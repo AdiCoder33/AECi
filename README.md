@@ -1,31 +1,34 @@
-# Aravind E-Logbook (Phase 1A - Auth MVP)
+# Aravind E-Logbook (Phase 1B)
 
-Minimal Flutter + Supabase app that supports Google sign-in, session restore on restart, and logout with a dark UI.
+Flutter + Supabase app with Google Auth, session restore, mandatory professional profile onboarding, and profile edit.
 
 ## Features
-- Google OAuth via Supabase Auth (PKCE)
-- Session restoration on app launch
-- Riverpod state + GoRouter navigation
-- Clean dark UI with Auth and Home screens
+- Google OAuth (PKCE) + email/password login/signup (Supabase Auth)
+- Mandatory profile capture after first login; enforced routing
+- Profile view/edit stored in Supabase `profiles` table
+- Session restoration on restart; Riverpod state; GoRouter navigation
+- Dark UI with Auth, Create Profile, Profile, and Home screens
 
-## Prerequisites
-1) Supabase project with Google provider enabled (Authentication → Providers → Google).
-2) Add `io.supabase.flutter://login-callback` to **Authentication → URL Configuration → Redirect URLs**.
-3) Grab your project URL and anon key (Project Settings → API).
+## Supabase setup
+1) Enable providers: Google and Email/Password (Authentication → Providers).
+2) Redirect URLs: add `io.supabase.flutter://login-callback` (Authentication → URL Configuration).
+3) Apply schema/RLS: run `supabase/profile_schema.sql` in the SQL editor.
 
 ## Mobile redirect configuration
-- **Android**: `android/app/src/main/AndroidManifest.xml` already contains an intent-filter for `io.supabase.flutter://login-callback`. If you change the scheme/host, update both the manifest and `AuthRepository._redirectUrl`.
-- **iOS**: `ios/Runner/Info.plist` includes the `io.supabase.flutter` URL scheme. Match this to your redirect URL if you customize it.
+- **Android**: intent-filter for `io.supabase.flutter://login-callback` already in `android/app/src/main/AndroidManifest.xml`. If you change the scheme/host, also update `_redirectUrl` in `lib/features/auth/data/auth_repository.dart`.
+- **iOS**: URL scheme `io.supabase.flutter` already in `ios/Runner/Info.plist`. Keep it in sync with your redirect URL.
 
 ## Run
 ```bash
 flutter pub get
 flutter run \
-  --dart-define=SUPABASE_URL=your-url \
+  --dart-define=SUPABASE_URL=https://zivtybyisftechheizwe.supabase.co \
   --dart-define=SUPABASE_ANON_KEY=your-anon-key
 ```
 
-## Flow
-1) Launch app → restores existing Supabase session (if any) and routes to Home.
-2) Auth screen → tap **Continue with Google** → Supabase OAuth → redirects back to app → Home.
-3) Home shows signed-in email + user id; **Logout** signs out and returns to Auth.
+## App flow
+1) Launch → restores Supabase session if present.
+2) If not logged in → Auth screen (Google or email/password login/signup).
+3) If logged in and no profile → forced Create Profile (cannot back out) → Save upserts to Supabase.
+4) If profile exists → Home shows name, designation, centre; navigate to Profile to view/edit.
+5) Logout available on Home/Profile/Create screens.

@@ -78,6 +78,27 @@ class AuthController extends StateNotifier<AuthStateModel> {
     }
   }
 
+  Future<void> signInWithEmailPassword({
+    required String email,
+    required String password,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      await _repository.signInWithEmailPassword(
+        email: email.trim(),
+        password: password,
+      );
+    } on AuthException catch (error) {
+      state = state.copyWith(errorMessage: error.message);
+    } catch (_) {
+      state = state.copyWith(
+        errorMessage: 'Unable to sign in. Please try again.',
+      );
+    } finally {
+      state = state.copyWith(isLoading: false);
+    }
+  }
+
   Future<void> signOut() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -88,6 +109,34 @@ class AuthController extends StateNotifier<AuthStateModel> {
       state = state.copyWith(errorMessage: 'Unable to sign out. Please retry.');
     } finally {
       state = state.copyWith(isLoading: false, session: null);
+    }
+  }
+
+  Future<void> signUpWithEmailPassword({
+    required String email,
+    required String password,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final response = await _repository.signUpWithEmailPassword(
+        email: email.trim(),
+        password: password,
+      );
+      // If email confirmation is on, session may be null.
+      state = state.copyWith(
+        session: response.session ?? state.session,
+        errorMessage: response.session == null
+            ? 'Check your email to confirm your account.'
+            : null,
+      );
+    } on AuthException catch (error) {
+      state = state.copyWith(errorMessage: error.message);
+    } catch (_) {
+      state = state.copyWith(
+        errorMessage: 'Unable to create account. Please try again.',
+      );
+    } finally {
+      state = state.copyWith(isLoading: false);
     }
   }
 

@@ -1,0 +1,55 @@
+-- Profiles table
+create table if not exists public.profiles (
+  id uuid primary key references auth.users (id) on delete cascade,
+  name text not null,
+  age int not null,
+  designation text not null check (designation in ('Fellow','Resident','Consultant')),
+  hospital text not null default 'Aravind Eye Hospital',
+  centre text not null check (centre in ('Chennai','Coimbatore','Madurai','Pondicherry','Tirupati','Salem','Tirunelveli')),
+  employee_id text not null,
+  phone text not null,
+  email text not null,
+  dob date not null,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- updated_at trigger
+create or replace function public.set_profiles_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists profiles_set_updated_at on public.profiles;
+create trigger profiles_set_updated_at
+before update on public.profiles
+for each row
+execute function public.set_profiles_updated_at();
+
+alter table public.profiles enable row level security;
+
+-- RLS Policies
+drop policy if exists "Profiles are viewable by authenticated users" on public.profiles;
+create policy "Profiles are viewable by authenticated users"
+on public.profiles
+for select
+to authenticated
+using (true);
+
+drop policy if exists "Users can insert their own profile" on public.profiles;
+create policy "Users can insert their own profile"
+on public.profiles
+for insert
+to authenticated
+with check (id = auth.uid());
+
+drop policy if exists "Users can update their own profile" on public.profiles;
+create policy "Users can update their own profile"
+on public.profiles
+for update
+to authenticated
+using (id = auth.uid())
+with check (id = auth.uid());

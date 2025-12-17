@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../auth/application/auth_controller.dart';
+import '../../profile/application/profile_controller.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -9,7 +11,9 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider);
-    final session = authState.session;
+    final profileState = ref.watch(profileControllerProvider);
+    final profile = profileState.profile;
+    final displayName = profile?.name;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Aravind E-Logbook')),
@@ -18,18 +22,41 @@ class HomeScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Signed in', style: Theme.of(context).textTheme.headlineSmall),
+            Text(
+              'Welcome${displayName != null ? ', $displayName' : ''}',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             const SizedBox(height: 12),
             _InfoTile(
-              label: 'Email',
-              value: session?.user.email ?? 'Unavailable',
+              label: 'Designation',
+              value: profile?.designation ?? 'Pending',
             ),
             const SizedBox(height: 8),
+            _InfoTile(label: 'Centre', value: profile?.centre ?? 'Pending'),
+            const SizedBox(height: 8),
             _InfoTile(
-              label: 'User ID',
-              value: session?.user.id ?? 'Unavailable',
+              label: 'Email',
+              value: profile?.email ?? authState.session?.user.email ?? '',
             ),
             const Spacer(),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => context.go('/profile'),
+                    icon: const Icon(Icons.person, color: Colors.black),
+                    label: const Text(
+                      'View / Edit Profile',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             ElevatedButton.icon(
               onPressed: authState.isLoading
                   ? null

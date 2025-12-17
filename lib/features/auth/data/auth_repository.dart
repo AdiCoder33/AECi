@@ -20,9 +20,23 @@ class AuthRepository {
     );
   }
 
+  Future<void> signInWithEmailPassword({
+    required String email,
+    required String password,
+  }) {
+    return _client.auth.signInWithPassword(email: email, password: password);
+  }
+
   Future<void> signOut() => _client.auth.signOut();
 
   static const _redirectUrl = 'io.supabase.flutter://login-callback';
+
+  Future<supabase.AuthResponse> signUpWithEmailPassword({
+    required String email,
+    required String password,
+  }) {
+    return _client.auth.signUp(email: email, password: password);
+  }
 }
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
