@@ -21,9 +21,11 @@ Flutter + Supabase app with Google Auth, session restore, mandatory professional
 ## Run
 ```bash
 flutter pub get
-flutter run \
-  --dart-define=SUPABASE_URL=https://zivtybyisftechheizwe.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=your-anon-key
+# Option A: use local env file (preferred, Flutter 3.35+)
+flutter run --dart-define-from-file=.env.local
+
+# Option B: inline defines
+flutter run --dart-define=SUPABASE_URL=https://zivtybyisftechheizwe.supabase.co --dart-define=SUPABASE_ANON_KEY=your-anon-key
 ```
 
 ## App flow
