@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:retry/retry.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/supabase_client.dart';
@@ -21,7 +22,11 @@ class MediaRepository {
     final fileName =
         '${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
     final path = '$userId/$entryId/$fileName';
-    await _client.storage.from(_bucket).upload(path, file);
+    final r = RetryOptions(maxAttempts: 3);
+    await r.retry(
+      () => _client.storage.from(_bucket).upload(path, file),
+      retryIf: (e) => e is StorageException,
+    );
     return path;
   }
 
@@ -30,6 +35,10 @@ class MediaRepository {
         .from(_bucket)
         .createSignedUrl(path, 60 * 60); // 60 minutes
     return response;
+  }
+
+  Future<void> removeObject(String path) async {
+    await _client.storage.from(_bucket).remove([path]);
   }
 }
 

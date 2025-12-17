@@ -78,6 +78,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               style: TextStyle(color: Colors.redAccent),
             ),
           ),
+          IconButton(
+            icon: const Icon(Icons.file_upload),
+            onPressed: () => context.push('/export'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.cleaning_services),
+            onPressed: () => context.push('/storage-tools'),
+          ),
         ],
       ),
       body: SingleChildScrollView(

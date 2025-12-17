@@ -41,20 +41,7 @@ class EntryCard extends StatelessWidget {
                   style: const TextStyle(color: Colors.white70),
                 ),
                 const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    color: Colors.orange.withValues(alpha: 0.15),
-                  ),
-                  child: Text(
-                    entry.status,
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                ),
+                _StatusBadge(status: entry.status),
               ],
             ),
             const SizedBox(height: 8),
@@ -102,5 +89,40 @@ class EntryCard extends StatelessWidget {
       default:
         return '';
     }
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.status});
+  final String status;
+
+  Color _color() {
+    switch (status) {
+      case statusApproved:
+        return Colors.green.withValues(alpha: 0.2);
+      case statusSubmitted:
+        return Colors.blue.withValues(alpha: 0.2);
+      case statusNeedsRevision:
+        return Colors.orange.withValues(alpha: 0.2);
+      case statusRejected:
+        return Colors.red.withValues(alpha: 0.2);
+      default:
+        return Colors.white.withValues(alpha: 0.1);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: _color(),
+      ),
+      child: Text(
+        status,
+        style: const TextStyle(fontSize: 12),
+      ),
+    );
   }
 }

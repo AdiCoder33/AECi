@@ -6,8 +6,10 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../application/logbook_providers.dart';
-import '../domain/elog_entry.dart';
 import '../data/media_repository.dart';
+import '../domain/elog_entry.dart';
+import '../../quality/data/quality_repository.dart';
+import '../../taxonomy/data/taxonomy_repository.dart';
 
 class EntryFormScreen extends ConsumerStatefulWidget {
   const EntryFormScreen({super.key, this.entryId, this.moduleType});
@@ -39,6 +41,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   final _surgeonAssistantController = TextEditingController();
 
   String? _moduleType;
+  String _currentStatus = statusDraft;
   List<String> _existingImagePaths = [];
   final List<File> _newImages = [];
 
@@ -51,10 +54,14 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     }
   }
 
+  bool get _canEditStatus =>
+      _currentStatus == statusDraft || _currentStatus == statusNeedsRevision;
+
   Future<void> _loadEntry() async {
     final entry = await ref.read(entryDetailProvider(widget.entryId!).future);
     setState(() {
       _moduleType = entry.moduleType;
+      _currentStatus = entry.status;
       _patientController.text = entry.patientUniqueId;
       _mrnController.text = entry.mrn;
       _keywordsController.text = entry.keywords.join(', ');
@@ -130,7 +137,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               DropdownButtonFormField<String>(
-                initialValue: _moduleType,
+                value: _moduleType,
                 decoration: const InputDecoration(labelText: 'Module'),
                 items: moduleTypes
                     .map(
@@ -140,27 +147,30 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                       ),
                     )
                     .toList(),
-                onChanged: isEditing
-                    ? null
-                    : (value) {
-                        setState(() => _moduleType = value);
-                      },
+                onChanged: isEditing ? null : (value) => setState(() => _moduleType = value),
               ),
               _buildText(
                 controller: _patientController,
                 label: 'Patient Unique ID',
                 validator: _required,
+                enabled: _canEditStatus,
               ),
               _buildText(
                 controller: _mrnController,
                 label: 'MRN',
                 validator: _required,
+                enabled: _canEditStatus,
               ),
               _buildText(
                 controller: _keywordsController,
                 label: 'Keywords (comma separated)',
                 validator: _required,
+                enabled: _canEditStatus,
               ),
+              if (_canEditStatus)
+                _KeywordSuggestionsField(
+                  controller: _keywordsController,
+                ),
               const SizedBox(height: 12),
               _ModuleFields(
                 moduleType: _moduleType ?? moduleCases,
@@ -174,18 +184,30 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                 surgeonController: _surgeonController,
                 learningPointController: _learningPointController,
                 surgeonAssistantController: _surgeonAssistantController,
+                enabled: _canEditStatus,
               ),
               if (_moduleType == moduleCases || _moduleType == moduleImages)
                 _ImagePickerSection(
                   existingPaths: _existingImagePaths,
                   newImages: _newImages,
                   onChanged: () => setState(() {}),
+                  enabled: _canEditStatus,
+                ),
+              if (!_canEditStatus)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Editing locked while submitted/approved/rejected.',
+                    style: TextStyle(color: Colors.white70),
+                  ),
                 ),
               const SizedBox(height: 16),
               Row(
                 children: [
                   ElevatedButton(
-                    onPressed: mutation.isLoading ? null : _save,
+                    onPressed: !_canEditStatus || mutation.isLoading
+                        ? null
+                        : () => _save(submit: false),
                     child: mutation.isLoading
                         ? const SizedBox(
                             height: 18,
@@ -199,6 +221,16 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                             'Save Draft',
                             style: TextStyle(color: Colors.black),
                           ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: !_canEditStatus || mutation.isLoading
+                        ? null
+                        : () => _save(submit: true),
+                    child: const Text(
+                      'Submit for review',
+                      style: TextStyle(color: Colors.black),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   TextButton(
@@ -223,19 +255,29 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     required TextEditingController controller,
     required String label,
     String? Function(String?)? validator,
+    bool enabled = true,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         controller: controller,
+        enabled: enabled,
         decoration: InputDecoration(labelText: label),
         validator: validator,
       ),
     );
   }
 
-  Future<void> _save() async {
+  Future<void> _save({required bool submit}) async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_canEditStatus) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cannot edit this status')),
+        );
+      }
+      return;
+    }
     final module = _moduleType ?? moduleCases;
     final keywords = _keywordsController.text
         .split(',')
@@ -245,6 +287,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
 
     final mediaRepo = ref.read(mediaRepositoryProvider);
     Map<String, dynamic> payload = _buildPayload(module);
+
     try {
       if (widget.entryId == null) {
         final create = ElogEntryCreate(
@@ -254,33 +297,29 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
           keywords: keywords,
           payload: payload,
         );
-        final entryId = await ref
-            .read(entryMutationProvider.notifier)
-            .create(create);
+        final entryId =
+            await ref.read(entryMutationProvider.notifier).create(create);
 
-        final newPaths = <String>[];
-        for (final file in _newImages) {
-          final path = await mediaRepo.uploadImage(
-            entryId: entryId,
-            file: file,
-          );
-          newPaths.add(path);
-        }
+        final newPaths = await _uploadNewImages(mediaRepo, entryId);
         if (newPaths.isNotEmpty) {
-          final updatedPayload = _withNewPaths(module, payload, newPaths);
+          payload = _withNewPaths(module, payload, newPaths);
           await ref
               .read(entryMutationProvider.notifier)
-              .update(entryId, ElogEntryUpdate(payload: updatedPayload));
+              .update(entryId, ElogEntryUpdate(payload: payload));
+        }
+        if (submit) {
+          await ref.read(entryMutationProvider.notifier).update(
+                entryId,
+                ElogEntryUpdate(
+                  status: statusSubmitted,
+                  submittedAt: DateTime.now(),
+                  clearReview: true,
+                ),
+              );
         }
       } else {
-        final newPaths = <String>[];
-        for (final file in _newImages) {
-          final path = await mediaRepo.uploadImage(
-            entryId: widget.entryId!,
-            file: file,
-          );
-          newPaths.add(path);
-        }
+        final entryId = widget.entryId!;
+        final newPaths = await _uploadNewImages(mediaRepo, entryId);
         if (newPaths.isNotEmpty) {
           payload = _withNewPaths(module, payload, newPaths);
         }
@@ -289,11 +328,18 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
           mrn: _mrnController.text.trim(),
           keywords: keywords,
           payload: payload,
+          status: submit ? statusSubmitted : _currentStatus,
+          submittedAt: submit ? DateTime.now() : null,
+          clearReview: submit,
         );
-        await ref
-            .read(entryMutationProvider.notifier)
-            .update(widget.entryId!, update);
+        await ref.read(entryMutationProvider.notifier).update(entryId, update);
       }
+      // Re-score quality after save/update
+      try {
+        await ref.read(qualityRepositoryProvider).scoreEntry(
+              widget.entryId ?? '',
+            );
+      } catch (_) {}
       if (mounted) {
         context.go('/logbook');
       }
@@ -304,6 +350,18 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
         ).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
       }
     }
+  }
+
+  Future<List<String>> _uploadNewImages(
+    MediaRepository mediaRepo,
+    String entryId,
+  ) async {
+    final newPaths = <String>[];
+    for (final file in _newImages) {
+      final path = await mediaRepo.uploadImage(entryId: entryId, file: file);
+      newPaths.add(path);
+    }
+    return newPaths;
   }
 
   Map<String, dynamic> _buildPayload(String module) {
@@ -377,6 +435,7 @@ class _ModuleFields extends StatelessWidget {
     required this.surgeonController,
     required this.learningPointController,
     required this.surgeonAssistantController,
+    required this.enabled,
   });
 
   final String moduleType;
@@ -390,6 +449,7 @@ class _ModuleFields extends StatelessWidget {
   final TextEditingController surgeonController;
   final TextEditingController learningPointController;
   final TextEditingController surgeonAssistantController;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -402,10 +462,12 @@ class _ModuleFields extends StatelessWidget {
               label: 'Brief Description',
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Required' : null,
+              enabled: enabled,
             ),
             _buildField(
               controller: followUpDescController,
               label: 'Follow-up Visit Description (optional)',
+              enabled: enabled,
             ),
           ],
         );
@@ -417,10 +479,12 @@ class _ModuleFields extends StatelessWidget {
               label: 'Key Description / Pathology',
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Required' : null,
+              enabled: enabled,
             ),
             _buildField(
               controller: additionalInfoController,
               label: 'Additional Information (optional)',
+              enabled: enabled,
             ),
           ],
         );
@@ -432,24 +496,28 @@ class _ModuleFields extends StatelessWidget {
               label: 'Pre-op diagnosis / pathology',
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Required' : null,
+              enabled: enabled,
             ),
             _buildField(
               controller: surgicalVideoController,
               label: 'Surgical video link (URL)',
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Required' : null,
+              enabled: enabled,
             ),
             _buildField(
               controller: teachingPointController,
               label: 'Teaching point',
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Required' : null,
+              enabled: enabled,
             ),
             _buildField(
               controller: surgeonController,
               label: 'Surgeon',
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Required' : null,
+              enabled: enabled,
             ),
           ],
         );
@@ -461,24 +529,28 @@ class _ModuleFields extends StatelessWidget {
               label: 'Pre-op diagnosis / pathology',
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Required' : null,
+              enabled: enabled,
             ),
             _buildField(
               controller: surgicalVideoController,
               label: 'Surgical video link (URL)',
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Required' : null,
+              enabled: enabled,
             ),
             _buildField(
               controller: learningPointController,
               label: 'Learning point or complication',
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Required' : null,
+              enabled: enabled,
             ),
             _buildField(
               controller: surgeonAssistantController,
               label: 'Surgeon or assistant',
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Required' : null,
+              enabled: enabled,
             ),
           ],
         );
@@ -491,11 +563,13 @@ class _ModuleFields extends StatelessWidget {
     required TextEditingController controller,
     required String label,
     String? Function(String?)? validator,
+    bool enabled = true,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         controller: controller,
+        enabled: enabled,
         decoration: InputDecoration(labelText: label),
         validator: validator,
       ),
@@ -508,11 +582,13 @@ class _ImagePickerSection extends ConsumerWidget {
     required this.existingPaths,
     required this.newImages,
     required this.onChanged,
+    required this.enabled,
   });
 
   final List<String> existingPaths;
   final List<File> newImages;
   final VoidCallback onChanged;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -527,14 +603,16 @@ class _ImagePickerSection extends ConsumerWidget {
           children: [
             const Text('Images', style: TextStyle(fontWeight: FontWeight.bold)),
             TextButton.icon(
-              onPressed: () async {
-                final picker = ImagePicker();
-                final picked = await picker.pickMultiImage();
-                if (picked.isNotEmpty) {
-                  newImages.addAll(picked.map((e) => File(e.path)));
-                  onChanged();
-                }
-              },
+              onPressed: !enabled
+                  ? null
+                  : () async {
+                      final picker = ImagePicker();
+                      final picked = await picker.pickMultiImage();
+                      if (picked.isNotEmpty) {
+                        newImages.addAll(picked.map((e) => File(e.path)));
+                        onChanged();
+                      }
+                    },
               icon: const Icon(Icons.add),
               label: const Text('Add'),
             ),
@@ -582,6 +660,78 @@ class _ImagePickerSection extends ConsumerWidget {
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+class _KeywordSuggestionsField extends ConsumerStatefulWidget {
+  const _KeywordSuggestionsField({required this.controller});
+  final TextEditingController controller;
+
+  @override
+  ConsumerState<_KeywordSuggestionsField> createState() =>
+      _KeywordSuggestionsFieldState();
+}
+
+class _KeywordSuggestionsFieldState
+    extends ConsumerState<_KeywordSuggestionsField> {
+  String current = '';
+  @override
+  Widget build(BuildContext context) {
+    final repo = ref.watch(taxonomyRepositoryProvider);
+    final last = current.split(',').last.trim();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 4),
+        if (last.length >= 2)
+          FutureBuilder(
+            future: repo.autocomplete(last),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) return const SizedBox.shrink();
+              final terms = snapshot.data!;
+              if (terms.isEmpty) {
+                return TextButton(
+                  onPressed: () async {
+                    await repo.suggest(last);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Suggested new term')),
+                    );
+                  },
+                  child: Text('Suggest "$last"'),
+                );
+              }
+              return Wrap(
+                spacing: 6,
+                children: terms
+                    .map(
+                      (t) => ActionChip(
+                        label: Text(t.term),
+                        onPressed: () {
+                          final existing = widget.controller.text
+                              .split(',')
+                              .map((e) => e.trim())
+                              .where((e) => e.isNotEmpty)
+                              .toList();
+                          existing.removeWhere((e) => e.toLowerCase() == last.toLowerCase());
+                          existing.add(t.term);
+                          widget.controller.text = existing.join(', ');
+                          setState(() => current = widget.controller.text);
+                        },
+                      ),
+                    )
+                    .toList(),
+              );
+            },
+          ),
+        TextField(
+          controller: widget.controller,
+          decoration: const InputDecoration(
+            hintText: 'Type keywords (comma separated)',
+          ),
+          onChanged: (v) => setState(() => current = v),
         ),
       ],
     );

@@ -12,18 +12,29 @@ class EntriesRepository {
   Future<List<ElogEntry>> listEntries({
     required String moduleType,
     String? search,
+    bool onlyMine = false,
+    DateTime? startDate,
+    DateTime? endDate,
   }) async {
-    final query = _client
+    final response = await _client
         .from('elog_entries')
-        .select(
-          '*, profiles:created_by (name, designation, centre, employee_id)',
-        )
+        .select('*')
         .eq('module_type', moduleType)
         .order('updated_at', ascending: false);
-
-    final response = await query;
     final rows = (response as List).cast<Map<String, dynamic>>();
     var entries = rows.map(ElogEntry.fromMap).toList();
+    if (onlyMine) {
+      final uid = _client.auth.currentUser?.id;
+      if (uid != null) {
+        entries = entries.where((e) => e.createdBy == uid).toList();
+      }
+    }
+    if (startDate != null) {
+      entries = entries.where((e) => !e.createdAt.isBefore(startDate)).toList();
+    }
+    if (endDate != null) {
+      entries = entries.where((e) => !e.createdAt.isAfter(endDate)).toList();
+    }
     if (search != null && search.trim().isNotEmpty) {
       final needle = search.toLowerCase();
       entries = entries.where((e) {
@@ -39,17 +50,38 @@ class EntriesRepository {
   }
 
   Future<ElogEntry> getEntry(String id) async {
-    final response = await _client
-        .from('elog_entries')
-        .select(
-          '*, profiles:created_by (name, designation, centre, employee_id)',
-        )
-        .eq('id', id)
-        .maybeSingle();
-    if (response == null) {
+    final row =
+        await _client.from('elog_entries').select('*').eq('id', id).maybeSingle();
+    if (row == null) {
       throw PostgrestException(message: 'Entry not found', code: '404');
     }
-    return ElogEntry.fromMap(Map<String, dynamic>.from(response));
+    final map = Map<String, dynamic>.from(row);
+
+    // Fetch author profile
+    final createdBy = map['created_by'] as String;
+    final author = await _client
+        .from('profiles')
+        .select('name, designation, centre, employee_id')
+        .eq('id', createdBy)
+        .maybeSingle();
+    if (author != null) {
+      map['author_profile'] = author;
+    }
+
+    // Fetch reviewer profile if exists
+    final reviewerId = map['reviewed_by'] as String?;
+    if (reviewerId != null) {
+      final reviewer = await _client
+          .from('profiles')
+          .select('name, designation, centre, employee_id')
+          .eq('id', reviewerId)
+          .maybeSingle();
+      if (reviewer != null) {
+        map['reviewer_profile'] = reviewer;
+      }
+    }
+
+    return ElogEntry.fromMap(map);
   }
 
   Future<String> createEntry(ElogEntryCreate data) async {

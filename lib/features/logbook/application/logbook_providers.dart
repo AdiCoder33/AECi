@@ -1,11 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/cache/signed_url_cache.dart';
 import '../data/entries_repository.dart';
-import '../data/media_repository.dart';
 import '../domain/elog_entry.dart';
 
 final moduleSelectionProvider = StateProvider<String>((ref) => moduleCases);
 final searchQueryProvider = StateProvider<String>((ref) => '');
+final showMineProvider = StateProvider<bool>((ref) => true);
+final showDraftsProvider = StateProvider<bool>((ref) => false);
 
 final entriesListProvider = FutureProvider.autoDispose<List<ElogEntry>>((
   ref,
@@ -13,10 +15,20 @@ final entriesListProvider = FutureProvider.autoDispose<List<ElogEntry>>((
   final repo = ref.watch(entriesRepositoryProvider);
   final module = ref.watch(moduleSelectionProvider);
   final search = ref.watch(searchQueryProvider);
-  return repo.listEntries(
-    moduleType: module,
-    search: search.isEmpty ? null : search,
-  );
+  final onlyMine = ref.watch(showMineProvider);
+  final draftsOnly = ref.watch(showDraftsProvider);
+  return repo
+      .listEntries(
+        moduleType: module,
+        search: search.isEmpty ? null : search,
+        onlyMine: draftsOnly ? true : onlyMine,
+      )
+      .then((list) {
+        if (draftsOnly) {
+          return list.where((e) => e.status == 'draft').toList();
+        }
+        return list;
+      });
 });
 
 final entryDetailProvider = FutureProvider.family
@@ -72,21 +84,8 @@ final entryMutationProvider =
       return EntryMutationController(entriesRepo);
     });
 
-class SignedUrlCache extends StateNotifier<Map<String, String>> {
-  SignedUrlCache(this._mediaRepository) : super({});
-
-  final MediaRepository _mediaRepository;
-
-  Future<String> getUrl(String path) async {
-    if (state.containsKey(path)) return state[path]!;
-    final url = await _mediaRepository.getSignedUrl(path);
-    state = {...state, path: url};
-    return url;
-  }
-}
-
+/// Global signed URL cache with expiry
 final signedUrlCacheProvider =
-    StateNotifierProvider<SignedUrlCache, Map<String, String>>((ref) {
-      final mediaRepo = ref.watch(mediaRepositoryProvider);
-      return SignedUrlCache(mediaRepo);
+    StateNotifierProvider<SignedUrlCache, Map<String, SignedUrlEntry>>((ref) {
+      return SignedUrlCache(ref.watch);
     });

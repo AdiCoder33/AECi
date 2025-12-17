@@ -14,11 +14,19 @@ class LogbookScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final module = ref.watch(moduleSelectionProvider);
     final entries = ref.watch(entriesListProvider);
+    final showMine = ref.watch(showMineProvider);
+    final showDrafts = ref.watch(showDraftsProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Logbook'),
         backgroundColor: AppTheme.dark.scaffoldBackgroundColor,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () => context.push('/search'),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.pushNamed('logbookNew', extra: module),
@@ -37,6 +45,34 @@ class LogbookScreen extends ConsumerWidget {
             _SearchBar(
               onChanged: (value) =>
                   ref.read(searchQueryProvider.notifier).state = value,
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                ChoiceChip(
+                  label: const Text('My Entries'),
+                  selected: showMine,
+                  onSelected: (v) =>
+                      ref.read(showMineProvider.notifier).state = v,
+                ),
+                ChoiceChip(
+                  label: const Text('Drafts'),
+                  selected: showDrafts,
+                  onSelected: (v) =>
+                      ref.read(showDraftsProvider.notifier).state = v,
+                ),
+                ChoiceChip(
+                  label: const Text('Browse All'),
+                  selected: !showMine && !showDrafts,
+                  onSelected: (v) {
+                    if (v) {
+                      ref.read(showMineProvider.notifier).state = false;
+                      ref.read(showDraftsProvider.notifier).state = false;
+                    }
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             Expanded(

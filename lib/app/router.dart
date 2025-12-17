@@ -15,6 +15,18 @@ import '../features/profile/presentation/profile_screen.dart';
 import '../features/logbook/presentation/logbook_screen.dart';
 import '../features/logbook/presentation/entry_detail_screen.dart';
 import '../features/logbook/presentation/entry_form_screen.dart';
+import '../features/search/presentation/global_search_screen.dart';
+import '../features/export/presentation/export_screen.dart';
+import '../features/profile/tools/storage_management_screen.dart';
+import '../features/review/presentation/review_queue_screen.dart';
+import '../features/review/presentation/review_detail_screen.dart';
+import '../features/portfolio/presentation/research_screens.dart';
+import '../features/portfolio/presentation/publication_screens.dart';
+import '../features/teaching/presentation/teaching_list_screen.dart';
+import '../features/analytics/presentation/analytics_screen.dart';
+import '../features/teaching/data/teaching_repository.dart';
+import '../features/teaching/proposal_screens.dart';
+import '../features/taxonomy/presentation/keyword_suggestions_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
@@ -122,6 +134,120 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'profile',
             builder: (context, state) => const ProfileScreen(),
           ),
+          GoRoute(
+            path: '/research',
+            name: 'researchList',
+            builder: (context, state) => const ResearchListScreen(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                name: 'researchNew',
+                builder: (context, state) => const ResearchFormScreen(),
+              ),
+              GoRoute(
+                path: ':id',
+                name: 'researchDetail',
+                builder: (context, state) =>
+                    ResearchDetailScreen(id: state.pathParameters['id']!),
+              ),
+              GoRoute(
+                path: ':id/edit',
+                name: 'researchEdit',
+                builder: (context, state) =>
+                    ResearchFormScreen(id: state.pathParameters['id']!),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: '/publications',
+            name: 'pubList',
+            builder: (context, state) => const PublicationListScreen(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                name: 'pubNew',
+                builder: (context, state) => const PublicationFormScreen(),
+              ),
+              GoRoute(
+                path: ':id',
+                name: 'pubDetail',
+                builder: (context, state) =>
+                    PublicationDetailScreen(id: state.pathParameters['id']!),
+              ),
+              GoRoute(
+                path: ':id/edit',
+                name: 'pubEdit',
+                builder: (context, state) =>
+                    PublicationFormScreen(id: state.pathParameters['id']!),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: '/search',
+            name: 'search',
+            builder: (context, state) => const GlobalSearchScreen(),
+          ),
+          GoRoute(
+            path: '/review-queue',
+            name: 'reviewQueue',
+            builder: (context, state) => const ReviewQueueScreen(),
+          ),
+          GoRoute(
+            path: '/review/:id',
+            name: 'reviewDetail',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return ReviewDetailScreen(entryId: id);
+            },
+          ),
+          GoRoute(
+            path: '/export',
+            name: 'export',
+            builder: (context, state) => const ExportScreen(),
+          ),
+          GoRoute(
+            path: '/storage-tools',
+            name: 'storageTools',
+            builder: (context, state) => const StorageManagementScreen(),
+          ),
+          GoRoute(
+            path: '/teaching',
+            name: 'teaching',
+            builder: (context, state) => const TeachingListScreen(),
+            routes: [
+              GoRoute(
+                path: 'proposals',
+                name: 'teachingProposals',
+                builder: (context, state) => const TeachingProposalsScreen(),
+              ),
+              GoRoute(
+                path: ':id',
+                name: 'teachingDetail',
+                builder: (context, state) {
+                  final item = state.extra as TeachingItem;
+                  return TeachingDetailScreen(item: item);
+                },
+              ),
+              GoRoute(
+                path: 'proposal/:proposalId/:id',
+                name: 'proposalReview',
+                builder: (context, state) => ProposalReviewScreen(
+                  proposalId: state.pathParameters['proposalId']!,
+                  entryId: state.pathParameters['id']!,
+                ),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: '/analytics',
+            name: 'analytics',
+            builder: (context, state) => const AnalyticsScreen(),
+          ),
+          GoRoute(
+            path: '/taxonomy/suggestions',
+            name: 'taxonomySuggestions',
+            builder: (context, state) => const KeywordSuggestionsScreen(),
+          ),
         ],
       ),
     ],
@@ -152,7 +278,8 @@ class _MainShell extends StatelessWidget {
 
   int get _index {
     if (location.startsWith('/logbook')) return 1;
-    if (location.startsWith('/profile')) return 2;
+    if (location.startsWith('/teaching')) return 2;
+    if (location.startsWith('/profile')) return 3;
     return 0;
   }
 
@@ -165,6 +292,9 @@ class _MainShell extends StatelessWidget {
         context.go('/logbook');
         break;
       case 2:
+        context.go('/teaching');
+        break;
+      case 3:
         context.go('/profile');
         break;
     }
@@ -180,6 +310,7 @@ class _MainShell extends StatelessWidget {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Logbook'),
+          BottomNavigationBarItem(icon: Icon(Icons.school), label: 'Teaching'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
