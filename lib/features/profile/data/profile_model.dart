@@ -10,6 +10,12 @@ class Profile {
     required this.phone,
     required this.email,
     required this.dob,
+    this.gender,
+    this.degrees = const [],
+    this.aravindCentre,
+    this.idNumber,
+    this.dateOfJoining,
+    this.hodName,
   });
 
   final String id;
@@ -22,6 +28,12 @@ class Profile {
   final String phone;
   final String email;
   final DateTime dob;
+  final String? gender;
+  final List<String> degrees;
+  final String? aravindCentre;
+  final String? idNumber;
+  final DateTime? dateOfJoining;
+  final String? hodName;
 
   Profile copyWith({
     String? id,
@@ -34,6 +46,12 @@ class Profile {
     String? phone,
     String? email,
     DateTime? dob,
+    String? gender,
+    List<String>? degrees,
+    String? aravindCentre,
+    String? idNumber,
+    DateTime? dateOfJoining,
+    String? hodName,
   }) {
     return Profile(
       id: id ?? this.id,
@@ -46,6 +64,12 @@ class Profile {
       phone: phone ?? this.phone,
       email: email ?? this.email,
       dob: dob ?? this.dob,
+      gender: gender ?? this.gender,
+      degrees: degrees ?? this.degrees,
+      aravindCentre: aravindCentre ?? this.aravindCentre,
+      idNumber: idNumber ?? this.idNumber,
+      dateOfJoining: dateOfJoining ?? this.dateOfJoining,
+      hodName: hodName ?? this.hodName,
     );
   }
 
@@ -61,6 +85,13 @@ class Profile {
       phone: map['phone'] as String,
       email: map['email'] as String,
       dob: DateTime.parse(map['dob'] as String),
+      gender: map['gender'] as String?,
+      degrees: (map['degrees'] as List?)?.cast<String>() ?? const [],
+      aravindCentre: map['aravind_centre'] as String? ?? map['centre'] as String?,
+      idNumber: map['id_number'] as String?,
+      dateOfJoining:
+          map['date_of_joining'] != null ? DateTime.parse(map['date_of_joining'] as String) : null,
+      hodName: map['hod_name'] as String?,
     );
   }
 
@@ -77,6 +108,12 @@ class Profile {
       'phone': phone,
       'email': email,
       'dob': date,
+      'gender': gender,
+      'degrees': degrees,
+      'aravind_centre': aravindCentre ?? centre,
+      'id_number': idNumber,
+      'date_of_joining': dateOfJoining?.toIso8601String().split('T').first,
+      'hod_name': hodName,
     };
   }
 }

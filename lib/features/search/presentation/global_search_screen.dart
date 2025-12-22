@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../logbook/data/entries_repository.dart';
 import '../../logbook/domain/elog_entry.dart';
 import '../../logbook/presentation/widgets/entry_card.dart';
+import '../../clinical_cases/data/clinical_cases_repository.dart';
+import '../../clinical_cases/data/clinical_cases_repository.dart' show ClinicalCase;
 
 class GlobalSearchScreen extends ConsumerStatefulWidget {
   const GlobalSearchScreen({super.key});
@@ -82,13 +84,28 @@ class _SearchResults extends ConsumerWidget {
           );
     }).toList();
 
-    return FutureBuilder<List<List<ElogEntry>>>(
-      future: Future.wait(futures),
+    final caseFuture = ref
+        .read(clinicalCasesRepositoryProvider)
+        .listCases()
+        .then((list) => list
+            .where((c) =>
+                query.isEmpty ||
+                c.keywords.any((k) => k.toLowerCase().contains(query.toLowerCase())) ||
+                c.patientName.toLowerCase().contains(query.toLowerCase()))
+            .toList());
+
+    return FutureBuilder(
+      future: Future.wait(futures).then((logEntries) async {
+        final cases = await caseFuture;
+        return {'log': logEntries, 'cases': cases};
+      }),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        final all = snapshot.data!.expand((e) => e).toList();
+        final data = snapshot.data as Map;
+        final logLists = (data['log'] as List<List<ElogEntry>>);
+        final all = logLists.expand((e) => e).toList();
         if (all.isEmpty) {
           return const Center(child: Text('No results'));
         }
@@ -96,6 +113,7 @@ class _SearchResults extends ConsumerWidget {
         for (final entry in all) {
           grouped.putIfAbsent(entry.moduleType, () => []).add(entry);
         }
+        final cases = data['cases'] as List<ClinicalCase>;
         return ListView(
           children: grouped.entries.map((group) {
             return Column(
@@ -119,7 +137,24 @@ class _SearchResults extends ConsumerWidget {
                 const SizedBox(height: 12),
               ],
             );
-          }).toList(),
+          }).toList()
+            ..add(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('CLINICAL CASES'),
+                  const SizedBox(height: 8),
+                  ...cases.map(
+                    (c) => ListTile(
+                      title: Text(c.patientName),
+                      subtitle: Text('${c.uidNumber} • ${c.diagnosis}'),
+                      onTap: () =>
+                          GoRouter.of(context).go('/cases/${c.id}'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         );
       },
     );

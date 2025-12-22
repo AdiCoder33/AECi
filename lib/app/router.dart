@@ -27,6 +27,10 @@ import '../features/analytics/presentation/analytics_screen.dart';
 import '../features/teaching/data/teaching_repository.dart';
 import '../features/teaching/proposal_screens.dart';
 import '../features/taxonomy/presentation/keyword_suggestions_screen.dart';
+import '../features/clinical_cases/presentation/case_list_screen.dart';
+import '../features/clinical_cases/presentation/case_detail_screen.dart';
+import '../features/clinical_cases/presentation/case_form_screen.dart';
+import '../features/clinical_cases/presentation/notifications_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
@@ -248,6 +252,30 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'taxonomySuggestions',
             builder: (context, state) => const KeywordSuggestionsScreen(),
           ),
+          GoRoute(
+            path: '/cases',
+            name: 'cases',
+            builder: (context, state) => const ClinicalCaseListScreen(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                name: 'caseNew',
+                builder: (context, state) => const ClinicalCaseFormScreen(),
+              ),
+              GoRoute(
+                path: ':id',
+                name: 'caseDetail',
+                builder: (context, state) => ClinicalCaseDetailScreen(
+                  caseId: state.pathParameters['id']!,
+                ),
+              ),
+              GoRoute(
+                path: 'notifications',
+                name: 'notifications',
+                builder: (context, state) => const NotificationsScreen(),
+              ),
+            ],
+          ),
         ],
       ),
     ],
@@ -278,8 +306,9 @@ class _MainShell extends StatelessWidget {
 
   int get _index {
     if (location.startsWith('/logbook')) return 1;
-    if (location.startsWith('/teaching')) return 2;
-    if (location.startsWith('/profile')) return 3;
+    if (location.startsWith('/cases')) return 2;
+    if (location.startsWith('/teaching')) return 3;
+    if (location.startsWith('/profile')) return 4;
     return 0;
   }
 
@@ -292,9 +321,12 @@ class _MainShell extends StatelessWidget {
         context.go('/logbook');
         break;
       case 2:
-        context.go('/teaching');
+        context.go('/cases');
         break;
       case 3:
+        context.go('/teaching');
+        break;
+      case 4:
         context.go('/profile');
         break;
     }
@@ -310,6 +342,7 @@ class _MainShell extends StatelessWidget {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Logbook'),
+          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Cases'),
           BottomNavigationBarItem(icon: Icon(Icons.school), label: 'Teaching'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],

@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../logbook/application/logbook_providers.dart';
-import 'application/teaching_controller.dart' show proposalListProvider, teachingMutationProvider;
+import 'application/teaching_controller.dart'
+    show proposalListProvider, teachingMutationProvider;
 import 'data/teaching_repository.dart';
 
 class TeachingProposalsScreen extends ConsumerWidget {

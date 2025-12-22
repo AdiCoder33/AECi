@@ -1,10 +1,19 @@
 const profileDesignations = ['Fellow', 'Resident', 'Consultant'];
 const profileCentres = [
+  'Madurai',
   'Chennai',
   'Coimbatore',
-  'Madurai',
-  'Pondicherry',
-  'Tirupati',
-  'Salem',
   'Tirunelveli',
+  'Salem',
+  'Tirupati',
+  'Pondicherry',
+];
+const profileGenders = ['male', 'female'];
+const profileDegrees = [
+  'DO',
+  'MS/MD Ophthalmology',
+  'DNB Ophthalmology',
+  'FRCS',
+  'FICO',
+  'FRCOphth',
 ];
