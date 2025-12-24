@@ -22,9 +22,14 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
   final _employeeIdController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
+  final _idNumberController = TextEditingController();
+  final _hodController = TextEditingController();
   DateTime? _dob;
+  DateTime? _dateOfJoining;
   String _designation = profileDesignations.first;
   String _centre = profileCentres.first;
+  String _gender = profileGenders.first;
+  List<String> _degrees = [];
 
   @override
   void initState() {
@@ -40,6 +45,8 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
     _employeeIdController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
+    _idNumberController.dispose();
+    _hodController.dispose();
     super.dispose();
   }
 
@@ -123,7 +130,54 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                           },
                         ),
                         DropdownButtonFormField<String>(
-                          initialValue: _designation,
+                          value: _gender,
+                          items: profileGenders
+                              .map(
+                                (g) => DropdownMenuItem(
+                                  value: g,
+                                  child: Text(g[0].toUpperCase() + g.substring(1)),
+                                ),
+                              )
+                              .toList(),
+                          decoration: const InputDecoration(
+                            labelText: 'Gender',
+                          ),
+                          onChanged: isSaving
+                              ? null
+                              : (value) => setState(() => _gender = value!),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Degrees',
+                          style: TextStyle(fontSize: 12, color: Colors.white70),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: profileDegrees.map((degree) {
+                            final selected = _degrees.contains(degree);
+                            return FilterChip(
+                              selected: selected,
+                              label: Text(degree),
+                              onSelected: isSaving
+                                  ? null
+                                  : (value) {
+                                      setState(() {
+                                        if (value) {
+                                          _degrees = [..._degrees, degree];
+                                        } else {
+                                          _degrees =
+                                              _degrees.where((d) => d != degree).toList();
+                                        }
+                                      });
+                                    },
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<String>(
+                          value: _designation,
                           items: profileDesignations
                               .map(
                                 (d) =>
@@ -135,11 +189,10 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                           ),
                           onChanged: isSaving
                               ? null
-                              : (value) =>
-                                    setState(() => _designation = value!),
+                              : (value) => setState(() => _designation = value!),
                         ),
                         DropdownButtonFormField<String>(
-                          initialValue: _centre,
+                          value: _centre,
                           items: profileCentres
                               .map(
                                 (c) =>
@@ -147,7 +200,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                               )
                               .toList(),
                           decoration: const InputDecoration(
-                            labelText: 'Centre',
+                            labelText: 'Aravind Centre',
                           ),
                           onChanged: isSaving
                               ? null
@@ -164,6 +217,11 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                           validator: _requiredValidator,
                         ),
                         _FormField(
+                          label: 'ID Number',
+                          controller: _idNumberController,
+                          validator: _requiredValidator,
+                        ),
+                        _FormField(
                           label: 'Phone Number',
                           controller: _phoneController,
                           keyboardType: TextInputType.phone,
@@ -176,6 +234,11 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                             }
                             return null;
                           },
+                        ),
+                        _FormField(
+                          label: 'Name of HOD',
+                          controller: _hodController,
+                          validator: _requiredValidator,
                         ),
                         _FormField(
                           label: 'Email',
@@ -215,6 +278,34 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                                     });
                                   }
                                 },
+                        ),
+                        const SizedBox(height: 12),
+                        _DateField(
+                          label: 'Date of Joining',
+                          value: _dateOfJoining,
+                          onPick: isSaving
+                              ? null
+                              : () async {
+                                  final now = DateTime.now();
+                                  final picked = await showDatePicker(
+                                    context: context,
+                                    initialDate: now,
+                                    firstDate: DateTime(now.year - 20),
+                                    lastDate: now,
+                                  );
+                                  if (picked != null) {
+                                    setState(() {
+                                      _dateOfJoining = picked;
+                                    });
+                                  }
+                                },
+                        ),
+                        const SizedBox(height: 12),
+                        _ReadonlyField(
+                          label: 'Months into program',
+                          value: _dateOfJoining == null
+                              ? 'Select date of joining'
+                              : '${_monthsIntoProgram(_dateOfJoining!)} months',
                         ),
                         const SizedBox(height: 18),
                         SizedBox(
@@ -256,6 +347,18 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
       );
       return;
     }
+    if (_dateOfJoining == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select Date of Joining')),
+      );
+      return;
+    }
+    if (_degrees.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select at least one degree')),
+      );
+      return;
+    }
     final auth = ref.read(authControllerProvider);
     final userId = auth.session?.user.id;
     if (userId == null) {
@@ -276,6 +379,12 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
       phone: _phoneController.text.trim(),
       email: _emailController.text.trim(),
       dob: _dob!,
+      gender: _gender,
+      degrees: _degrees,
+      aravindCentre: _centre,
+      idNumber: _idNumberController.text.trim(),
+      dateOfJoining: _dateOfJoining,
+      hodName: _hodController.text.trim(),
     );
 
     await ref.read(profileControllerProvider.notifier).upsertProfile(profile);
@@ -293,6 +402,13 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
       return 'Required';
     }
     return null;
+  }
+
+  int _monthsIntoProgram(DateTime joining) {
+    final now = DateTime.now();
+    var months = (now.year - joining.year) * 12 + (now.month - joining.month);
+    if (now.day < joining.day) months -= 1;
+    return months < 0 ? 0 : months;
   }
 }
 
@@ -340,6 +456,40 @@ class _DobField extends StatelessWidget {
         const Text(
           'Date of Birth',
           style: TextStyle(fontSize: 12, color: Colors.white70),
+        ),
+        const SizedBox(height: 6),
+        OutlinedButton.icon(
+          onPressed: onPick,
+          icon: const Icon(Icons.calendar_today, size: 18),
+          label: Text(text),
+        ),
+      ],
+    );
+  }
+}
+
+class _DateField extends StatelessWidget {
+  const _DateField({
+    required this.label,
+    required this.value,
+    required this.onPick,
+  });
+
+  final String label;
+  final DateTime? value;
+  final VoidCallback? onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = value == null
+        ? 'Select date'
+        : '${value!.year}-${value!.month.toString().padLeft(2, '0')}-${value!.day.toString().padLeft(2, '0')}';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: Colors.white70),
         ),
         const SizedBox(height: 6),
         OutlinedButton.icon(

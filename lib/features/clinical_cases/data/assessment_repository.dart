@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:postgrest/postgrest.dart';
 
 import '../../../core/supabase_client.dart';
 
@@ -35,6 +36,38 @@ class CaseAssessment {
       );
 }
 
+class RosterConsultant {
+  RosterConsultant({
+    required this.id,
+    required this.name,
+    required this.designation,
+    required this.centre,
+  });
+
+  final String id;
+  final String name;
+  final String designation;
+  final String centre;
+}
+
+class AssessmentQueueItem {
+  AssessmentQueueItem({
+    required this.assessmentId,
+    required this.caseId,
+    required this.patientName,
+    required this.uidNumber,
+    required this.mrNumber,
+    required this.status,
+  });
+
+  final String assessmentId;
+  final String caseId;
+  final String patientName;
+  final String uidNumber;
+  final String mrNumber;
+  final String status;
+}
+
 class AssessmentRepository {
   AssessmentRepository(this._client);
   final SupabaseClient _client;
@@ -61,7 +94,30 @@ class AssessmentRepository {
       'assigned_consultant_id': consultantId,
       'status': 'submitted',
     }).select('id').maybeSingle();
-    return inserted?['id'] as String;
+    if (inserted == null) {
+      throw PostgrestException(message: 'Unable to submit assessment');
+    }
+    await _client
+        .from('clinical_cases')
+        .update({'status': 'submitted'}).eq('id', caseId);
+    final caseRow = await _client
+        .from('clinical_cases')
+        .select('patient_name, uid_number, mr_number')
+        .eq('id', caseId)
+        .maybeSingle();
+    final title = 'New case submitted';
+    final body = caseRow == null
+        ? 'A clinical case was submitted for review.'
+        : '${caseRow['patient_name']} (UID ${caseRow['uid_number']})';
+    await _client.rpc('notify_user', params: {
+      'p_user_id': consultantId,
+      'p_type': 'case_submitted',
+      'p_title': title,
+      'p_body': body,
+      'p_entity_type': 'clinical_case',
+      'p_entity_id': caseId,
+    });
+    return inserted['id'] as String;
   }
 
   Future<void> consultantUpdate({
@@ -69,21 +125,78 @@ class AssessmentRepository {
     required String status,
     String? comments,
   }) async {
-    await _client.from('case_assessments').update({
+    final row = await _client.from('case_assessments').update({
       'status': status,
       'consultant_comments': comments,
       'assessed_at': status == 'completed' ? DateTime.now().toIso8601String() : null,
-    }).eq('id', assessmentId);
+    }).eq('id', assessmentId).select('submitted_by, case_id').maybeSingle();
+    if (status == 'completed' && row != null) {
+      await _client.rpc('notify_user', params: {
+        'p_user_id': row['submitted_by'],
+        'p_type': 'assessment_completed',
+        'p_title': 'Assessment completed',
+        'p_body': 'Your clinical case assessment is complete.',
+        'p_entity_type': 'clinical_case',
+        'p_entity_id': row['case_id'],
+      });
+    }
   }
 
-  Future<List<CaseAssessment>> listAssigned(String consultantId) async {
+  Future<List<AssessmentQueueItem>> listAssignedQueue(String consultantId) async {
     final rows = await _client
         .from('case_assessments')
-        .select('*, clinical_cases(id, patient_name, uid_number, mr_number)')
+        .select('id, case_id, status, clinical_cases:case_id(patient_name, uid_number, mr_number)')
         .eq('assigned_consultant_id', consultantId)
-        .eq('status', 'submitted');
-    return (rows as List)
-        .map((e) => CaseAssessment.fromMap(Map<String, dynamic>.from(e)))
+        .eq('status', 'submitted')
+        .order('created_at');
+    return (rows as List).map((e) {
+      final map = Map<String, dynamic>.from(e);
+      final caseMap = Map<String, dynamic>.from(map['clinical_cases'] as Map);
+      return AssessmentQueueItem(
+        assessmentId: map['id'] as String,
+        caseId: map['case_id'] as String,
+        patientName: caseMap['patient_name'] as String,
+        uidNumber: caseMap['uid_number'] as String,
+        mrNumber: caseMap['mr_number'] as String,
+        status: map['status'] as String,
+      );
+    }).toList();
+  }
+
+  Future<List<RosterConsultant>> listRoster({
+    required String centre,
+    required String monthKey,
+  }) async {
+    final rows = await _client
+        .from('assessment_roster')
+        .select('consultant_id')
+        .eq('centre', centre)
+        .eq('month_key', monthKey)
+        .eq('is_active', true);
+    final ids = (rows as List)
+        .map((e) => (e as Map)['consultant_id'] as String)
+        .toList();
+    if (ids.isEmpty) return [];
+    final quotedIds = ids.map((id) => '"$id"').join(',');
+    final profiles = await _client
+        .from('profiles')
+        .select('id, name, designation, centre')
+        .filter('id', 'in', '($quotedIds)');
+    final byId = {
+      for (final row in profiles as List)
+        (row as Map)['id'] as String: row
+    };
+    return ids
+        .where((id) => byId.containsKey(id))
+        .map((id) {
+          final row = Map<String, dynamic>.from(byId[id] as Map);
+          return RosterConsultant(
+            id: row['id'] as String,
+            name: row['name'] as String,
+            designation: row['designation'] as String,
+            centre: row['centre'] as String,
+          );
+        })
         .toList();
   }
 }

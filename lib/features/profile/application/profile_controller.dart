@@ -136,3 +136,9 @@ final profileChangesProvider = Provider<Stream<Profile?>>((ref) {
   final repository = ref.watch(profileRepositoryProvider);
   return repository.watchMyProfile();
 });
+
+final profileByIdProvider =
+    FutureProvider.family.autoDispose<Profile?, String>((ref, id) async {
+  final repository = ref.watch(profileRepositoryProvider);
+  return repository.getProfileById(id);
+});

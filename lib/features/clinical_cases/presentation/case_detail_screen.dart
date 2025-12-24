@@ -1,12 +1,14 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../application/clinical_cases_controller.dart';
 import '../application/assessment_controller.dart';
-import '../../auth/application/auth_controller.dart';
+import '../data/clinical_case_constants.dart';
+import '../data/clinical_cases_repository.dart';
 import '../../profile/application/profile_controller.dart';
-import '../data/assessment_repository.dart';
+import '../../auth/application/auth_controller.dart';
 
 class ClinicalCaseDetailScreen extends ConsumerWidget {
   const ClinicalCaseDetailScreen({super.key, required this.caseId});
@@ -18,21 +20,25 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
     final caseAsync = ref.watch(clinicalCaseDetailProvider(caseId));
     final assessmentAsync = ref.watch(caseAssessmentProvider(caseId));
     final profileState = ref.watch(profileControllerProvider);
-    final isConsultant =
-        profileState.profile?.designation == 'Consultant';
+    final isConsultant = profileState.profile?.designation == 'Consultant';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        title: const Text(
-          'Case Detail',
-          style: TextStyle(
-            color: Color(0xFF1E293B),
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+        title: const Text('Case Detail'),
+        actions: [
+          caseAsync.maybeWhen(
+            data: (c) => c.status == 'draft'
+                ? IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () => context.push('/cases/${c.id}/edit'),
+                  )
+                : const SizedBox.shrink(),
+            orElse: () => const SizedBox.shrink(),
           ),
-        ),
+        ],
       ),
       body: caseAsync.when(
         data: (c) {
@@ -42,16 +48,16 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
               children: [
                 Container(
                   color: Colors.white,
-                  child: TabBar(
-                    labelColor: const Color(0xFF0B5FFF),
-                    unselectedLabelColor: const Color(0xFF64748B),
-                    indicatorColor: const Color(0xFF0B5FFF),
+                  child: const TabBar(
+                    labelColor: Color(0xFF0B5FFF),
+                    unselectedLabelColor: Color(0xFF64748B),
+                    indicatorColor: Color(0xFF0B5FFF),
                     indicatorWeight: 3,
-                    labelStyle: const TextStyle(
+                    labelStyle: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
-                    tabs: const [
+                    tabs: [
                       Tab(text: 'Summary'),
                       Tab(text: 'Follow-ups'),
                       Tab(text: 'Media'),
@@ -98,363 +104,266 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
 
 class _SummaryTab extends StatelessWidget {
   const _SummaryTab({required this.c});
-  final dynamic c;
+  final ClinicalCase c;
+
   @override
   Widget build(BuildContext context) {
+    final examDate = c.dateOfExamination.toIso8601String().split('T').first;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
+        _Section(
+          title: 'Patient Information',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0B5FFF).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.person,
-                      color: Color(0xFF0B5FFF),
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Patient Information',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          c.patientName,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF1E293B),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 16),
+              _InfoRow(label: 'Patient', value: c.patientName),
+              _InfoRow(label: 'UID', value: c.uidNumber),
+              _InfoRow(label: 'MR Number', value: c.mrNumber),
+              _InfoRow(label: 'Gender', value: c.patientGender),
+              _InfoRow(label: 'Age', value: c.patientAge.toString()),
+              _InfoRow(label: 'Exam Date', value: examDate),
+              _InfoRow(label: 'Status', value: c.status),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _Section(
+          title: 'Complaints',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _InfoRow(label: 'Chief Complaint', value: c.chiefComplaint),
               _InfoRow(
-                icon: Icons.badge_outlined,
-                label: 'UID',
-                value: c.uidNumber,
-              ),
-              const SizedBox(height: 12),
-              _InfoRow(
-                icon: Icons.medical_services_outlined,
-                label: 'MR Number',
-                value: c.mrNumber,
+                label: 'Duration',
+                value: '${c.complaintDurationValue} ${c.complaintDurationUnit}',
               ),
             ],
           ),
         ),
         const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
+        _Section(
+          title: 'Systemic History',
+          child: Text(
+            _formatSystemic(c.systemicHistory),
+            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
           ),
+        ),
+        const SizedBox(height: 12),
+        _Section(
+          title: 'Vision (BCVA) & IOP',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
-                children: [
-                  Icon(
-                    Icons.medical_information_outlined,
-                    color: Color(0xFF0B5FFF),
-                    size: 20,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'Clinical Details',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1E293B),
-                    ),
-                  ),
-                ],
+              _InfoRow(label: 'BCVA RE', value: c.bcvaRe ?? '-'),
+              _InfoRow(label: 'BCVA LE', value: c.bcvaLe ?? '-'),
+              _InfoRow(
+                label: 'IOP RE',
+                value: c.iopRe?.toString() ?? '-',
               ),
-              const SizedBox(height: 16),
-              _DetailItem(
-                label: 'Chief Complaint',
-                value: c.chiefComplaint,
+              _InfoRow(
+                label: 'IOP LE',
+                value: c.iopLe?.toString() ?? '-',
               ),
-              const SizedBox(height: 12),
-              _DetailItem(
-                label: 'Diagnosis',
-                value: '${c.diagnosis}${c.diagnosisOther != null ? " (${c.diagnosisOther})" : ""}',
-              ),
-              if (c.management != null && c.management.toString().isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _DetailItem(
-                  label: 'Management',
-                  value: c.management,
-                ),
-              ],
-              if (c.learningPoint != null && c.learningPoint.toString().isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _DetailItem(
-                  label: 'Learning Point',
-                  value: c.learningPoint,
-                ),
-              ],
             ],
           ),
         ),
+        const SizedBox(height: 12),
+        _Section(
+          title: 'Anterior Segment',
+          child: Text(
+            _formatAnterior(c.anteriorSegment),
+            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _Section(
+          title: 'Fundus Examination',
+          child: Text(
+            _formatFundus(c.fundus),
+            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _Section(
+          title: 'Diagnosis',
+          child: Text(
+            c.diagnosisOther == null || c.diagnosisOther!.isEmpty
+                ? c.diagnosis
+                : '${c.diagnosis} (${c.diagnosisOther})',
+            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+          ),
+        ),
+        if (c.management != null && c.management!.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _Section(
+            title: 'Management',
+            child: Text(
+              c.management!,
+              style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+            ),
+          ),
+        ],
+        if (c.learningPoint != null && c.learningPoint!.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _Section(
+            title: 'Learning Point',
+            child: Text(
+              c.learningPoint!,
+              style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+            ),
+          ),
+        ],
         if (c.keywords.isNotEmpty) ...[
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(
-                      Icons.label_outline,
-                      color: Color(0xFF0B5FFF),
-                      size: 20,
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      'Keywords',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1E293B),
+          _Section(
+            title: 'Keywords',
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: c.keywords
+                  .map(
+                    (k) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Text(
+                        k,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF475569),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: c.keywords
-                      .map<Widget>(
-                        (k) => Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: const Color(0xFFE2E8F0),
-                            ),
-                          ),
-                          child: Text(
-                            k,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF475569),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ],
+                  )
+                  .toList(),
             ),
           ),
         ],
       ],
     );
   }
-}
 
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
+  String _formatSystemic(List<dynamic> items) {
+    if (items.isEmpty) return 'Nil';
+    return items.map((e) => e.toString()).join(', ');
+  }
 
-  final IconData icon;
-  final String label;
-  final String value;
+  String _formatAnterior(Map<String, dynamic>? anterior) {
+    if (anterior == null || anterior.isEmpty) return '-';
+    final lines = <String>[];
+    for (final eyeKey in ['RE', 'LE']) {
+      final eye = Map<String, dynamic>.from(anterior[eyeKey] as Map? ?? {});
+      final abnormal = <String>[];
+      for (final field in anteriorSegments) {
+        final data = Map<String, dynamic>.from(eye[field] as Map? ?? {});
+        final status = (data['status'] as String?) ?? 'normal';
+        final notes = (data['notes'] as String?) ?? '';
+        if (status == 'abnormal') {
+          abnormal.add('$field: $notes');
+        }
+      }
+      if (abnormal.isEmpty) {
+        lines.add('$eyeKey: All normal');
+      } else {
+        lines.add('$eyeKey: ${abnormal.join('; ')}');
+      }
+    }
+    return lines.join('\n');
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 18,
-          color: const Color(0xFF64748B),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          '$label:',
-          style: const TextStyle(
-            fontSize: 14,
-            color: Color(0xFF64748B),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Color(0xFF1E293B),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
+  String _formatFundus(Map<String, dynamic>? fundus) {
+    if (fundus == null || fundus.isEmpty) return '-';
+    final lines = <String>[];
+    for (final field in fundusFields) {
+      final value = (fundus[field] as String?) ?? '-';
+      lines.add('${field.toUpperCase()}: $value');
+    }
+    final others = (fundus['others'] as String?) ?? '';
+    if (others.trim().isNotEmpty) {
+      lines.add('OTHERS: $others');
+    }
+    return lines.join('\n');
   }
 }
 
-class _DetailItem extends StatelessWidget {
-  const _DetailItem({
-    required this.label,
-    required this.value,
-  });
+class _Section extends StatelessWidget {
+  const _Section({required this.title, required this.child});
 
-  final String label;
-  final String value;
+  final String title;
+  final Widget child;
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Color(0xFF64748B),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Color(0xFF1E293B),
-            height: 1.5,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _FollowupsTab extends StatelessWidget {
-  const _FollowupsTab({required this.caseId});
-  final String caseId;
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFF7F9FC),
       padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.event_note_outlined,
-                    size: 80,
-                    color: Colors.grey[300],
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'No Follow-ups Yet',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Track patient follow-up visits here',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF94A3B8),
-                    ),
-                  ),
-                ],
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1E293B),
+            ),
+          ),
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 130,
+            child: Text(
+              '$label:',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => context.push('/cases/$caseId/followup'),
-              icon: const Icon(Icons.add, color: Colors.white),
-              label: const Text(
-                'Add Follow-up',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0B5FFF),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF1E293B),
               ),
             ),
           ),
@@ -464,9 +373,241 @@ class _FollowupsTab extends StatelessWidget {
   }
 }
 
-class _MediaTab extends StatelessWidget {
+class _FollowupsTab extends ConsumerWidget {
+  const _FollowupsTab({required this.caseId});
+  final String caseId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final followupsAsync = ref.watch(caseFollowupsProvider(caseId));
+    return followupsAsync.when(
+      data: (list) {
+        if (list.isEmpty) {
+          return _EmptyState(
+            icon: Icons.event_note_outlined,
+            title: 'No Follow-ups Yet',
+            subtitle: 'Track patient follow-up visits here',
+            actionLabel: 'Add Follow-up',
+            onAction: () => context.push('/cases/$caseId/followup'),
+          );
+        }
+        return Column(
+          children: [
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: list.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final f = list[index];
+                  final date =
+                      f.dateOfExamination.toIso8601String().split('T').first;
+                  return Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'Follow-up ${f.followupIndex}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(date),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text('Interval: ${f.intervalDays} days'),
+                          if (f.management != null &&
+                              f.management!.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Text('Management: ${f.management}'),
+                          ],
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () => context.push(
+                                '/cases/$caseId/followup/${f.id}',
+                              ),
+                              child: const Text('Edit'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => context.push('/cases/$caseId/followup'),
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  label: const Text('Add Follow-up'),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Failed to load follow-ups: $e')),
+    );
+  }
+}
+
+class _MediaTab extends ConsumerWidget {
   const _MediaTab({required this.caseId});
   final String caseId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mediaAsync = ref.watch(caseMediaProvider(caseId));
+    return mediaAsync.when(
+      data: (list) {
+        if (list.isEmpty) {
+          return _EmptyState(
+            icon: Icons.photo_library_outlined,
+            title: 'No Media Files',
+            subtitle: 'Add images or videos',
+            actionLabel: 'Add Media',
+            onAction: () => context.push('/cases/$caseId/media'),
+          );
+        }
+        return Column(
+          children: [
+            Expanded(
+              child: GridView.builder(
+                padding: const EdgeInsets.all(16),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 0.85,
+                ),
+                itemCount: list.length,
+                itemBuilder: (context, index) {
+                  final item = list[index];
+                  return _MediaTile(item: item);
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => context.push('/cases/$caseId/media'),
+                  icon: const Icon(Icons.add_photo_alternate, color: Colors.white),
+                  label: const Text('Add Media'),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Failed to load media: $e')),
+    );
+  }
+}
+
+class _MediaTile extends ConsumerWidget {
+  const _MediaTile({required this.item});
+
+  final CaseMediaItem item;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.watch(clinicalCasesRepositoryProvider);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: FutureBuilder<String>(
+                future: repo.getSignedUrl(item.storagePath),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    );
+                  }
+                  final url = snapshot.data!;
+                  if (item.mediaType == 'video') {
+                    return InkWell(
+                      onTap: () => launchUrl(Uri.parse(url)),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Center(
+                          child: Icon(Icons.play_circle_fill, size: 48),
+                        ),
+                      ),
+                    );
+                  }
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      url,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              item.category.replaceAll('_', ' '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            if (item.note != null && item.note!.isNotEmpty)
+              Text(
+                item.note!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.actionLabel,
+    required this.onAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String actionLabel;
+  final VoidCallback onAction;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -479,24 +620,20 @@ class _MediaTab extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.photo_library_outlined,
-                    size: 80,
-                    color: Colors.grey[300],
-                  ),
+                  Icon(icon, size: 80, color: Colors.grey[300]),
                   const SizedBox(height: 16),
-                  const Text(
-                    'No Media Files',
-                    style: TextStyle(
+                  Text(
+                    title,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF64748B),
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Add images, documents, or other media',
-                    style: TextStyle(
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
                       fontSize: 14,
                       color: Color(0xFF94A3B8),
                     ),
@@ -508,24 +645,9 @@ class _MediaTab extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => context.push('/cases/$caseId/media'),
-              icon: const Icon(Icons.add_photo_alternate, color: Colors.white),
-              label: const Text(
-                'Add Media',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0B5FFF),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
+              onPressed: onAction,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: Text(actionLabel),
             ),
           ),
         ],
@@ -555,7 +677,18 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
   @override
   Widget build(BuildContext context) {
     final mutation = ref.watch(assessmentMutationProvider);
+    final profileState = ref.watch(profileControllerProvider);
+    final centre = profileState.profile?.aravindCentre ??
+        profileState.profile?.centre ??
+        '';
+    final monthKey = _monthKey(DateTime.now());
+    final rosterAsync = centre.isEmpty
+        ? null
+        : ref.watch(
+            assessmentRosterProvider((centre: centre, monthKey: monthKey)),
+          );
     final assessment = widget.assessment;
+
     if (assessment == null) {
       return Container(
         color: const Color(0xFFF7F9FC),
@@ -565,96 +698,57 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
             Expanded(
               child: ListView(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0B5FFF).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(
-                                Icons.assessment_outlined,
-                                color: Color(0xFF0B5FFF),
-                                size: 24,
-                              ),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Submit for Assessment',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
                             ),
-                            const SizedBox(width: 12),
-                            const Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Submit for Assessment',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF1E293B),
-                                    ),
-                                  ),
-                                  SizedBox(height: 2),
-                                  Text(
-                                    'Request consultant review',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF64748B),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        DropdownButtonFormField<String>(
-                          value: _selectedConsultant,
-                          items: const [],
-                          onChanged: (v) => setState(() => _selectedConsultant = v),
-                          decoration: InputDecoration(
-                            labelText: 'Select Consultant',
-                            labelStyle: const TextStyle(
-                              color: Color(0xFF64748B),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFE2E8F0),
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFE2E8F0),
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF0B5FFF),
-                                width: 2,
-                              ),
-                            ),
-                            filled: true,
-                            fillColor: const Color(0xFFF8FAFC),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 12),
+                          if (centre.isEmpty)
+                            const Text('Complete your profile centre first.')
+                          else if (rosterAsync == null)
+                            const SizedBox.shrink()
+                          else
+                            rosterAsync.when(
+                              data: (list) {
+                                if (list.isEmpty) {
+                                  return const Text(
+                                    'No consultants available for this month.',
+                                  );
+                                }
+                                return DropdownButtonFormField<String>(
+                                  value: _selectedConsultant,
+                                  items: list
+                                      .map(
+                                        (c) => DropdownMenuItem(
+                                          value: c.id,
+                                          child: Text(
+                                            '${c.name} - ${c.designation}',
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (v) =>
+                                      setState(() => _selectedConsultant = v),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Select Consultant',
+                                  ),
+                                );
+                              },
+                              loading: () =>
+                                  const CircularProgressIndicator(strokeWidth: 2),
+                              error: (e, _) => Text('Error: $e'),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -672,29 +766,20 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
                             .submit(widget.caseId, _selectedConsultant!);
                       },
                 icon: const Icon(Icons.send, color: Colors.white),
-                label: const Text(
-                  'Submit for Assessment',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0B5FFF),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                  disabledBackgroundColor: Colors.grey[300],
-                ),
+                label: const Text('Submit for Assessment'),
               ),
             ),
           ],
         ),
       );
     }
+
+    final authState = ref.watch(authControllerProvider);
+    final isAssignee =
+        authState.session?.user.id == assessment.assignedConsultantId;
+    final consultantProfileAsync =
+        ref.watch(profileByIdProvider(assessment.assignedConsultantId));
+
     return Container(
       color: const Color(0xFFF7F9FC),
       padding: const EdgeInsets.all(16),
@@ -703,157 +788,81 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
           Expanded(
             child: ListView(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            _StatusPill(status: assessment.status),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        consultantProfileAsync.when(
+                          data: (profile) {
+                            if (profile == null) return const SizedBox.shrink();
+                            return Text(
+                              'Consultant: ${profile.name} - ${profile.designation} (${profile.aravindCentre ?? profile.centre})',
+                              style: const TextStyle(fontSize: 13),
+                            );
+                          },
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, __) => const SizedBox.shrink(),
+                        ),
+                        if (assessment.consultantComments != null &&
+                            assessment.consultantComments.toString().isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: Text(
+                              assessment.consultantComments,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF475569),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                ),
+                if (widget.isConsultant &&
+                    isAssignee &&
+                    assessment.status != 'completed') ...[
+                  const SizedBox(height: 12),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
+                          const Text(
+                            'Add Comments',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
                             ),
-                            decoration: BoxDecoration(
-                              color: _getStatusColor(assessment.status).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  _getStatusIcon(assessment.status),
-                                  size: 16,
-                                  color: _getStatusColor(assessment.status),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  assessment.status.toUpperCase(),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: _getStatusColor(assessment.status),
-                                  ),
-                                ),
-                              ],
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: _comments,
+                            maxLines: 4,
+                            decoration: const InputDecoration(
+                              hintText: 'Enter your assessment comments...',
                             ),
                           ),
                         ],
                       ),
-                      if (assessment.consultantComments != null &&
-                          assessment.consultantComments.toString().isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        const Divider(),
-                        const SizedBox(height: 16),
-                        const Row(
-                          children: [
-                            Icon(
-                              Icons.comment_outlined,
-                              color: Color(0xFF0B5FFF),
-                              size: 20,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              'Consultant Comments',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF1E293B),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          assessment.consultantComments,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF475569),
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                if (widget.isConsultant && assessment.status != 'completed') ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Add Comments',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF1E293B),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _comments,
-                          maxLines: 4,
-                          decoration: InputDecoration(
-                            hintText: 'Enter your assessment comments...',
-                            hintStyle: const TextStyle(
-                              color: Color(0xFF94A3B8),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFE2E8F0),
-                              ),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Color(0xFFE2E8F0),
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Color(0xFF0B5FFF),
-                                width: 2,
-                              ),
-                            ),
-                            filled: true,
-                            fillColor: const Color(0xFFF8FAFC),
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ],
               ],
             ),
           ),
-          if (widget.isConsultant && assessment.status != 'completed') ...[
+          if (widget.isConsultant &&
+              isAssignee &&
+              assessment.status != 'completed') ...[
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -877,20 +886,6 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
                     : const Icon(Icons.check_circle, color: Colors.white),
                 label: Text(
                   mutation.isLoading ? 'Processing...' : 'Mark Complete',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF10B981),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                  disabledBackgroundColor: Colors.grey[300],
                 ),
               ),
             ),
@@ -900,29 +895,48 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return const Color(0xFF10B981);
-      case 'pending':
-        return const Color(0xFFF59E0B);
-      case 'in_review':
-        return const Color(0xFF0B5FFF);
-      default:
-        return const Color(0xFF64748B);
-    }
+  String _monthKey(DateTime date) {
+    final m = date.month.toString().padLeft(2, '0');
+    return '${date.year}-$m';
   }
+}
 
-  IconData _getStatusIcon(String status) {
-    switch (status.toLowerCase()) {
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalized = status.toLowerCase();
+    Color color;
+    switch (normalized) {
       case 'completed':
-        return Icons.check_circle;
-      case 'pending':
-        return Icons.hourglass_empty;
+        color = const Color(0xFF10B981);
+        break;
+      case 'submitted':
+        color = const Color(0xFF0B5FFF);
+        break;
       case 'in_review':
-        return Icons.rate_review;
+        color = const Color(0xFFF59E0B);
+        break;
       default:
-        return Icons.info;
+        color = const Color(0xFF64748B);
     }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        normalized.toUpperCase(),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+    );
   }
 }

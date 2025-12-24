@@ -29,8 +29,11 @@ import '../features/teaching/proposal_screens.dart';
 import '../features/taxonomy/presentation/keyword_suggestions_screen.dart';
 import '../features/clinical_cases/presentation/case_list_screen.dart';
 import '../features/clinical_cases/presentation/case_detail_screen.dart';
-import '../features/clinical_cases/presentation/case_form_screen.dart';
 import '../features/clinical_cases/presentation/notifications_screen.dart';
+import '../features/clinical_cases/presentation/assessment_queue_screen.dart';
+import '../features/clinical_cases/presentation/case_followup_form_screen.dart';
+import '../features/clinical_cases/presentation/case_media_screen.dart';
+import '../features/clinical_cases/presentation/wizard/clinical_case_wizard_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
@@ -101,7 +104,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             child: child,
             name: profile?.name,
             designation: profile?.designation,
-            centre: profile?.centre,
+            centre: profile?.aravindCentre ?? profile?.centre,
             onSignOut: authNotifier.signOut,
           );
         },
@@ -199,7 +202,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/search',
             name: 'search',
-            builder: (context, state) => const GlobalSearchScreen(),
+            builder: (context, state) => GlobalSearchScreen(
+              initialQuery: state.extra as String?,
+            ),
           ),
           GoRoute(
             path: '/review-queue',
@@ -270,7 +275,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'new',
                 name: 'caseNew',
-                builder: (context, state) => const ClinicalCaseFormScreen(),
+                builder: (context, state) => const ClinicalCaseWizardScreen(),
               ),
               GoRoute(
                 path: ':id',
@@ -280,9 +285,43 @@ final routerProvider = Provider<GoRouter>((ref) {
                 ),
               ),
               GoRoute(
+                path: ':id/edit',
+                name: 'caseEdit',
+                builder: (context, state) => ClinicalCaseWizardScreen(
+                  caseId: state.pathParameters['id']!,
+                ),
+              ),
+              GoRoute(
                 path: 'notifications',
                 name: 'notifications',
                 builder: (context, state) => const NotificationsScreen(),
+              ),
+              GoRoute(
+                path: 'assessment-queue',
+                name: 'assessmentQueue',
+                builder: (context, state) => const AssessmentQueueScreen(),
+              ),
+              GoRoute(
+                path: ':id/followup',
+                name: 'caseFollowupNew',
+                builder: (context, state) => CaseFollowupFormScreen(
+                  caseId: state.pathParameters['id']!,
+                ),
+              ),
+              GoRoute(
+                path: ':id/followup/:followupId',
+                name: 'caseFollowupEdit',
+                builder: (context, state) => CaseFollowupFormScreen(
+                  caseId: state.pathParameters['id']!,
+                  followupId: state.pathParameters['followupId']!,
+                ),
+              ),
+              GoRoute(
+                path: ':id/media',
+                name: 'caseMedia',
+                builder: (context, state) => CaseMediaScreen(
+                  caseId: state.pathParameters['id']!,
+                ),
               ),
             ],
           ),
@@ -421,7 +460,7 @@ class _AppDrawer extends StatelessWidget {
               ),
               accountName: Text(name ?? 'Aravind Trainee'),
               accountEmail: Text(
-                [designation, centre].where((e) => (e ?? '').isNotEmpty).join(' • '),
+                [designation, centre].where((e) => (e ?? '').isNotEmpty).join(' | '),
               ),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(

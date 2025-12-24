@@ -41,8 +41,23 @@ class HomeScreen extends ConsumerWidget {
               _ProfileHeader(
                 name: displayName,
                 designation: profile?.designation,
-                centre: profile?.centre,
+                centre: profile?.aravindCentre ?? profile?.centre,
                 onTap: () => context.go('/profile'),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: TextField(
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.search),
+                    hintText: 'Search cases, logbook, teaching...',
+                  ),
+                  onSubmitted: (value) {
+                    final query = value.trim();
+                    if (query.isEmpty) return;
+                    context.go('/search', extra: query);
+                  },
+                ),
               ),
               const SizedBox(height: 16),
               Padding(
@@ -122,6 +137,8 @@ class _ActionGrid extends StatelessWidget {
       _ActionTile('Research', Icons.science, '/research', const Color(0xFFEC4899)),
       _ActionTile('Publications', Icons.slideshow, '/publications', const Color(0xFF06B6D4)),
       if (isConsultant) _ActionTile('Reviews', Icons.rate_review, '/review-queue', const Color(0xFFEF4444)),
+      if (isConsultant)
+        _ActionTile('Case Assessments', Icons.fact_check, '/cases/assessment-queue', const Color(0xFF0B5FFF)),
       if (isConsultant) _ActionTile('Proposals', Icons.inbox, '/teaching/proposals', const Color(0xFF6366F1)),
     ];
 
@@ -254,7 +271,7 @@ class _ProfileHeader extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    [designation, centre].where((e) => (e ?? '').isNotEmpty).join(' • '),
+                    [designation, centre].where((e) => (e ?? '').isNotEmpty).join(' | '),
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.9),
                       fontSize: 14,

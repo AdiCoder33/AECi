@@ -25,6 +25,13 @@ class ProfileRepository {
     return Profile.fromMap(Map<String, dynamic>.from(response));
   }
 
+  Future<Profile?> getProfileById(String id) async {
+    final response =
+        await _client.from('profiles').select().eq('id', id).maybeSingle();
+    if (response == null) return null;
+    return Profile.fromMap(Map<String, dynamic>.from(response));
+  }
+
   Future<void> upsertMyProfile(Profile profile) async {
     final userId = _userId;
     if (userId == null) {
