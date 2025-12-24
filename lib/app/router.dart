@@ -93,8 +93,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const CreateProfileScreen(),
       ),
       ShellRoute(
-        builder: (context, state, child) =>
-            _MainShell(location: state.matchedLocation, child: child),
+        builder: (context, state, child) {
+          final profile = ref.watch(profileControllerProvider).profile;
+          final authNotifier = ref.read(authControllerProvider.notifier);
+          return _MainShell(
+            location: state.matchedLocation,
+            child: child,
+            name: profile?.name,
+            designation: profile?.designation,
+            centre: profile?.centre,
+            onSignOut: authNotifier.signOut,
+          );
+        },
         routes: [
           GoRoute(
             path: '/home',
@@ -299,10 +309,21 @@ class GoRouterRefreshStream extends ChangeNotifier {
 }
 
 class _MainShell extends StatelessWidget {
-  const _MainShell({required this.child, required this.location});
+  const _MainShell({
+    required this.child,
+    required this.location,
+    this.name,
+    this.designation,
+    this.centre,
+    this.onSignOut,
+  });
 
   final Widget child;
   final String location;
+  final String? name;
+  final String? designation;
+  final String? centre;
+  final VoidCallback? onSignOut;
 
   int get _index {
     if (location.startsWith('/logbook')) return 1;
@@ -333,8 +354,19 @@ class _MainShell extends StatelessWidget {
   }
 
   @override
+  PreferredSizeWidget? get appBar => null;
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: _AppDrawer(
+        current: location,
+        name: name,
+        designation: designation,
+        centre: centre,
+        onNavigate: (route) => context.go(route),
+        onSignOut: onSignOut,
+      ),
       body: child,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _index,
@@ -347,6 +379,85 @@ class _MainShell extends StatelessWidget {
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
+    );
+  }
+}
+
+class _AppDrawer extends StatelessWidget {
+  const _AppDrawer({
+    required this.current,
+    required this.onNavigate,
+    this.onSignOut,
+    this.name,
+    this.designation,
+    this.centre,
+  });
+
+  final String current;
+  final void Function(String route) onNavigate;
+  final VoidCallback? onSignOut;
+  final String? name;
+  final String? designation;
+  final String? centre;
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: SafeArea(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            UserAccountsDrawerHeader(
+              currentAccountPicture: const CircleAvatar(
+                backgroundColor: Color(0xFF0B5FFF),
+                child: Icon(Icons.visibility, color: Colors.white),
+              ),
+              accountName: Text(name ?? 'Aravind Trainee'),
+              accountEmail: Text(
+                [designation, centre].where((e) => (e ?? '').isNotEmpty).join(' • '),
+              ),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFFEAF2FF), Color(0xFFF7F9FC)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            ),
+            _item(context, Icons.home, 'Dashboard', '/home'),
+            _item(context, Icons.book, 'Logbook', '/logbook'),
+            _item(context, Icons.list_alt, 'Cases', '/cases'),
+            _item(context, Icons.school, 'Teaching Library', '/teaching'),
+            _item(context, Icons.person, 'Profile', '/profile'),
+            _item(context, Icons.search, 'Global Search', '/search'),
+            _item(context, Icons.insights, 'Analytics', '/analytics'),
+            _item(context, Icons.rate_review, 'Review Queue', '/review-queue'),
+            _item(context, Icons.archive, 'Storage Tools', '/storage-tools'),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Sign out'),
+              onTap: () {
+                Navigator.pop(context);
+                onSignOut?.call();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _item(BuildContext context, IconData icon, String label, String route) {
+    final selected = current.startsWith(route);
+    return ListTile(
+      leading: Icon(icon, color: selected ? const Color(0xFF0B5FFF) : null),
+      title: Text(label),
+      selected: selected,
+      onTap: () {
+        Navigator.pop(context);
+        onNavigate(route);
+      },
     );
   }
 }

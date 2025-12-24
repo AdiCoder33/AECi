@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme.dart';
 import '../application/logbook_providers.dart';
 import '../domain/elog_entry.dart';
 import 'widgets/entry_card.dart';
@@ -20,7 +19,6 @@ class LogbookScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Logbook'),
-        backgroundColor: AppTheme.dark.scaffoldBackgroundColor,
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -147,11 +145,9 @@ class _SearchBar extends StatelessWidget {
       decoration: InputDecoration(
         prefixIcon: const Icon(Icons.search),
         hintText: 'Search by patient, MRN or keyword',
-        filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.05),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: Theme.of(context).dividerColor),
         ),
       ),
       onChanged: onChanged,

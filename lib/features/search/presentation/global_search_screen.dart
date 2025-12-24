@@ -22,7 +22,10 @@ class _GlobalSearchScreenState extends ConsumerState<GlobalSearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Global Search')),
+      appBar: AppBar(
+        leading: const BackButton(),
+        title: const Text('Global Search'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

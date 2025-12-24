@@ -29,214 +29,149 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Welcome${displayName != null ? ', $displayName' : ''}',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 12),
-            _InfoTile(
-              label: 'Designation',
-              value: profile?.designation ?? 'Pending',
-            ),
-            const SizedBox(height: 8),
-            _InfoTile(label: 'Centre', value: profile?.centre ?? 'Pending'),
-            const SizedBox(height: 8),
-            _InfoTile(
-              label: 'Email',
-              value: profile?.email ?? authState.session?.user.email ?? '',
-            ),
-            const SizedBox(height: 16),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Logbook snapshot',
-                style: Theme.of(context).textTheme.titleMedium,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Welcome${displayName != null ? ', $displayName' : ''}',
+                style: Theme.of(context).textTheme.headlineSmall,
               ),
-            ),
-            const SizedBox(height: 8),
-            fellowStats.when(
-              data: (stats) => Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _StatPill(label: 'Drafts', value: stats.drafts),
-                  _StatPill(label: 'Submitted', value: stats.submitted),
-                  _StatPill(label: 'Approved', value: stats.approved),
-                ],
-              ),
-              loading: () => const CircularProgressIndicator(),
-              error: (e, _) => Text('Stats error: $e'),
-            ),
-            if (isConsultant) ...[
               const SizedBox(height: 12),
+              _InfoTile(
+                label: 'Designation',
+                value: profile?.designation ?? 'Pending',
+              ),
+              const SizedBox(height: 8),
+              _InfoTile(label: 'Centre', value: profile?.centre ?? 'Pending'),
+              const SizedBox(height: 8),
+              _InfoTile(
+                label: 'Email',
+                value: profile?.email ?? authState.session?.user.email ?? '',
+              ),
+              const SizedBox(height: 16),
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  'Consultant dashboard',
+                  'Logbook snapshot',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
-              const SizedBox(height: 6),
-              consultantStats.when(
+              const SizedBox(height: 8),
+              fellowStats.when(
                 data: (stats) => Wrap(
                   spacing: 12,
                   runSpacing: 12,
                   children: [
-                    _StatPill(label: 'Pending review', value: stats.pending),
-                    _StatPill(
-                      label: 'Approvals this month',
-                      value: stats.approvalsThisMonth,
-                    ),
+                    _StatPill(label: 'Drafts', value: stats.drafts),
+                    _StatPill(label: 'Submitted', value: stats.submitted),
+                    _StatPill(label: 'Approved', value: stats.approved),
                   ],
                 ),
                 loading: () => const CircularProgressIndicator(),
-                error: (e, _) => Text('Consultant stats error: $e'),
+                error: (e, _) => Text('Stats error: $e'),
               ),
-            ],
-            const Spacer(),
-            Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => context.go('/logbook'),
-                        icon: const Icon(Icons.book, color: Colors.black),
-                        label: const Text(
-                          'Open Logbook',
-                          style: TextStyle(color: Colors.black),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => context.go('/profile'),
-                        icon: const Icon(Icons.person, color: Colors.black),
-                        label: const Text(
-                          'Profile',
-                          style: TextStyle(color: Colors.black),
-                        ),
-                      ),
-                    ),
-                  ],
+              if (isConsultant) ...[
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Consultant dashboard',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => context.go('/teaching'),
-                        icon: const Icon(Icons.school, color: Colors.black),
-                        label: const Text(
-                          'Teaching Library',
-                          style: TextStyle(color: Colors.black),
-                        ),
+                const SizedBox(height: 6),
+                consultantStats.when(
+                  data: (stats) => Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _StatPill(label: 'Pending review', value: stats.pending),
+                      _StatPill(
+                        label: 'Approvals this month',
+                        value: stats.approvalsThisMonth,
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => context.go('/analytics'),
-                        icon: const Icon(Icons.insights, color: Colors.black),
-                        label: const Text(
-                          'Analytics',
-                          style: TextStyle(color: Colors.black),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => context.go('/research'),
-                        icon: const Icon(Icons.science, color: Colors.black),
-                        label: const Text(
-                          'Research',
-                          style: TextStyle(color: Colors.black),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => context.go('/publications'),
-                        icon: const Icon(Icons.slideshow, color: Colors.black),
-                        label: const Text(
-                          'Presentations',
-                          style: TextStyle(color: Colors.black),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                if (isConsultant)
-                  ElevatedButton.icon(
-                    onPressed: () => context.go('/review-queue'),
-                    icon: const Icon(Icons.rate_review, color: Colors.black),
-                    label: const Text(
-                      'Review queue',
-                      style: TextStyle(color: Colors.black),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
-                    ),
+                    ],
                   ),
-                if (isConsultant) ...[
-                  const SizedBox(height: 12),
-                  ElevatedButton.icon(
-                    onPressed: () => context.go('/teaching/proposals'),
-                    icon: const Icon(Icons.inbox, color: Colors.black),
-                    label: const Text(
-                      'Teaching proposals',
-                      style: TextStyle(color: Colors.black),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton.icon(
-                    onPressed: () => context.go('/taxonomy/suggestions'),
-                    icon: const Icon(Icons.list_alt, color: Colors.black),
-                    label: const Text(
-                      'Keyword suggestions',
-                      style: TextStyle(color: Colors.black),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  onPressed: authState.isLoading
-                      ? null
-                      : () => ref.read(authControllerProvider.notifier).signOut(),
-                  icon: authState.isLoading
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.black,
-                          ),
-                        )
-                      : const Icon(Icons.logout, color: Colors.black),
-                  label: Text(
-                    authState.isLoading ? 'Signing out...' : 'Logout',
-                    style: const TextStyle(color: Colors.black),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(50),
-                  ),
+                  loading: () => const CircularProgressIndicator(),
+                  error: (e, _) => Text('Consultant stats error: $e'),
                 ),
               ],
-            ),
-          ],
+              const SizedBox(height: 20),
+              _ActionGrid(isConsultant: isConsultant),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: authState.isLoading
+                    ? null
+                    : () => ref.read(authControllerProvider.notifier).signOut(),
+                icon: authState.isLoading
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.logout),
+                label: Text(authState.isLoading ? 'Signing out...' : 'Logout'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionGrid extends StatelessWidget {
+  const _ActionGrid({required this.isConsultant});
+
+  final bool isConsultant;
+
+  @override
+  Widget build(BuildContext context) {
+    final tiles = <_ActionTile>[
+      _ActionTile('Open Logbook', Icons.book, '/logbook'),
+      _ActionTile('Profile', Icons.person, '/profile'),
+      _ActionTile('Teaching Library', Icons.school, '/teaching'),
+      _ActionTile('Analytics', Icons.insights, '/analytics'),
+      _ActionTile('Research', Icons.science, '/research'),
+      _ActionTile('Presentations', Icons.slideshow, '/publications'),
+      if (isConsultant) _ActionTile('Review queue', Icons.rate_review, '/review-queue'),
+      if (isConsultant) _ActionTile('Teaching proposals', Icons.inbox, '/teaching/proposals'),
+      if (isConsultant) _ActionTile('Keyword suggestions', Icons.list_alt, '/taxonomy/suggestions'),
+    ];
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: tiles,
+    );
+  }
+}
+
+class _ActionTile extends StatelessWidget {
+  const _ActionTile(this.label, this.icon, this.route);
+
+  final String label;
+  final IconData icon;
+  final String route;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 180,
+      child: OutlinedButton.icon(
+        onPressed: () => context.go(route),
+        icon: Icon(icon),
+        label: Text(label, textAlign: TextAlign.start),
+        style: OutlinedButton.styleFrom(
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
     );
@@ -254,9 +189,16 @@ class _InfoTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: Theme.of(context).dividerColor),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,9 +206,9 @@ class _InfoTile extends StatelessWidget {
           Text(
             label.toUpperCase(),
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              letterSpacing: 1,
-              color: Colors.white70,
-            ),
+                  letterSpacing: 1,
+                  color: Colors.blueGrey,
+                ),
           ),
           const SizedBox(height: 6),
           Text(value, style: Theme.of(context).textTheme.bodyLarge),
@@ -287,9 +229,16 @@ class _StatPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: Theme.of(context).dividerColor),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
