@@ -37,111 +37,159 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF0D1117), Color(0xFF0B1A2A)],
+            colors: [Color(0xFFEAF2FF), Color(0xFFF7F9FC)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
-            child: Card(
-              elevation: 12,
-              shadowColor: Colors.black54,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 32,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: Stack(
                   children: [
-                    const Text(
-                      'Aravind E-Logbook',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
+                    Positioned(
+                      top: -30,
+                      right: -50,
+                      child: Container(
+                        width: 140,
+                        height: 140,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.blue.withOpacity(0.08),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Login with your Aravind Google account to access the logbook.',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.75),
+                    Card(
+                      elevation: 10,
+                      shadowColor: Colors.black12,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    if (state.errorMessage != null) ...[
-                      _ErrorBanner(message: state.errorMessage!),
-                      const SizedBox(height: 12),
-                    ],
-                    _EmailPasswordFields(
-                      emailController: emailController,
-                      passwordController: passwordController,
-                      isLoading: state.isLoading,
-                      primaryLabel: isCreatingAccount
-                          ? 'Create account'
-                          : 'Continue with Email',
-                      onSubmit: () {
-                        final email = emailController.text.trim();
-                        final password = passwordController.text;
-                        if (email.isEmpty || password.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Please enter both email and password.',
-                              ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 28,
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: const [
+                                CircleAvatar(
+                                  radius: 22,
+                                  backgroundColor: Color(0xFF0B5FFF),
+                                  child: Icon(Icons.book, color: Colors.white),
+                                ),
+                                SizedBox(width: 12),
+                                Text(
+                                  'Aravind E-Logbook',
+                                  style: TextStyle(
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
                             ),
-                          );
-                          return;
-                        }
-                        final notifier = ref.read(
-                          authControllerProvider.notifier,
-                        );
-                        if (isCreatingAccount) {
-                          notifier.signUpWithEmailPassword(
-                            email: email,
-                            password: password,
-                          );
-                        } else {
-                          notifier.signInWithEmailPassword(
-                            email: email,
-                            password: password,
-                          );
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          isCreatingAccount
-                              ? 'Have an account?'
-                              : 'Need an account?',
+                            const SizedBox(height: 8),
+                            Row(
+                              children: const [
+                                Icon(Icons.verified_user, color: Color(0xFF0B5FFF)),
+                                SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    'Sign in securely with your Aravind account',
+                                    style: TextStyle(color: Color(0xFF475569)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 18),
+                            if (state.errorMessage != null) ...[
+                              _ErrorBanner(message: state.errorMessage!),
+                              const SizedBox(height: 12),
+                            ],
+                            _EmailPasswordFields(
+                              emailController: emailController,
+                              passwordController: passwordController,
+                              isLoading: state.isLoading,
+                              primaryLabel: isCreatingAccount
+                                  ? 'Create account'
+                                  : 'Continue with email',
+                              onSubmit: () {
+                                final email = emailController.text.trim();
+                                final password = passwordController.text;
+                                if (email.isEmpty || password.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Please enter both email and password.',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                final notifier = ref.read(
+                                  authControllerProvider.notifier,
+                                );
+                                if (isCreatingAccount) {
+                                  notifier.signUpWithEmailPassword(
+                                    email: email,
+                                    password: password,
+                                  );
+                                } else {
+                                  notifier.signInWithEmailPassword(
+                                    email: email,
+                                    password: password,
+                                  );
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  isCreatingAccount
+                                      ? 'Have an account?'
+                                      : 'Need an account?',
+                                  style: const TextStyle(color: Color(0xFF475569)),
+                                ),
+                                TextButton(
+                                  onPressed: state.isLoading
+                                      ? null
+                                      : () {
+                                          setState(() {
+                                            isCreatingAccount = !isCreatingAccount;
+                                          });
+                                        },
+                                  child: Text(
+                                    isCreatingAccount ? 'Sign in' : 'Create one',
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            const Divider(),
+                            const SizedBox(height: 12),
+                            _GoogleButton(isLoading: state.isLoading),
+                            const SizedBox(height: 20),
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 8,
+                              children: const [
+                                _FeaturePill(icon: Icons.note_alt, label: 'Log cases fast'),
+                                _FeaturePill(icon: Icons.insights, label: 'Track analytics'),
+                                _FeaturePill(icon: Icons.shield, label: 'Secure by Supabase'),
+                              ],
+                            ),
+                          ],
                         ),
-                        TextButton(
-                          onPressed: state.isLoading
-                              ? null
-                              : () {
-                                  setState(() {
-                                    isCreatingAccount = !isCreatingAccount;
-                                  });
-                                },
-                          child: Text(
-                            isCreatingAccount ? 'Sign in' : 'Create one',
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 14),
-                    const Divider(),
-                    const SizedBox(height: 14),
-                    _GoogleButton(isLoading: state.isLoading),
                   ],
                 ),
               ),
@@ -180,6 +228,7 @@ class _EmailPasswordFields extends StatelessWidget {
           decoration: const InputDecoration(
             labelText: 'Email',
             hintText: 'name@aravind.org',
+            prefixIcon: Icon(Icons.email_outlined),
           ),
           enabled: !isLoading,
         ),
@@ -188,7 +237,10 @@ class _EmailPasswordFields extends StatelessWidget {
           controller: passwordController,
           obscureText: true,
           autofillHints: const [AutofillHints.password],
-          decoration: const InputDecoration(labelText: 'Password'),
+          decoration: const InputDecoration(
+            labelText: 'Password',
+            prefixIcon: Icon(Icons.lock_outline),
+          ),
           enabled: !isLoading,
         ),
         const SizedBox(height: 16),
@@ -271,6 +323,40 @@ class _ErrorBanner extends StatelessWidget {
               style: const TextStyle(color: Colors.redAccent),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeaturePill extends StatelessWidget {
+  const _FeaturePill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Theme.of(context).dividerColor),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: const Color(0xFF0B5FFF), size: 18),
+          const SizedBox(width: 8),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
         ],
       ),
     );

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme.dart';
 import '../application/teaching_controller.dart';
 import '../data/teaching_repository.dart';
 import '../proposal_screens.dart';
@@ -30,7 +29,6 @@ class _TeachingListScreenState extends ConsumerState<TeachingListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Teaching Library'),
-        backgroundColor: AppTheme.dark.scaffoldBackgroundColor,
         actions: [
           IconButton(
             icon: const Icon(Icons.inbox),
@@ -83,9 +81,10 @@ class _TeachingListScreenState extends ConsumerState<TeachingListScreen> {
                     itemBuilder: (context, index) {
                       final item = list[index] as TeachingItem;
                       return ListTile(
-                        tileColor: Colors.white.withValues(alpha: 0.04),
+                        tileColor: Theme.of(context).colorScheme.surface,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: Theme.of(context).dividerColor),
                         ),
                         title: Text(item.title),
                         subtitle: Text('${item.moduleType} • ${item.shareScope}'),
@@ -130,7 +129,7 @@ class TeachingDetailScreen extends StatelessWidget {
               children: item.keywords
                   .map((k) => Chip(
                         label: Text(k),
-                        backgroundColor: Colors.white.withValues(alpha: 0.08),
+                        backgroundColor: Theme.of(context).colorScheme.surface,
                       ))
                   .toList(),
             ),

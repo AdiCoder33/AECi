@@ -15,7 +15,7 @@ class App extends ConsumerWidget {
     if (!authState.initialized) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.dark,
+        theme: AppTheme.light,
         home: const _SplashScreen(),
       );
     }
@@ -24,7 +24,7 @@ class App extends ConsumerWidget {
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark,
+      theme: AppTheme.light,
       routerConfig: router,
     );
   }
