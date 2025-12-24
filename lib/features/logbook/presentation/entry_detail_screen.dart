@@ -21,7 +21,19 @@ class EntryDetailScreen extends ConsumerWidget {
     final auth = ref.watch(authControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Entry Detail')),
+      backgroundColor: const Color(0xFFF7F9FC),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        title: const Text(
+          'Entry Detail',
+          style: TextStyle(
+            color: Color(0xFF1E293B),
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
       body: entryAsync.when(
         data: (entry) {
           final isOwner = auth.session?.user.id == entry.createdBy;
@@ -32,156 +44,307 @@ class EntryDetailScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '${entry.patientUniqueId} • MRN ${entry.mrn}',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _StatusBadge(status: entry.status),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Updated ${entry.updatedAt.toLocal()}',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text('Module: ${entry.moduleType}'),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: entry.keywords
-                      .map(
-                        (k) => Chip(
-                          label: Text(k),
-                          backgroundColor: Colors.white.withValues(alpha: 0.08),
-                        ),
-                      )
-                      .toList(),
-                ),
-                const SizedBox(height: 12),
-                _AuthorInfo(author: entry.authorProfile),
-                const SizedBox(height: 16),
-                _PayloadView(entry: entry),
-                const SizedBox(height: 24),
-                _QualitySection(entry: entry),
-                const SizedBox(height: 16),
-                _SimilarEntries(entry: entry),
-                const SizedBox(height: 16),
-                _ReviewPanel(entry: entry),
-                const SizedBox(height: 16),
-                if (entry.status == statusApproved)
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      final note = await showDialog<String>(
-                        context: context,
-                        builder: (_) {
-                          final controller = TextEditingController();
-                          return AlertDialog(
-                            title: const Text('Propose to Teaching Library'),
-                            content: TextField(
-                              controller: controller,
-                              decoration: const InputDecoration(
-                                hintText: 'Optional note',
-                              ),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.of(context, rootNavigator: true)
-                                        .pop(null),
-                                child: const Text('Cancel'),
-                              ),
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.of(context, rootNavigator: true)
-                                        .pop(controller.text.trim()),
-                                child: const Text('Submit'),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                      if (note != null) {
-                        try {
-                          await ref
-                              .read(teachingMutationProvider.notifier)
-                              .propose(entry.id, note);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Proposal submitted')),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(SnackBar(content: Text('Failed: $e')));
-                          }
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.school, color: Colors.black),
-                    label: const Text(
-                      'Propose to Teaching Library',
-                      style: TextStyle(color: Colors.black),
-                    ),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                if (canEdit)
-                  Column(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          ElevatedButton.icon(
-                            onPressed: () => context.pushNamed(
-                              'logbookEdit',
-                              pathParameters: {'id': entry.id},
-                              extra: entry.moduleType,
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0B5FFF).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            icon: const Icon(Icons.edit, color: Colors.black),
-                            label: const Text(
-                              'Edit',
-                              style: TextStyle(color: Colors.black),
+                            child: const Icon(
+                              Icons.description,
+                              color: Color(0xFF0B5FFF),
+                              size: 24,
                             ),
                           ),
                           const SizedBox(width: 12),
-                          ElevatedButton(
-                            onPressed: () async {
-                              await ref
-                                  .read(entryMutationProvider.notifier)
-                                  .update(
-                                    entry.id,
-                                    ElogEntryUpdate(
-                                      status: statusSubmitted,
-                                      submittedAt: DateTime.now(),
-                                      clearReview: true,
-                                    ),
-                                  );
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      entry.status == statusNeedsRevision
-                                          ? 'Resubmitted for review'
-                                          : 'Submitted for review',
-                                    ),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  entry.patientUniqueId,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF1E293B),
                                   ),
-                                );
-                              }
-                            },
-                            child: Text(
-                              entry.status == statusNeedsRevision
-                                  ? 'Resubmit'
-                                  : 'Submit for review',
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'MRN: ${entry.mrn}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      TextButton.icon(
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          _StatusBadge(status: entry.status),
+                          const Spacer(),
+                          Text(
+                            'Updated ${_formatDate(entry.updatedAt)}',
+                            style: const TextStyle(
+                              color: Color(0xFF64748B),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.category_outlined,
+                              size: 16,
+                              color: Color(0xFF64748B),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              entry.moduleType,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF475569),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (entry.keywords.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: entry.keywords
+                              .map(
+                                (k) => Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: const Color(0xFFE2E8F0),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    k,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF475569),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _AuthorInfo(author: entry.authorProfile),
+                const SizedBox(height: 12),
+                _PayloadView(entry: entry),
+                const SizedBox(height: 12),
+                _QualitySection(entry: entry),
+                const SizedBox(height: 12),
+                _ReviewPanel(entry: entry),
+                const SizedBox(height: 12),
+                _SimilarEntries(entry: entry),
+                const SizedBox(height: 16),
+                const SizedBox(height: 16),
+                if (entry.status == statusApproved)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        final note = await showDialog<String>(
+                          context: context,
+                          builder: (_) {
+                            final controller = TextEditingController();
+                            return AlertDialog(
+                              title: const Text('Propose to Teaching Library'),
+                              content: TextField(
+                                controller: controller,
+                                decoration: const InputDecoration(
+                                  hintText: 'Optional note',
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(context, rootNavigator: true)
+                                          .pop(null),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(context, rootNavigator: true)
+                                          .pop(controller.text.trim()),
+                                  child: const Text('Submit'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                        if (note != null) {
+                          try {
+                            await ref
+                                .read(teachingMutationProvider.notifier)
+                                .propose(entry.id, note);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Proposal submitted')),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(SnackBar(content: Text('Failed: $e')));
+                            }
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.school, color: Colors.white),
+                      label: const Text(
+                        'Propose to Teaching Library',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF10B981),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                if (canEdit)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () => context.pushNamed(
+                                'logbookEdit',
+                                pathParameters: {'id': entry.id},
+                                extra: entry.moduleType,
+                              ),
+                              icon: const Icon(Icons.edit, color: Colors.white),
+                              label: const Text(
+                                'Edit',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF0B5FFF),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                await ref
+                                    .read(entryMutationProvider.notifier)
+                                    .update(
+                                      entry.id,
+                                      ElogEntryUpdate(
+                                        status: statusSubmitted,
+                                        submittedAt: DateTime.now(),
+                                        clearReview: true,
+                                      ),
+                                    );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        entry.status == statusNeedsRevision
+                                            ? 'Resubmitted for review'
+                                            : 'Submitted for review',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.send, color: Colors.white),
+                              label: Text(
+                                entry.status == statusNeedsRevision
+                                    ? 'Resubmit'
+                                    : 'Submit',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF10B981),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
                         onPressed: entry.status == statusDraft
                             ? () async {
                                 final confirmed = await showDialog<bool>(
@@ -202,6 +365,9 @@ class EntryDetailScreen extends ConsumerWidget {
                                         onPressed: () =>
                                             Navigator.of(context, rootNavigator: true)
                                                 .pop(true),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: Colors.red,
+                                        ),
                                         child: const Text('Delete'),
                                       ),
                                     ],
@@ -217,30 +383,110 @@ class EntryDetailScreen extends ConsumerWidget {
                                 }
                               }
                             : null,
-                        icon: const Icon(Icons.delete, color: Colors.redAccent),
+                        icon: const Icon(Icons.delete, color: Colors.red),
                         label: const Text(
-                          'Delete draft',
-                          style: TextStyle(color: Colors.redAccent),
+                          'Delete Draft',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: const BorderSide(color: Colors.red),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 if (!canEdit && isOwner)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 8),
-                    child: Text(
-                      'Editing locked while submitted/approved/rejected. You can edit after consultant requests changes.',
-                      style: TextStyle(color: Colors.white70),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFFF59E0B),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.lock_outline,
+                          color: Color(0xFFD97706),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Editing locked while submitted/approved/rejected. You can edit after consultant requests changes.',
+                            style: TextStyle(
+                              color: Color(0xFF92400E),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
               ],
             ),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Failed to load: $e')),
+        loading: () => const Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFF0B5FFF),
+          ),
+        ),
+        error: (e, _) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 60,
+                color: Colors.red[300],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Failed to load entry',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                e.toString(),
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF64748B),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+    if (diff.inDays == 0) {
+      if (diff.inHours == 0) {
+        return '${diff.inMinutes}m ago';
+      }
+      return '${diff.inHours}h ago';
+    } else if (diff.inDays < 7) {
+      return '${diff.inDays}d ago';
+    } else {
+      return date.toLocal().toString().split(' ')[0];
+    }
   }
 }
 
@@ -255,20 +501,91 @@ class _AuthorInfo extends StatelessWidget {
       return const SizedBox.shrink();
     }
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Author: ${author?['name'] ?? ''}'),
-          Text('Designation: ${author?['designation'] ?? ''}'),
-          Text('Centre: ${author?['centre'] ?? ''}'),
-          Text('Employee ID: ${author?['employee_id'] ?? ''}'),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0B5FFF).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.person_outline,
+                  color: Color(0xFF0B5FFF),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'Author',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _InfoItem('Name', author?['name'] ?? ''),
+          const SizedBox(height: 8),
+          _InfoItem('Designation', author?['designation'] ?? ''),
+          const SizedBox(height: 8),
+          _InfoItem('Centre', author?['centre'] ?? ''),
+          const SizedBox(height: 8),
+          _InfoItem('Employee ID', author?['employee_id'] ?? ''),
         ],
       ),
+    );
+  }
+}
+
+class _InfoItem extends StatelessWidget {
+  const _InfoItem(this.label, this.value);
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 100,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFF64748B),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFF1E293B),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -298,59 +615,123 @@ class _PayloadView extends ConsumerWidget {
 
     final videoLink = payload['surgicalVideoLink'] as String?;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ..._buildFields(entry),
-        if (videoLink != null && videoLink.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          TextButton.icon(
-            onPressed: () => launchUrl(Uri.parse(videoLink)),
-            icon: const Icon(Icons.open_in_new),
-            label: const Text('Open video link'),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
-        if (imagePaths.isNotEmpty) ...[
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.article_outlined,
+                color: Color(0xFF0B5FFF),
+                size: 20,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Details',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
-          const Text('Images', style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
+          ..._buildFields(entry),
+          if (videoLink != null && videoLink.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => launchUrl(Uri.parse(videoLink)),
+              icon: const Icon(Icons.play_circle_outline, color: Color(0xFF0B5FFF)),
+              label: const Text(
+                'Open Video Link',
+                style: TextStyle(
+                  color: Color(0xFF0B5FFF),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                side: const BorderSide(color: Color(0xFF0B5FFF)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
             ),
-            itemCount: imagePaths.length,
-            itemBuilder: (context, index) {
-              final path = imagePaths[index];
-              return FutureBuilder(
-                future: signedCache.getUrl(path),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  return GestureDetector(
-                    onTap: () => showDialog(
-                      context: context,
-                      builder: (_) => Dialog(
-                        child: InteractiveViewer(
-                          child: Image.network(snapshot.data!),
+          ],
+          if (imagePaths.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Images',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1E293B),
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 8),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              itemCount: imagePaths.length,
+              itemBuilder: (context, index) {
+                final path = imagePaths[index];
+                return FutureBuilder(
+                  future: signedCache.getUrl(path),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF0B5FFF),
+                          ),
+                        ),
+                      );
+                    }
+                    return GestureDetector(
+                      onTap: () => showDialog(
+                        context: context,
+                        builder: (_) => Dialog(
+                          child: InteractiveViewer(
+                            child: Image.network(snapshot.data!),
+                          ),
                         ),
                       ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(snapshot.data!, fit: BoxFit.cover),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(snapshot.data!, fit: BoxFit.cover),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
@@ -413,7 +794,23 @@ class _ReviewPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget body;
     if (entry.status == statusSubmitted && entry.reviewedAt == null) {
-      body = const Text('Awaiting consultant review');
+      body = Row(
+        children: [
+          Icon(
+            Icons.hourglass_empty,
+            size: 20,
+            color: Colors.orange[400],
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            'Awaiting consultant review',
+            style: TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 14,
+            ),
+          ),
+        ],
+      );
     } else if (entry.reviewedAt != null) {
       final reviewerName = entry.reviewerProfile != null
           ? entry.reviewerProfile!['name']
@@ -421,63 +818,168 @@ class _ReviewPanel extends StatelessWidget {
       body = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Reviewer: ${reviewerName ?? ''}'),
-          Text('Decision: ${entry.status}'),
-          if (entry.reviewComment != null && entry.reviewComment!.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text('Comment: ${entry.reviewComment}'),
-            ),
-          if (entry.requiredChanges.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            const Text(
-              'Required changes:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            ...entry.requiredChanges.map(
-              (c) => Row(
+          _InfoItem('Reviewer', reviewerName ?? ''),
+          const SizedBox(height: 8),
+          _InfoItem('Decision', entry.status),
+          if (entry.reviewComment != null && entry.reviewComment!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: const Color(0xFFE2E8F0),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.checklist_rtl, size: 16),
-                  const SizedBox(width: 6),
-                  Expanded(child: Text(c.toString())),
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.comment_outlined,
+                        size: 16,
+                        color: Color(0xFF0B5FFF),
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Comment',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    entry.reviewComment!,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF475569),
+                      height: 1.5,
+                    ),
+                  ),
                 ],
               ),
             ),
           ],
-          if (entry.reviewedAt != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                'Reviewed at: ${entry.reviewedAt!.toLocal()}',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+          if (entry.requiredChanges.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'Required changes:',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                color: Color(0xFF1E293B),
               ),
             ),
+            const SizedBox(height: 8),
+            ...entry.requiredChanges.map(
+              (c) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.checklist_rtl,
+                      size: 16,
+                      color: Color(0xFF0B5FFF),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        c.toString(),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF475569),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          if (entry.reviewedAt != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Reviewed ${_formatDate(entry.reviewedAt!)}',
+              style: const TextStyle(
+                color: Color(0xFF94A3B8),
+                fontSize: 12,
+              ),
+            ),
+          ],
         ],
       );
     } else {
-      body = const Text('No review yet');
+      body = const Text(
+        'No review yet',
+        style: TextStyle(
+          color: Color(0xFF64748B),
+          fontSize: 14,
+        ),
+      );
     }
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Review',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          const Row(
+            children: [
+              Icon(
+                Icons.rate_review_outlined,
+                color: Color(0xFF0B5FFF),
+                size: 20,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Review',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           body,
         ],
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+    if (diff.inDays == 0) {
+      if (diff.inHours == 0) {
+        return '${diff.inMinutes}m ago';
+      }
+      return '${diff.inHours}h ago';
+    } else if (diff.inDays < 7) {
+      return '${diff.inDays}d ago';
+    } else {
+      return date.toLocal().toString().split(' ')[0];
+    }
   }
 }
 
@@ -489,24 +991,58 @@ class _QualitySection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              const Icon(
+                Icons.verified_outlined,
+                color: Color(0xFF0B5FFF),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
               const Text(
                 'Quality',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
               ),
               const Spacer(),
-              Text('Score: ${entry.qualityScore ?? 0}'),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0B5FFF).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Score: ${entry.qualityScore ?? 0}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0B5FFF),
+                  ),
+                ),
+              ),
               const SizedBox(width: 8),
-              TextButton(
+              OutlinedButton(
                 onPressed: () async {
                   await ref.read(qualityRepositoryProvider).scoreEntry(entry.id);
                   if (context.mounted) {
@@ -515,16 +1051,115 @@ class _QualitySection extends ConsumerWidget {
                     );
                   }
                 },
-                child: const Text('Re-score'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  side: const BorderSide(color: Color(0xFF0B5FFF)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Re-score',
+                  style: TextStyle(
+                    color: Color(0xFF0B5FFF),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),
+          const SizedBox(height: 12),
           if (entry.qualityIssues.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            const Text('Issues:', style: TextStyle(color: Colors.orangeAccent)),
-            ...entry.qualityIssues.map((i) => Text('- $i')).toList(),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: const Color(0xFFF59E0B),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        size: 16,
+                        color: Color(0xFFD97706),
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Issues Detected',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF92400E),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ...entry.qualityIssues.map(
+                    (i) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '• ',
+                            style: TextStyle(
+                              color: Color(0xFF92400E),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              i,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF92400E),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ] else
-            const Text('No issues detected'),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD1FAE5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 16,
+                    color: Color(0xFF059669),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'No issues detected',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF065F46),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -542,31 +1177,112 @@ class _SimilarEntries extends ConsumerWidget {
       future: repo.similarEntries(entry),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: CircularProgressIndicator(
+              color: Color(0xFF0B5FFF),
+            ),
+          );
         }
         final list = snapshot.data ?? [];
         if (list.isEmpty) {
           return const SizedBox.shrink();
         }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Similar entries',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            ...list.map(
-              (e) => ListTile(
-                title: Text(e.patientUniqueId),
-                subtitle: Text(e.keywords.take(3).join(', ')),
-                onTap: () => context.pushNamed(
-                  'logbookDetail',
-                  pathParameters: {'id': e.id},
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(
+                    Icons.compare_arrows,
+                    color: Color(0xFF0B5FFF),
+                    size: 20,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Similar Entries',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ...list.map(
+                (e) => InkWell(
+                  onTap: () => context.pushNamed(
+                    'logbookDetail',
+                    pathParameters: {'id': e.id},
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          e.patientUniqueId,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1E293B),
+                          ),
+                        ),
+                        if (e.keywords.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 4,
+                            runSpacing: 4,
+                            children: e.keywords.take(3).map(
+                              (k) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE2E8F0),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  k,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ),
+                            ).toList(),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -581,16 +1297,27 @@ class _FieldRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 4),
-          Text(value),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Color(0xFF1E293B),
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
         ],
       ),
     );
@@ -604,29 +1331,59 @@ class _StatusBadge extends StatelessWidget {
   Color _color() {
     switch (status) {
       case statusApproved:
-        return Colors.green.withValues(alpha: 0.2);
+        return const Color(0xFF10B981);
       case statusSubmitted:
-        return Colors.blue.withValues(alpha: 0.2);
+        return const Color(0xFF0B5FFF);
       case statusNeedsRevision:
-        return Colors.orange.withValues(alpha: 0.2);
+        return const Color(0xFFF59E0B);
       case statusRejected:
-        return Colors.red.withValues(alpha: 0.2);
+        return const Color(0xFFEF4444);
       default:
-        return Colors.white.withValues(alpha: 0.1);
+        return const Color(0xFF64748B);
+    }
+  }
+
+  IconData _icon() {
+    switch (status) {
+      case statusApproved:
+        return Icons.check_circle;
+      case statusSubmitted:
+        return Icons.send;
+      case statusNeedsRevision:
+        return Icons.edit_note;
+      case statusRejected:
+        return Icons.cancel;
+      default:
+        return Icons.article_outlined;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        color: _color(),
+        color: _color().withOpacity(0.1),
       ),
-      child: Text(
-        status,
-        style: const TextStyle(fontSize: 12),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            _icon(),
+            size: 16,
+            color: _color(),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            status.toUpperCase(),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: _color(),
+            ),
+          ),
+        ],
       ),
     );
   }

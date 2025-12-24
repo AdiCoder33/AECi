@@ -132,10 +132,37 @@ class _ClinicalCaseFormScreenState extends ConsumerState<ClinicalCaseFormScreen>
                   return null;
                 },
               ),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: mutation.isLoading ? null : _save,
-                child: const Text('Save case'),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: mutation.isLoading ? null : _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0B5FFF),
+                    foregroundColor: Colors.white,
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: mutation.isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Save Case',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
               ),
             ],
           ),
@@ -171,12 +198,22 @@ class _ClinicalCaseFormScreenState extends ConsumerState<ClinicalCaseFormScreen>
       final id =
           await ref.read(clinicalCaseMutationProvider.notifier).create(data);
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/cases/$id');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Case created successfully'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+        Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create case: $e'),
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
       }
     }
   }

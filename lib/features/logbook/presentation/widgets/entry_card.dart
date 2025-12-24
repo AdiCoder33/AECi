@@ -14,65 +14,183 @@ class EntryCard extends StatelessWidget {
     final keywordChips = entry.keywords.take(3).toList();
     final extra = entry.keywords.length - keywordChips.length;
 
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  entry.patientUniqueId,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0B5FFF).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      entry.patientUniqueId,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: Color(0xFF0B5FFF),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
                   ),
+                  const SizedBox(width: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.badge_outlined,
+                          size: 14,
+                          color: Color(0xFF64748B),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          entry.mrn,
+                          style: const TextStyle(
+                            color: Color(0xFF64748B),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  _StatusBadge(status: entry.status),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                summary,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: Color(0xFF475569),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'MRN: ${entry.mrn}',
-                  style: const TextStyle(color: Colors.white70),
+              ),
+              if (entry.keywords.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    ...keywordChips.map(
+                      (k) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        child: Text(
+                          k,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF475569),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (extra > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0B5FFF).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '+$extra',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF0B5FFF),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-                const Spacer(),
-                _StatusBadge(status: entry.status),
               ],
-            ),
-            const SizedBox(height: 8),
-            Text(summary, maxLines: 2, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                ...keywordChips.map(
-                  (k) => Chip(
-                    label: Text(k),
-                    backgroundColor: Colors.white.withValues(alpha: 0.08),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.access_time_rounded,
+                    size: 14,
+                    color: Color(0xFF94A3B8),
                   ),
-                ),
-                if (extra > 0)
-                  Chip(
-                    label: Text('+$extra'),
-                    backgroundColor: Colors.white.withValues(alpha: 0.08),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Updated ${_formatDate(entry.updatedAt)}',
+                    style: const TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Updated: ${entry.updatedAt.toLocal()}',
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      return 'today';
+    } else if (difference.inDays == 1) {
+      return 'yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
   }
 
   String _summaryText(ElogEntry entry) {
@@ -96,32 +214,77 @@ class _StatusBadge extends StatelessWidget {
   const _StatusBadge({required this.status});
   final String status;
 
-  Color _color() {
+  Color _backgroundColor() {
     switch (status) {
       case statusApproved:
-        return Colors.green.withValues(alpha: 0.2);
+        return const Color(0xFF10B981).withOpacity(0.1);
       case statusSubmitted:
-        return Colors.blue.withValues(alpha: 0.2);
+        return const Color(0xFF0B5FFF).withOpacity(0.1);
       case statusNeedsRevision:
-        return Colors.orange.withValues(alpha: 0.2);
+        return const Color(0xFFF59E0B).withOpacity(0.1);
       case statusRejected:
-        return Colors.red.withValues(alpha: 0.2);
+        return const Color(0xFFEF4444).withOpacity(0.1);
       default:
-        return Colors.white.withValues(alpha: 0.1);
+        return const Color(0xFF94A3B8).withOpacity(0.1);
+    }
+  }
+
+  Color _textColor() {
+    switch (status) {
+      case statusApproved:
+        return const Color(0xFF10B981);
+      case statusSubmitted:
+        return const Color(0xFF0B5FFF);
+      case statusNeedsRevision:
+        return const Color(0xFFF59E0B);
+      case statusRejected:
+        return const Color(0xFFEF4444);
+      default:
+        return const Color(0xFF64748B);
+    }
+  }
+
+  IconData _icon() {
+    switch (status) {
+      case statusApproved:
+        return Icons.check_circle_rounded;
+      case statusSubmitted:
+        return Icons.send_rounded;
+      case statusNeedsRevision:
+        return Icons.edit_note_rounded;
+      case statusRejected:
+        return Icons.cancel_rounded;
+      default:
+        return Icons.article_outlined;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        color: _color(),
+        color: _backgroundColor(),
       ),
-      child: Text(
-        status,
-        style: const TextStyle(fontSize: 12),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            _icon(),
+            size: 14,
+            color: _textColor(),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            status,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: _textColor(),
+            ),
+          ),
+        ],
       ),
     );
   }
