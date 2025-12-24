@@ -448,6 +448,9 @@ class _AppDrawer extends StatelessWidget {
                 Navigator.pop(context);
                 if (onSignOut != null) {
                   await onSignOut!();
+                  if (context.mounted) {
+                    context.go('/auth');
+                  }
                 }
               },
             ),

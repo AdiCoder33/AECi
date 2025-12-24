@@ -11,6 +11,7 @@ class Profile {
     required this.email,
     required this.dob,
     this.gender,
+    this.profilePhotoUrl,
     this.degrees = const [],
     this.aravindCentre,
     this.idNumber,
@@ -29,6 +30,7 @@ class Profile {
   final String email;
   final DateTime dob;
   final String? gender;
+  final String? profilePhotoUrl;
   final List<String> degrees;
   final String? aravindCentre;
   final String? idNumber;
@@ -47,6 +49,7 @@ class Profile {
     String? email,
     DateTime? dob,
     String? gender,
+    String? profilePhotoUrl,
     List<String>? degrees,
     String? aravindCentre,
     String? idNumber,
@@ -65,6 +68,7 @@ class Profile {
       email: email ?? this.email,
       dob: dob ?? this.dob,
       gender: gender ?? this.gender,
+      profilePhotoUrl: profilePhotoUrl ?? this.profilePhotoUrl,
       degrees: degrees ?? this.degrees,
       aravindCentre: aravindCentre ?? this.aravindCentre,
       idNumber: idNumber ?? this.idNumber,
@@ -86,6 +90,7 @@ class Profile {
       email: map['email'] as String,
       dob: DateTime.parse(map['dob'] as String),
       gender: map['gender'] as String?,
+      profilePhotoUrl: map['profile_photo_url'] as String?,
       degrees: (map['degrees'] as List?)?.cast<String>() ?? const [],
       aravindCentre: map['aravind_centre'] as String? ?? map['centre'] as String?,
       idNumber: map['id_number'] as String?,
@@ -109,6 +114,7 @@ class Profile {
       'email': email,
       'dob': date,
       'gender': gender,
+      'profile_photo_url': profilePhotoUrl,
       'degrees': degrees,
       'aravind_centre': aravindCentre ?? centre,
       'id_number': idNumber,
