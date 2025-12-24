@@ -26,6 +26,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   DateTime? _dob;
   String _designation = profileDesignations.first;
   String _centre = profileCentres.first;
+  String _gender = 'Male';
 
   @override
   void initState() {
@@ -94,7 +95,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
             child: Card(
-              color: const Color(0xFF0F1624),
+              color: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -167,6 +168,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     labelText: 'Designation',
                                   ),
                                 ),
+                                const SizedBox(height: 12),
+                                DropdownButtonFormField<String>(
+                                  value: _gender,
+                                  items: const [
+                                    DropdownMenuItem(value: 'Male', child: Text('Male')),
+                                    DropdownMenuItem(value: 'Female', child: Text('Female')),
+                                    DropdownMenuItem(value: 'Other', child: Text('Other')),
+                                  ],
+                                  onChanged: (v) => setState(() => _gender = v!),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Gender',
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
                                 DropdownButtonFormField<String>(
                                   initialValue: _centre,
                                   items: profileCentres
@@ -288,6 +303,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _dob = profile.dob;
     _designation = profile.designation;
     _centre = profile.centre;
+    _gender = profile.gender ?? 'Male';
   }
 
   void _save(String userId) async {
@@ -310,6 +326,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       phone: _phoneController.text.trim(),
       email: _emailController.text.trim(),
       dob: _dob!,
+      gender: _gender,
     );
     await ref.read(profileControllerProvider.notifier).upsertProfile(profile);
     final error = ref.read(profileControllerProvider).errorMessage;
@@ -365,6 +382,7 @@ class _ProfileView extends StatelessWidget {
       children: [
         _Row(label: 'Name', value: profile.name),
         _Row(label: 'Age', value: profile.age.toString()),
+        _Row(label: 'Gender', value: profile.gender ?? 'Not specified'),
         _Row(label: 'Designation', value: profile.designation),
         _Row(label: 'Hospital', value: profile.hospital),
         _Row(label: 'Centre', value: profile.centre),
@@ -396,7 +414,13 @@ class _Row extends StatelessWidget {
         children: [
           SizedBox(
             width: 140,
-            child: Text(label, style: const TextStyle(color: Colors.white70)),
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
           Expanded(
             child: Text(
@@ -426,7 +450,11 @@ class _DobField extends StatelessWidget {
       children: [
         const Text(
           'Date of Birth',
-          style: TextStyle(fontSize: 12, color: Colors.white70),
+          style: TextStyle(
+            fontSize: 12,
+            color: Color(0xFF64748B),
+            fontWeight: FontWeight.w500,
+          ),
         ),
         const SizedBox(height: 6),
         OutlinedButton.icon(

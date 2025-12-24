@@ -323,7 +323,7 @@ class _MainShell extends StatelessWidget {
   final String? name;
   final String? designation;
   final String? centre;
-  final VoidCallback? onSignOut;
+  final Future<void> Function()? onSignOut;
 
   int get _index {
     if (location.startsWith('/logbook')) return 1;
@@ -371,12 +371,19 @@ class _MainShell extends StatelessWidget {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _index,
         onTap: (i) => _onTap(context, i),
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        selectedItemColor: const Color(0xFF0B5FFF),
+        unselectedItemColor: const Color(0xFF64748B),
+        selectedFontSize: 12,
+        unselectedFontSize: 11,
+        elevation: 8,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Logbook'),
-          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Cases'),
-          BottomNavigationBarItem(icon: Icon(Icons.school), label: 'Teaching'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.book_outlined), activeIcon: Icon(Icons.book), label: 'Logbook'),
+          BottomNavigationBarItem(icon: Icon(Icons.medical_services_outlined), activeIcon: Icon(Icons.medical_services), label: 'Cases'),
+          BottomNavigationBarItem(icon: Icon(Icons.school_outlined), activeIcon: Icon(Icons.school), label: 'Teaching'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );
@@ -395,7 +402,7 @@ class _AppDrawer extends StatelessWidget {
 
   final String current;
   final void Function(String route) onNavigate;
-  final VoidCallback? onSignOut;
+  final Future<void> Function()? onSignOut;
   final String? name;
   final String? designation;
   final String? centre;
@@ -435,11 +442,13 @@ class _AppDrawer extends StatelessWidget {
             _item(context, Icons.archive, 'Storage Tools', '/storage-tools'),
             const Divider(),
             ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Sign out'),
-              onTap: () {
+              leading: const Icon(Icons.logout, color: Color(0xFFEF4444)),
+              title: const Text('Sign out', style: TextStyle(color: Color(0xFFEF4444))),
+              onTap: () async {
                 Navigator.pop(context);
-                onSignOut?.call();
+                if (onSignOut != null) {
+                  await onSignOut!();
+                }
               },
             ),
           ],
