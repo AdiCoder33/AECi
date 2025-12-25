@@ -1,10 +1,27 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/assessment_repository.dart';
+import '../../auth/application/auth_controller.dart';
 
 final caseAssessmentProvider = FutureProvider.family
     .autoDispose<CaseAssessment?, String>((ref, caseId) async {
   return ref.watch(assessmentRepositoryProvider).getAssessment(caseId);
+});
+
+final assessmentQueueProvider =
+    FutureProvider.autoDispose<List<AssessmentQueueItem>>((ref) async {
+  final auth = ref.watch(authControllerProvider);
+  final uid = auth.session?.user.id;
+  if (uid == null) return [];
+  return ref.watch(assessmentRepositoryProvider).listAssignedQueue(uid);
+});
+
+final assessmentRosterProvider = FutureProvider.family
+    .autoDispose<List<RosterConsultant>, ({String centre, String monthKey})>(
+        (ref, query) async {
+  return ref
+      .watch(assessmentRepositoryProvider)
+      .listRoster(centre: query.centre, monthKey: query.monthKey);
 });
 
 class AssessmentMutation extends StateNotifier<AsyncValue<void>> {

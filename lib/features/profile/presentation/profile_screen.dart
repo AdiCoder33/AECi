@@ -1,15 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:io';
 
-import '../../auth/application/auth_controller.dart';
 import '../application/profile_controller.dart';
 import '../data/profile_constants.dart';
 import '../data/profile_model.dart';
-import '../../../core/supabase_client.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -20,16 +14,15 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
-  bool _editMode = false;
-  File? _imageFile;
-  bool _uploadingImage = false;
-
-  late final TextEditingController _nameController;
-  late final TextEditingController _ageController;
-  late final TextEditingController _employeeIdController;
-  late final TextEditingController _phoneController;
-  late final TextEditingController _emailController;
+  final _nameController = TextEditingController();
+  final _ageController = TextEditingController();
+  final _employeeIdController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _idNumberController = TextEditingController();
+  final _hodController = TextEditingController();
   DateTime? _dob;
+  DateTime? _dateOfJoining;
   String _designation = profileDesignations.first;
   String _centre = profileCentres.first;
   String _gender = 'male';
@@ -51,6 +44,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _employeeIdController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
+    _idNumberController.dispose();
+    _hodController.dispose();
     super.dispose();
   }
 
@@ -59,19 +54,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final profileState = ref.watch(profileControllerProvider);
     final profile = profileState.profile;
 
-    if (!profileState.initialized ||
-        profileState.isLoading && profile == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    if (profile == null) {
+    if (profile != null && !_initialized) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) context.go('/profile/create');
+        _loadFromProfile(profile);
       });
-      return const Scaffold();
     }
-
-    _seedControllers(profile);
 
     return Scaffold(
       appBar: AppBar(
@@ -111,193 +98,112 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               style: TextStyle(color: Colors.redAccent),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.file_upload),
-            onPressed: () => context.push('/export'),
+        ],
+      ),
+      body: profile == null
+          ? const Center(child: CircularProgressIndicator())
+          : _editing
+              ? _buildEdit(profileState)
+              : _buildView(profile),
+    );
+  }
+
+  Widget _buildView(Profile profile) {
+    final months = profile.dateOfJoining == null
+        ? null
+        : _monthsIntoProgram(profile.dateOfJoining!);
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          _SectionCard(
+            title: 'Personal',
+            children: [
+              _InfoRow(label: 'Name', value: profile.name),
+              _InfoRow(
+                label: 'Gender',
+                value: profile.gender ?? '-',
+              ),
+              _InfoRow(label: 'Age', value: profile.age.toString()),
+              _InfoRow(label: 'DOB', value: _formatDate(profile.dob)),
+              _InfoRow(label: 'Phone', value: profile.phone),
+              _InfoRow(label: 'Email', value: profile.email),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.cleaning_services),
-            onPressed: () => context.push('/storage-tools'),
+          const SizedBox(height: 12),
+          _SectionCard(
+            title: 'Professional',
+            children: [
+              _InfoRow(label: 'Designation', value: profile.designation),
+              _InfoRow(label: 'Degrees', value: _joinList(profile.degrees)),
+              _InfoRow(
+                label: 'Aravind Centre',
+                value: profile.aravindCentre ?? profile.centre,
+              ),
+              _InfoRow(label: 'Hospital', value: profile.hospital),
+              _InfoRow(label: 'Employee ID', value: profile.employeeId),
+              _InfoRow(label: 'ID Number', value: profile.idNumber ?? '-'),
+              _InfoRow(label: 'HOD', value: profile.hodName ?? '-'),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _SectionCard(
+            title: 'Program',
+            children: [
+              _InfoRow(
+                label: 'Date of Joining',
+                value: profile.dateOfJoining == null
+                    ? '-'
+                    : _formatDate(profile.dateOfJoining!),
+              ),
+              _InfoRow(
+                label: 'Months into program',
+                value: months == null ? '-' : '$months',
+              ),
+            ],
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 640),
-            child: Card(
-              color: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 8,
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Column(
-                        children: [
-                          Stack(
-                            children: [
-                              Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: profile.profilePhotoUrl == null
-                                      ? const LinearGradient(
-                                          colors: [Color(0xFF0B5FFF), Color(0xFF6366F1)],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        )
-                                      : null,
-                                  color: profile.profilePhotoUrl != null ? Colors.grey[200] : null,
-                                  border: Border.all(color: Colors.white, width: 4),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF0B5FFF).withOpacity(0.3),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 8),
-                                    ),
-                                  ],
-                                  image: profile.profilePhotoUrl != null
-                                      ? DecorationImage(
-                                          image: NetworkImage(profile.profilePhotoUrl!),
-                                          fit: BoxFit.cover,
-                                        )
-                                      : null,
-                                ),
-                                child: profile.profilePhotoUrl == null
-                                    ? Center(
-                                        child: Text(
-                                          profile.name.isNotEmpty ? profile.name[0].toUpperCase() : 'A',
-                                          style: const TextStyle(
-                                            fontSize: 42,
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      )
-                                    : _uploadingImage
-                                        ? const Center(
-                                            child: CircularProgressIndicator(
-                                              color: Color(0xFF0B5FFF),
-                                              strokeWidth: 3,
-                                            ),
-                                          )
-                                        : null,
-                              ),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: GestureDetector(
-                                  onTap: _uploadingImage ? null : _pickAndUploadImage,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF0B5FFF),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: Colors.white, width: 3),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.2),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    padding: const EdgeInsets.all(8),
-                                    child: _uploadingImage
-                                        ? const SizedBox(
-                                            width: 18,
-                                            height: 18,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white,
-                                            ),
-                                          )
-                                        : const Icon(
-                                            Icons.camera_alt,
-                                            size: 18,
-                                            color: Colors.white,
-                                          ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            profile.name,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF0F172A),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0B5FFF).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: const Color(0xFF0B5FFF).withOpacity(0.3),
-                              ),
-                            ),
-                            child: Text(
-                              profile.designation,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF0B5FFF),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            profile.centre,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    const Divider(height: 1),
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Professional Details',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0F172A),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              _editMode = !_editMode;
-                              if (!_editMode) {
-                                // Reset form when canceling
-                                _seedControllers(profile);
-                              }
-                            });
-                          },
-                          child: Text(
-                            _editMode ? 'Cancel' : 'Edit',
-                            style: TextStyle(
-                              color: _editMode ? const Color(0xFFEF4444) : const Color(0xFF0B5FFF),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+    );
+  }
+
+  Widget _buildEdit(ProfileState profileState) {
+    final isSaving = profileState.isLoading;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            _SectionCard(
+              title: 'Personal',
+              children: [
+                _FormField(
+                  label: 'Name',
+                  controller: _nameController,
+                  validator: _requiredValidator,
+                ),
+                _FormField(
+                  label: 'Age',
+                  controller: _ageController,
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    final v = value?.trim() ?? '';
+                    if (v.isEmpty) return 'Required';
+                    final age = int.tryParse(v);
+                    if (age == null || age < 18 || age > 80) {
+                      return 'Age must be between 18-80';
+                    }
+                    return null;
+                  },
+                ),
+                DropdownButtonFormField<String>(
+                  value: _gender,
+                  items: profileGenders
+                      .map(
+                        (g) => DropdownMenuItem(
+                          value: g,
+                          child: Text(g[0].toUpperCase() + g.substring(1)),
                         ),
                       ],
                     ),
@@ -475,74 +381,262 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           )
                         : _ProfileView(profile: profile),
                   ],
+                      )
+                      .toList(),
+                  decoration: const InputDecoration(labelText: 'Gender'),
+                  onChanged: isSaving
+                      ? null
+                      : (value) => setState(() => _gender = value!),
                 ),
+                const SizedBox(height: 12),
+                _DateField(
+                  label: 'Date of Birth',
+                  value: _dob,
+                  onPick: isSaving
+                      ? null
+                      : () async {
+                          final now = DateTime.now();
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _dob ?? DateTime(1990, 1, 1),
+                            firstDate: DateTime(now.year - 80),
+                            lastDate: DateTime(now.year - 18),
+                          );
+                          if (picked != null) {
+                            setState(() => _dob = picked);
+                          }
+                        },
+                ),
+                _FormField(
+                  label: 'Phone Number',
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  validator: (value) {
+                    final v = value?.trim() ?? '';
+                    if (v.isEmpty) return 'Required';
+                    final numeric = RegExp(r'^[0-9]{10}$');
+                    if (!numeric.hasMatch(v)) {
+                      return 'Enter a valid 10 digit number';
+                    }
+                    return null;
+                  },
+                ),
+                _FormField(
+                  label: 'Email',
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: (value) {
+                    final v = value?.trim() ?? '';
+                    if (v.isEmpty) return 'Required';
+                    if (!v.contains('@')) return 'Enter a valid email';
+                    return null;
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _SectionCard(
+              title: 'Professional',
+              children: [
+                const Text(
+                  'Degrees',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: profileDegrees.map((degree) {
+                    final selected = _degrees.contains(degree);
+                    return FilterChip(
+                      selected: selected,
+                      label: Text(degree),
+                      onSelected: isSaving
+                          ? null
+                          : (value) {
+                              setState(() {
+                                if (value) {
+                                  _degrees = [..._degrees, degree];
+                                } else {
+                                  _degrees = _degrees
+                                      .where((d) => d != degree)
+                                      .toList();
+                                }
+                              });
+                            },
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _designation,
+                  items: profileDesignations
+                      .map(
+                        (d) => DropdownMenuItem(value: d, child: Text(d)),
+                      )
+                      .toList(),
+                  decoration: const InputDecoration(labelText: 'Designation'),
+                  onChanged: isSaving
+                      ? null
+                      : (value) => setState(() => _designation = value!),
+                ),
+                DropdownButtonFormField<String>(
+                  value: _centre,
+                  items: profileCentres
+                      .map(
+                        (c) => DropdownMenuItem(value: c, child: Text(c)),
+                      )
+                      .toList(),
+                  decoration: const InputDecoration(labelText: 'Aravind Centre'),
+                  onChanged: isSaving
+                      ? null
+                      : (value) => setState(() => _centre = value!),
+                ),
+                _FormField(
+                  label: 'Employee ID',
+                  controller: _employeeIdController,
+                  validator: _requiredValidator,
+                ),
+                _FormField(
+                  label: 'ID Number',
+                  controller: _idNumberController,
+                  validator: _requiredValidator,
+                ),
+                _FormField(
+                  label: 'Name of HOD',
+                  controller: _hodController,
+                  validator: _requiredValidator,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _SectionCard(
+              title: 'Program',
+              children: [
+                _DateField(
+                  label: 'Date of Joining',
+                  value: _dateOfJoining,
+                  onPick: isSaving
+                      ? null
+                      : () async {
+                          final now = DateTime.now();
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _dateOfJoining ?? now,
+                            firstDate: DateTime(now.year - 20),
+                            lastDate: now,
+                          );
+                          if (picked != null) {
+                            setState(() => _dateOfJoining = picked);
+                          }
+                        },
+                ),
+                const SizedBox(height: 8),
+                _ReadonlyTile(
+                  label: 'Months into program',
+                  value: _dateOfJoining == null
+                      ? 'Select date of joining'
+                      : '${_monthsIntoProgram(_dateOfJoining!)} months',
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: isSaving ? null : _saveProfile,
+                child: isSaving
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Save Profile'),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 
-  void _seedControllers(Profile profile) {
-    _nameController.text = profile.name;
-    _ageController.text = profile.age.toString();
-    _employeeIdController.text = profile.employeeId;
-    _phoneController.text = profile.phone;
-    _emailController.text = profile.email;
-    _dob = profile.dob;
-    _designation = profile.designation;
-    _centre = profile.centre;
-    _gender = profile.gender ?? 'male';
+  void _loadFromProfile(Profile profile) {
+    setState(() {
+      _initialized = true;
+      _nameController.text = profile.name;
+      _ageController.text = profile.age.toString();
+      _employeeIdController.text = profile.employeeId;
+      _phoneController.text = profile.phone;
+      _emailController.text = profile.email;
+      _idNumberController.text = profile.idNumber ?? '';
+      _hodController.text = profile.hodName ?? '';
+      _dob = profile.dob;
+      _dateOfJoining = profile.dateOfJoining;
+      _designation = profile.designation;
+      _centre = profile.aravindCentre ?? profile.centre;
+      _gender = profile.gender ?? profileGenders.first;
+      _degrees = profile.degrees;
+    });
   }
 
-  void _save(String userId) async {
-    if (!_formKey.currentState!.validate() || _dob == null) {
-      if (_dob == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please select Date of Birth'),
-            backgroundColor: Color(0xFFEF4444),
-          ),
-        );
-      }
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_dob == null || _dateOfJoining == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please complete all dates.')),
+      );
       return;
     }
-    final profile = Profile(
-      id: userId,
+    if (_degrees.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select at least one degree.')),
+      );
+      return;
+    }
+
+    final profile = ref.read(profileControllerProvider).profile;
+    if (profile == null) return;
+
+    final updated = profile.copyWith(
       name: _nameController.text.trim(),
       age: int.parse(_ageController.text.trim()),
       designation: _designation,
-      hospital: 'Aravind Eye Hospital',
       centre: _centre,
       employeeId: _employeeIdController.text.trim(),
       phone: _phoneController.text.trim(),
       email: _emailController.text.trim(),
-      dob: _dob!,
+      dob: _dob,
       gender: _gender,
+      degrees: _degrees,
+      aravindCentre: _centre,
+      idNumber: _idNumberController.text.trim(),
+      dateOfJoining: _dateOfJoining,
+      hodName: _hodController.text.trim(),
     );
-    await ref.read(profileControllerProvider.notifier).upsertProfile(profile);
-    final error = ref.read(profileControllerProvider).errorMessage;
+
+    await ref.read(profileControllerProvider.notifier).upsertProfile(updated);
     if (mounted) {
-      if (error == null) {
-        setState(() => _editMode = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile updated successfully'),
-            backgroundColor: Color(0xFF10B981),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error),
-            backgroundColor: const Color(0xFFEF4444),
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      }
+      setState(() => _editing = false);
     }
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  String _joinList(List<String> items) {
+    if (items.isEmpty) return '-';
+    return items.join(', ');
+  }
+
+  int _monthsIntoProgram(DateTime joining) {
+    final now = DateTime.now();
+    var months = (now.year - joining.year) * 12 + (now.month - joining.month);
+    if (now.day < joining.day) months -= 1;
+    return months < 0 ? 0 : months;
   }
 
   String? _requiredValidator(String? value) {
@@ -551,66 +645,73 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
     return null;
   }
+}
 
-  Future<void> _pickAndUploadImage() async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 512,
-        maxHeight: 512,
-        imageQuality: 85,
-      );
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({required this.title, required this.children});
 
-      if (image == null) return;
+  final String title;
+  final List<Widget> children;
 
-      setState(() {
-        _imageFile = File(image.path);
-        _uploadingImage = true;
-      });
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-      final profile = ref.read(profileControllerProvider).profile;
-      if (profile == null) return;
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.label, required this.value});
 
-      // Upload to Supabase storage
-      final userId = profile.id;
-      final fileName = 'profile_$userId.jpg';
-      final bytes = await _imageFile!.readAsBytes();
+  final String label;
+  final String value;
 
-      final supabase = ref.read(supabaseClientProvider);
-      await supabase.storage.from('profiles').uploadBinary(
-            fileName,
-            bytes,
-            fileOptions: FileOptions(upsert: true),
-          );
-
-      // Get public URL
-      final photoUrl = supabase.storage.from('profiles').getPublicUrl(fileName);
-
-      // Update profile with photo URL
-      final updatedProfile = profile.copyWith(profilePhotoUrl: photoUrl);
-      await ref.read(profileControllerProvider.notifier).upsertProfile(updatedProfile);
-
-      if (mounted) {
-        setState(() => _uploadingImage = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile photo updated successfully'),
-            backgroundColor: Color(0xFF10B981),
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 140,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _uploadingImage = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to upload photo: $e'),
-            backgroundColor: const Color(0xFFEF4444),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF1E293B),
+              ),
+            ),
           ),
-        );
-      }
-    }
+        ],
+      ),
+    );
   }
 }
 
@@ -641,91 +742,28 @@ class _FormField extends StatelessWidget {
   }
 }
 
-class _ProfileView extends StatelessWidget {
-  const _ProfileView({required this.profile});
-
-  final Profile profile;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _Row(label: 'Name', value: profile.name),
-        _Row(label: 'Age', value: profile.age.toString()),
-        _Row(label: 'Gender', value: profile.gender ?? 'Not specified'),
-        _Row(label: 'Designation', value: profile.designation),
-        _Row(label: 'Hospital', value: profile.hospital),
-        _Row(label: 'Centre', value: profile.centre),
-        _Row(label: 'Employee ID', value: profile.employeeId),
-        _Row(label: 'Phone', value: profile.phone),
-        _Row(label: 'Email', value: profile.email),
-        _Row(
-          label: 'DOB',
-          value:
-              '${profile.dob.year}-${profile.dob.month.toString().padLeft(2, '0')}-${profile.dob.day.toString().padLeft(2, '0')}',
-        ),
-      ],
-    );
-  }
-}
-
-class _Row extends StatelessWidget {
-  const _Row({required this.label, required this.value});
+class _DateField extends StatelessWidget {
+  const _DateField({
+    required this.label,
+    required this.value,
+    required this.onPick,
+  });
 
   final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 140,
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFF64748B),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DobField extends StatelessWidget {
-  const _DobField({required this.dob, required this.onPick});
-
-  final DateTime? dob;
+  final DateTime? value;
   final VoidCallback? onPick;
 
   @override
   Widget build(BuildContext context) {
-    final text = dob == null
-        ? 'Select date of birth'
-        : '${dob!.year}-${dob!.month.toString().padLeft(2, '0')}-${dob!.day.toString().padLeft(2, '0')}';
+    final text = value == null
+        ? 'Select date'
+        : '${value!.year}-${value!.month.toString().padLeft(2, '0')}-${value!.day.toString().padLeft(2, '0')}';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Date of Birth',
-          style: TextStyle(
-            fontSize: 12,
-            color: Color(0xFF64748B),
-            fontWeight: FontWeight.w500,
-          ),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
         ),
         const SizedBox(height: 6),
         OutlinedButton.icon(
@@ -738,30 +776,31 @@ class _DobField extends StatelessWidget {
   }
 }
 
-class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message});
+class _ReadonlyTile extends StatelessWidget {
+  const _ReadonlyTile({required this.label, required this.value});
 
-  final String message;
+  final String label;
+  final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.redAccent.withValues(alpha: 0.15),
-        border: Border.all(color: Colors.redAccent),
-        borderRadius: BorderRadius.circular(12),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: Colors.redAccent),
-          const SizedBox(width: 8),
-          Expanded(
+          SizedBox(
+            width: 180,
             child: Text(
-              message,
-              style: const TextStyle(color: Colors.redAccent),
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
+              ),
             ),
+          ),
+          Expanded(
+            child: Text(value),
           ),
         ],
       ),

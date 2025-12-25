@@ -22,6 +22,13 @@ class ClinicalCase {
     required this.systemicHistory,
     required this.keywords,
     required this.diagnosis,
+    required this.status,
+    this.bcvaRe,
+    this.bcvaLe,
+    this.iopRe,
+    this.iopLe,
+    this.anteriorSegment,
+    this.fundus,
     this.diagnosisOther,
     this.management,
     this.learningPoint,
@@ -42,6 +49,13 @@ class ClinicalCase {
   final List<dynamic> systemicHistory;
   final List<String> keywords;
   final String diagnosis;
+  final String status;
+  final String? bcvaRe;
+  final String? bcvaLe;
+  final num? iopRe;
+  final num? iopLe;
+  final Map<String, dynamic>? anteriorSegment;
+  final Map<String, dynamic>? fundus;
   final String? diagnosisOther;
   final String? management;
   final String? learningPoint;
@@ -62,6 +76,17 @@ class ClinicalCase {
         systemicHistory: (map['systemic_history'] as List?) ?? const [],
         keywords: (map['keywords'] as List).cast<String>(),
         diagnosis: map['diagnosis'] as String,
+        status: map['status'] as String? ?? 'draft',
+        bcvaRe: map['bcva_re'] as String?,
+        bcvaLe: map['bcva_le'] as String?,
+        iopRe: map['iop_re'] as num?,
+        iopLe: map['iop_le'] as num?,
+        anteriorSegment: map['anterior_segment'] != null
+            ? Map<String, dynamic>.from(map['anterior_segment'] as Map)
+            : null,
+        fundus: map['fundus'] != null
+            ? Map<String, dynamic>.from(map['fundus'] as Map)
+            : null,
         diagnosisOther: map['diagnosis_other'] as String?,
         management: map['management'] as String?,
         learningPoint: map['learning_point'] as String?,
@@ -78,8 +103,15 @@ class CaseFollowup {
     required this.followupIndex,
     required this.dateOfExamination,
     required this.intervalDays,
+    this.ucvaRe,
+    this.ucvaLe,
+    this.bcvaRe,
+    this.bcvaLe,
+    this.iopRe,
+    this.iopLe,
     this.anteriorSegmentFindings,
     this.fundusFindings,
+    this.management,
   });
 
   final String id;
@@ -87,8 +119,15 @@ class CaseFollowup {
   final int followupIndex;
   final DateTime dateOfExamination;
   final int intervalDays;
+  final String? ucvaRe;
+  final String? ucvaLe;
+  final String? bcvaRe;
+  final String? bcvaLe;
+  final num? iopRe;
+  final num? iopLe;
   final String? anteriorSegmentFindings;
   final String? fundusFindings;
+  final String? management;
 
   factory CaseFollowup.fromMap(Map<String, dynamic> map) => CaseFollowup(
         id: map['id'] as String,
@@ -96,8 +135,15 @@ class CaseFollowup {
         followupIndex: map['followup_index'] as int,
         dateOfExamination: DateTime.parse(map['date_of_examination'] as String),
         intervalDays: map['interval_days'] as int,
+        ucvaRe: map['ucva_re'] as String?,
+        ucvaLe: map['ucva_le'] as String?,
+        bcvaRe: map['bcva_re'] as String?,
+        bcvaLe: map['bcva_le'] as String?,
+        iopRe: map['iop_re'] as num?,
+        iopLe: map['iop_le'] as num?,
         anteriorSegmentFindings: map['anterior_segment_findings'] as String?,
         fundusFindings: map['fundus_findings'] as String?,
+        management: map['management'] as String?,
       );
 }
 
@@ -144,6 +190,19 @@ class ClinicalCasesRepository {
         .toList();
   }
 
+  Future<List<ClinicalCase>> listMyCases() async {
+    final uid = _client.auth.currentUser?.id;
+    if (uid == null) return [];
+    final rows = await _client
+        .from('clinical_cases')
+        .select('*')
+        .eq('created_by', uid)
+        .order('updated_at', ascending: false);
+    return (rows as List)
+        .map((e) => ClinicalCase.fromMap(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
   Future<ClinicalCase> getCase(String id) async {
     final row = await _client
         .from('clinical_cases')
@@ -156,23 +215,38 @@ class ClinicalCasesRepository {
     return ClinicalCase.fromMap(Map<String, dynamic>.from(row));
   }
 
-  Future<String> createCase(Map<String, dynamic> data) async {
+  Future<String> createCaseDraft(Map<String, dynamic> data) async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) throw AuthException('Not signed in');
     data['created_by'] = uid;
+    data['status'] = data['status'] ?? 'draft';
     final inserted =
         await _client.from('clinical_cases').insert(data).select('id').maybeSingle();
     if (inserted == null) throw PostgrestException(message: 'Create failed');
     return inserted['id'] as String;
   }
 
-  Future<void> updateCase(String id, Map<String, dynamic> data) async {
+  Future<void> updateCaseDraft(String id, Map<String, dynamic> data) async {
     await _client.from('clinical_cases').update(data).eq('id', id);
   }
 
   Future<void> addFollowup(String caseId, Map<String, dynamic> data) async {
     data['case_id'] = caseId;
     await _client.from('case_followups').insert(data);
+  }
+
+  Future<void> updateFollowup(String followupId, Map<String, dynamic> data) async {
+    await _client.from('case_followups').update(data).eq('id', followupId);
+  }
+
+  Future<CaseFollowup?> getFollowup(String id) async {
+    final row = await _client
+        .from('case_followups')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+    if (row == null) return null;
+    return CaseFollowup.fromMap(Map<String, dynamic>.from(row));
   }
 
   Future<List<CaseFollowup>> listFollowups(String caseId) async {
@@ -188,7 +262,7 @@ class ClinicalCasesRepository {
 
   Future<List<CaseMediaItem>> listMedia(String caseId) async {
     final rows =
-        await _client.from('case_media').select('*').eq('case_id', caseId);
+        await _client.from('case_media').select('*').eq('case_id', caseId).order('created_at');
     return (rows as List)
         .map((e) => CaseMediaItem.fromMap(Map<String, dynamic>.from(e)))
         .toList();
@@ -200,6 +274,7 @@ class ClinicalCasesRepository {
     required String category,
     required String mediaType,
     required File file,
+    String? note,
   }) async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) throw AuthException('Not signed in');
@@ -213,8 +288,13 @@ class ClinicalCasesRepository {
       'category': category,
       'media_type': mediaType,
       'storage_path': path,
+      'note': note,
     });
     return path;
+  }
+
+  Future<String> getSignedUrl(String path) async {
+    return _client.storage.from('elogbook-media').createSignedUrl(path, 3600);
   }
 }
 

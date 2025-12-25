@@ -14,6 +14,20 @@ final clinicalCaseDetailProvider = FutureProvider.family
   return repo.getCase(id);
 });
 
+final caseFollowupsProvider =
+    FutureProvider.family.autoDispose<List<CaseFollowup>, String>(
+        (ref, caseId) async {
+  final repo = ref.watch(clinicalCasesRepositoryProvider);
+  return repo.listFollowups(caseId);
+});
+
+final caseMediaProvider =
+    FutureProvider.family.autoDispose<List<CaseMediaItem>, String>(
+        (ref, caseId) async {
+  final repo = ref.watch(clinicalCasesRepositoryProvider);
+  return repo.listMedia(caseId);
+});
+
 class ClinicalCaseMutation extends StateNotifier<AsyncValue<void>> {
   ClinicalCaseMutation(this._repo) : super(const AsyncValue.data(null));
   final ClinicalCasesRepository _repo;
@@ -21,7 +35,7 @@ class ClinicalCaseMutation extends StateNotifier<AsyncValue<void>> {
   Future<String> create(Map<String, dynamic> data) async {
     state = const AsyncValue.loading();
     try {
-      final id = await _repo.createCase(data);
+      final id = await _repo.createCaseDraft(data);
       state = const AsyncValue.data(null);
       return id;
     } catch (e, st) {
@@ -33,7 +47,7 @@ class ClinicalCaseMutation extends StateNotifier<AsyncValue<void>> {
   Future<void> update(String id, Map<String, dynamic> data) async {
     state = const AsyncValue.loading();
     try {
-      await _repo.updateCase(id, data);
+      await _repo.updateCaseDraft(id, data);
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -45,6 +59,17 @@ class ClinicalCaseMutation extends StateNotifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
     try {
       await _repo.addFollowup(caseId, data);
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
+  }
+
+  Future<void> updateFollowup(String followupId, Map<String, dynamic> data) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repo.updateFollowup(followupId, data);
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
