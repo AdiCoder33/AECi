@@ -108,11 +108,17 @@ class ProfileController extends StateNotifier<ProfileState> {
     try {
       await _repository.upsertMyProfile(profile);
       state = state.copyWith(profile: profile);
-    } on AuthException catch (error) {
-      state = state.copyWith(errorMessage: error.message);
-    } catch (_) {
+    } on PostgrestException catch (error) {
       state = state.copyWith(
-        errorMessage: 'Unable to save profile. Please try again.',
+        errorMessage: 'Database error: ${error.message}. ${error.details ?? ""}',
+      );
+    } on AuthException catch (error) {
+      state = state.copyWith(errorMessage: 'Auth error: ${error.message}');
+    } catch (error, stackTrace) {
+      print('Profile save error: $error');
+      print('Stack trace: $stackTrace');
+      state = state.copyWith(
+        errorMessage: 'Unable to save profile: ${error.toString()}',
       );
     } finally {
       state = state.copyWith(isLoading: false, initialized: true);

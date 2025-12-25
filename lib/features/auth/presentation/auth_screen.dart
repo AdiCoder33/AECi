@@ -119,7 +119,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                               primaryLabel: isCreatingAccount
                                   ? 'Create account'
                                   : 'Continue with email',
-                              onSubmit: () {
+                              onSubmit: () async {
                                 final email = emailController.text.trim();
                                 final password = passwordController.text;
                                 if (email.isEmpty || password.isEmpty) {
@@ -136,10 +136,22 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                   authControllerProvider.notifier,
                                 );
                                 if (isCreatingAccount) {
-                                  notifier.signUpWithEmailPassword(
+                                  await notifier.signUpWithEmailPassword(
                                     email: email,
                                     password: password,
                                   );
+                                  // After sign-up, check if we need to switch to sign-in mode
+                                  final authState = ref.read(authControllerProvider);
+                                  if (authState.session == null && 
+                                      authState.errorMessage != null &&
+                                      authState.errorMessage!.contains('created')) {
+                                    // Switch back to sign-in mode for email confirmation flow
+                                    if (mounted) {
+                                      setState(() {
+                                        isCreatingAccount = false;
+                                      });
+                                    }
+                                  }
                                 } else {
                                   notifier.signInWithEmailPassword(
                                     email: email,

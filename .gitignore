@@ -46,3 +46,11 @@ app.*.map.json
 
 # Local environment files (do not commit secrets)
 .env.local
+
+# Android signing keys and keystores (NEVER COMMIT THESE)
+android/key.properties
+android/app/upload-keystore.jks
+android/app/*.jks
+android/app/*.keystore
+*.jks
+*.keystore

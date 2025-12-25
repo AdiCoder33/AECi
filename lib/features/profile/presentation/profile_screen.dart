@@ -32,7 +32,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   DateTime? _dob;
   String _designation = profileDesignations.first;
   String _centre = profileCentres.first;
-  String _gender = 'Male';
+  String _gender = 'male';
 
   @override
   void initState() {
@@ -78,8 +78,34 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         title: const Text('Profile'),
         actions: [
           TextButton(
-            onPressed: () =>
-                ref.read(authControllerProvider.notifier).signOut(),
+            onPressed: () async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Logout'),
+                  content: const Text('Are you sure you want to logout?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text(
+                        'Logout',
+                        style: TextStyle(color: Colors.redAccent),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed == true && context.mounted) {
+                await ref.read(authControllerProvider.notifier).signOut();
+                if (context.mounted) {
+                  context.go('/auth');
+                }
+              }
+            },
             child: const Text(
               'Logout',
               style: TextStyle(color: Colors.redAccent),
@@ -324,9 +350,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 DropdownButtonFormField<String>(
                                   value: _gender,
                                   items: const [
-                                    DropdownMenuItem(value: 'Male', child: Text('Male')),
-                                    DropdownMenuItem(value: 'Female', child: Text('Female')),
-                                    DropdownMenuItem(value: 'Other', child: Text('Other')),
+                                    DropdownMenuItem(value: 'male', child: Text('Male')),
+                                    DropdownMenuItem(value: 'female', child: Text('Female')),
+                                    DropdownMenuItem(value: 'other', child: Text('Other')),
                                   ],
                                   onChanged: (v) => setState(() => _gender = v!),
                                   decoration: const InputDecoration(
@@ -467,7 +493,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _dob = profile.dob;
     _designation = profile.designation;
     _centre = profile.centre;
-    _gender = profile.gender ?? 'Male';
+    _gender = profile.gender ?? 'male';
   }
 
   void _save(String userId) async {
