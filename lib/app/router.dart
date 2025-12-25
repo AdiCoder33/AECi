@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/widgets/loading_screen.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/data/auth_repository.dart';
 import '../features/auth/presentation/auth_screen.dart';
@@ -52,12 +53,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       final onCreateProfile = state.matchedLocation == '/profile/create';
       final onProfileView = state.matchedLocation == '/profile';
       final hasProfile = profileState.profile != null;
+      final onLoadingRoute = state.matchedLocation == '/loading';
 
-      if (!authState.initialized) {
-        return null;
-      }
-
-      if (loggedIn && !profileState.initialized) {
+      if (!authState.initialized || (loggedIn && !profileState.initialized)) {
+        if (!onLoadingRoute) return '/loading';
         return null;
       }
 
@@ -85,6 +84,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/loading',
+        name: 'loading',
+        builder: (context, state) => const LoadingScreen(),
+      ),
       GoRoute(
         path: '/auth',
         name: 'auth',
@@ -485,11 +489,29 @@ class _AppDrawer extends StatelessWidget {
               title: const Text('Sign out', style: TextStyle(color: Color(0xFFEF4444))),
               onTap: () async {
                 Navigator.pop(context);
-                if (onSignOut != null) {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Logout'),
+                    content: const Text('Are you sure you want to logout?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text(
+                          'Logout',
+                          style: TextStyle(color: Color(0xFFEF4444)),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true && onSignOut != null) {
                   await onSignOut!();
-                  if (context.mounted) {
-                    context.go('/auth');
-                  }
+                  // Router will automatically redirect to /auth when session is null
                 }
               },
             ),

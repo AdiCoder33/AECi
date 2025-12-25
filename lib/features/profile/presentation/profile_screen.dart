@@ -25,10 +25,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   DateTime? _dateOfJoining;
   String _designation = profileDesignations.first;
   String _centre = profileCentres.first;
-  String _gender = profileGenders.first;
-  List<String> _degrees = [];
-  bool _editing = false;
-  bool _initialized = false;
+  String _gender = 'male';
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController();
+    _ageController = TextEditingController();
+    _employeeIdController = TextEditingController();
+    _phoneController = TextEditingController();
+    _emailController = TextEditingController();
+  }
 
   @override
   void dispose() {
@@ -58,19 +65,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         title: const Text('Profile'),
         actions: [
           TextButton(
-            onPressed: profile == null
-                ? null
-                : () {
-                    setState(() {
-                      if (_editing) {
-                        _loadFromProfile(profile);
-                        _editing = false;
-                      } else {
-                        _editing = true;
-                      }
-                    });
-                  },
-            child: Text(_editing ? 'Cancel' : 'Edit'),
+            onPressed: () async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Logout'),
+                  content: const Text('Are you sure you want to logout?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text(
+                        'Logout',
+                        style: TextStyle(color: Colors.redAccent),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed == true && context.mounted) {
+                await ref.read(authControllerProvider.notifier).signOut();
+                if (context.mounted) {
+                  context.go('/auth');
+                }
+              }
+            },
+            child: const Text(
+              'Logout',
+              style: TextStyle(color: Colors.redAccent),
+            ),
           ),
         ],
       ),
@@ -179,6 +205,182 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           value: g,
                           child: Text(g[0].toUpperCase() + g.substring(1)),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    if (profileState.errorMessage != null) ...[
+                      _ErrorBanner(message: profileState.errorMessage!),
+                      const SizedBox(height: 12),
+                    ],
+                    _editMode
+                        ? Form(
+                            key: _formKey,
+                            child: Column(
+                              children: [
+                                _FormField(
+                                  label: 'Name',
+                                  controller: _nameController,
+                                  validator: _requiredValidator,
+                                ),
+                                _FormField(
+                                  label: 'Age',
+                                  controller: _ageController,
+                                  keyboardType: TextInputType.number,
+                                  validator: (value) {
+                                    final v = value?.trim() ?? '';
+                                    if (v.isEmpty) return 'Required';
+                                    final age = int.tryParse(v);
+                                    if (age == null || age < 18 || age > 80) {
+                                      return 'Age must be between 18-80';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                DropdownButtonFormField<String>(
+                                  initialValue: _designation,
+                                  items: profileDesignations
+                                      .map(
+                                        (d) => DropdownMenuItem(
+                                          value: d,
+                                          child: Text(d),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (v) =>
+                                      setState(() => _designation = v!),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Designation',
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                DropdownButtonFormField<String>(
+                                  value: _gender,
+                                  items: const [
+                                    DropdownMenuItem(value: 'male', child: Text('Male')),
+                                    DropdownMenuItem(value: 'female', child: Text('Female')),
+                                    DropdownMenuItem(value: 'other', child: Text('Other')),
+                                  ],
+                                  onChanged: (v) => setState(() => _gender = v!),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Gender',
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                DropdownButtonFormField<String>(
+                                  initialValue: _centre,
+                                  items: profileCentres
+                                      .map(
+                                        (d) => DropdownMenuItem(
+                                          value: d,
+                                          child: Text(d),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (v) =>
+                                      setState(() => _centre = v!),
+                                  decoration: const InputDecoration(
+                                    labelText: 'Centre',
+                                  ),
+                                ),
+                                _FormField(
+                                  label: 'Employee ID',
+                                  controller: _employeeIdController,
+                                  validator: _requiredValidator,
+                                ),
+                                _FormField(
+                                  label: 'Phone Number',
+                                  controller: _phoneController,
+                                  keyboardType: TextInputType.phone,
+                                  validator: (value) {
+                                    final v = value?.trim() ?? '';
+                                    if (v.isEmpty) return 'Required';
+                                    final numeric = RegExp(r'^[0-9]{10}$');
+                                    if (!numeric.hasMatch(v)) {
+                                      return 'Enter a valid 10 digit number';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                _FormField(
+                                  label: 'Email',
+                                  controller: _emailController,
+                                  keyboardType: TextInputType.emailAddress,
+                                  validator: (value) {
+                                    final v = value?.trim() ?? '';
+                                    if (v.isEmpty) return 'Required';
+                                    if (!v.contains('@')) {
+                                      return 'Enter a valid email';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 10),
+                                _DobField(
+                                  dob: _dob,
+                                  onPick: () async {
+                                    final now = DateTime.now();
+                                    final picked = await showDatePicker(
+                                      context: context,
+                                      initialDate: _dob ?? DateTime(1990, 1, 1),
+                                      firstDate: DateTime(
+                                        now.year - 80,
+                                        now.month,
+                                        now.day,
+                                      ),
+                                      lastDate: DateTime(
+                                        now.year - 18,
+                                        now.month,
+                                        now.day,
+                                      ),
+                                    );
+                                    if (picked != null) {
+                                      setState(() {
+                                        _dob = picked;
+                                      });
+                                    }
+                                  },
+                                ),
+                                const SizedBox(height: 24),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 52,
+                                  child: ElevatedButton(
+                                    onPressed: profileState.isLoading
+                                        ? null
+                                        : () => _save(profile.id),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF0B5FFF),
+                                      foregroundColor: Colors.white,
+                                      elevation: 2,
+                                      shadowColor: const Color(0xFF0B5FFF).withOpacity(0.3),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: profileState.isLoading
+                                        ? const SizedBox(
+                                            height: 20,
+                                            width: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.5,
+                                              color: Colors.white,
+                                            ),
+                                          )
+                                        : const Text(
+                                            'Save Changes',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : _ProfileView(profile: profile),
+                  ],
                       )
                       .toList(),
                   decoration: const InputDecoration(labelText: 'Gender'),
