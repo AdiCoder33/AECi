@@ -138,185 +138,6 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                         shadowColor: Colors.black12,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
-          ],
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 640),
-              child: Card(
-                color: const Color(0xFF0F1624),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 8,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Aravind E-Logbook',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Complete your professional profile to proceed.',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        if (profileState.errorMessage != null) ...[
-                          _ErrorBanner(message: profileState.errorMessage!),
-                          const SizedBox(height: 12),
-                        ],
-                        _FormField(
-                          label: 'Name',
-                          controller: _nameController,
-                          validator: _requiredValidator,
-                        ),
-                        _FormField(
-                          label: 'Age',
-                          controller: _ageController,
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            final v = value?.trim() ?? '';
-                            if (v.isEmpty) return 'Required';
-                            final age = int.tryParse(v);
-                            if (age == null || age < 18 || age > 80) {
-                              return 'Age must be between 18-80';
-                            }
-                            return null;
-                          },
-                        ),
-                        DropdownButtonFormField<String>(
-                          value: _gender,
-                          items: profileGenders
-                              .map(
-                                (g) => DropdownMenuItem(
-                                  value: g,
-                                  child: Text(g[0].toUpperCase() + g.substring(1)),
-                                ),
-                              )
-                              .toList(),
-                          decoration: const InputDecoration(
-                            labelText: 'Gender',
-                          ),
-                          onChanged: isSaving
-                              ? null
-                              : (value) => setState(() => _gender = value!),
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'Degrees',
-                          style: TextStyle(fontSize: 12, color: Colors.white70),
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: profileDegrees.map((degree) {
-                            final selected = _degrees.contains(degree);
-                            return FilterChip(
-                              selected: selected,
-                              label: Text(degree),
-                              onSelected: isSaving
-                                  ? null
-                                  : (value) {
-                                      setState(() {
-                                        if (value) {
-                                          _degrees = [..._degrees, degree];
-                                        } else {
-                                          _degrees =
-                                              _degrees.where((d) => d != degree).toList();
-                                        }
-                                      });
-                                    },
-                            );
-                          }).toList(),
-                        ),
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<String>(
-                          value: _designation,
-                          items: profileDesignations
-                              .map(
-                                (d) =>
-                                    DropdownMenuItem(value: d, child: Text(d)),
-                              )
-                              .toList(),
-                          decoration: const InputDecoration(
-                            labelText: 'Designation',
-                          ),
-                          onChanged: isSaving
-                              ? null
-                              : (value) => setState(() => _designation = value!),
-                        ),
-                        DropdownButtonFormField<String>(
-                          value: _centre,
-                          items: profileCentres
-                              .map(
-                                (c) =>
-                                    DropdownMenuItem(value: c, child: Text(c)),
-                              )
-                              .toList(),
-                          decoration: const InputDecoration(
-                            labelText: 'Aravind Centre',
-                          ),
-                          onChanged: isSaving
-                              ? null
-                              : (value) => setState(() => _centre = value!),
-                        ),
-                        const SizedBox(height: 12),
-                        const _ReadonlyField(
-                          label: 'Hospital',
-                          value: 'Aravind Eye Hospital',
-                        ),
-                        _FormField(
-                          label: 'Employee ID',
-                          controller: _employeeIdController,
-                          validator: _requiredValidator,
-                        ),
-                        _FormField(
-                          label: 'ID Number',
-                          controller: _idNumberController,
-                          validator: _requiredValidator,
-                        ),
-                        _FormField(
-                          label: 'Phone Number',
-                          controller: _phoneController,
-                          keyboardType: TextInputType.phone,
-                          validator: (value) {
-                            final v = value?.trim() ?? '';
-                            if (v.isEmpty) return 'Required';
-                            final numeric = RegExp(r'^[0-9]{10}$');
-                            if (!numeric.hasMatch(v)) {
-                              return 'Enter a valid 10 digit number';
-                            }
-                            return null;
-                          },
-                        ),
-                        _FormField(
-                          label: 'Name of HOD',
-                          controller: _hodController,
-                          validator: _requiredValidator,
-                        ),
-                        _FormField(
-                          label: 'Email',
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            final v = value?.trim() ?? '';
-                            if (v.isEmpty) return 'Required';
-                            if (!v.contains('@')) return 'Enter a valid email';
-                            return null;
-                          },
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(24),
@@ -400,6 +221,45 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                                           }
                                         },
                                 ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Select Degrees',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF0A2E73),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: profileDegrees.map((degree) {
+                                    final selected = _degrees.contains(degree);
+                                    return FilterChip(
+                                      selected: selected,
+                                      label: Text(degree),
+                                      onSelected: isSaving
+                                          ? null
+                                          : (value) {
+                                              setState(() {
+                                                if (value) {
+                                                  _degrees = [..._degrees, degree];
+                                                } else {
+                                                  _degrees = _degrees.where((d) => d != degree).toList();
+                                                }
+                                              });
+                                            },
+                                      selectedColor: const Color(0xFF0B5FFF).withOpacity(0.2),
+                                      checkmarkColor: const Color(0xFF0B5FFF),
+                                      side: BorderSide(
+                                        color: selected
+                                            ? const Color(0xFF0B5FFF)
+                                            : Colors.grey[300]!,
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
                                 const SizedBox(height: 24),
                                 // Section: Professional Details
                                 _SectionHeader(
@@ -429,6 +289,54 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                                   enabled: !isSaving,
                                   validator: _requiredValidator,
                                 ),
+                                _FormField(
+                                  label: 'ID Number',
+                                  controller: _idNumberController,
+                                  prefixIcon: Icons.credit_card,
+                                  enabled: !isSaving,
+                                  validator: _requiredValidator,
+                                ),
+                                _FormField(
+                                  label: 'Name of HOD',
+                                  controller: _hodController,
+                                  prefixIcon: Icons.supervisor_account,
+                                  enabled: !isSaving,
+                                  validator: _requiredValidator,
+                                ),
+                                _DateField(
+                                  label: 'Date of Joining',
+                                  value: _dateOfJoining,
+                                  onPick: isSaving
+                                      ? null
+                                      : () async {
+                                          final now = DateTime.now();
+                                          final picked = await showDatePicker(
+                                            context: context,
+                                            initialDate: now,
+                                            firstDate: DateTime(now.year - 20),
+                                            lastDate: now,
+                                            builder: (context, child) {
+                                              return Theme(
+                                                data: Theme.of(context).copyWith(
+                                                  colorScheme: const ColorScheme.light(
+                                                    primary: Color(0xFF0B5FFF),
+                                                  ),
+                                                ),
+                                                child: child!,
+                                              );
+                                            },
+                                          );
+                                          if (picked != null) {
+                                            setState(() => _dateOfJoining = picked);
+                                          }
+                                        },
+                                ),
+                                if (_dateOfJoining != null)
+                                  _ReadonlyField(
+                                    label: 'Months into program',
+                                    value: '${_monthsIntoProgram(_dateOfJoining!)} months',
+                                    icon: Icons.timeline,
+                                  ),
                                 const SizedBox(height: 24),
                                 // Section: Contact Information
                                 _SectionHeader(
@@ -513,54 +421,6 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey[600],
-                                  );
-                                  if (picked != null) {
-                                    setState(() {
-                                      _dob = picked;
-                                    });
-                                  }
-                                },
-                        ),
-                        const SizedBox(height: 12),
-                        _DateField(
-                          label: 'Date of Joining',
-                          value: _dateOfJoining,
-                          onPick: isSaving
-                              ? null
-                              : () async {
-                                  final now = DateTime.now();
-                                  final picked = await showDatePicker(
-                                    context: context,
-                                    initialDate: now,
-                                    firstDate: DateTime(now.year - 20),
-                                    lastDate: now,
-                                  );
-                                  if (picked != null) {
-                                    setState(() {
-                                      _dateOfJoining = picked;
-                                    });
-                                  }
-                                },
-                        ),
-                        const SizedBox(height: 12),
-                        _ReadonlyField(
-                          label: 'Months into program',
-                          value: _dateOfJoining == null
-                              ? 'Select date of joining'
-                              : '${_monthsIntoProgram(_dateOfJoining!)} months',
-                        ),
-                        const SizedBox(height: 18),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: isSaving ? null : _saveProfile,
-                            child: isSaving
-                                ? const SizedBox(
-                                    height: 18,
-                                    width: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.black,
                                     ),
                                   ),
                                 ),
@@ -1000,21 +860,57 @@ class _DateField extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = value == null
         ? 'Select date'
-        : '${value!.year}-${value!.month.toString().padLeft(2, '0')}-${value!.day.toString().padLeft(2, '0')}';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: Colors.white70),
+        : '${value!.day.toString().padLeft(2, '0')}/${value!.month.toString().padLeft(2, '0')}/${value!.year}';
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: InkWell(
+        onTap: onPick,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.calendar_month_outlined,
+                size: 20,
+                color: value == null ? Colors.grey[600] : const Color(0xFF0B5FFF),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      text,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: value == null ? Colors.grey[600] : Colors.black87,
+                        fontWeight: value == null ? FontWeight.normal : FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_drop_down, color: Colors.grey[600]),
+            ],
+          ),
         ),
-        const SizedBox(height: 6),
-        OutlinedButton.icon(
-          onPressed: onPick,
-          icon: const Icon(Icons.calendar_today, size: 18),
-          label: Text(text),
-        ),
-      ],
+      ),
     );
   }
 }
