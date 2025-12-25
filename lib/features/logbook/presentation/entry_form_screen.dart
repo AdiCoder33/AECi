@@ -137,7 +137,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               DropdownButtonFormField<String>(
-                value: _moduleType,
+                initialValue: _moduleType,
                 decoration: const InputDecoration(labelText: 'Module'),
                 items: moduleTypes
                     .map(

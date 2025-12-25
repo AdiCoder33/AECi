@@ -79,7 +79,7 @@ class _TeachingListScreenState extends ConsumerState<TeachingListScreen> {
                     itemCount: list.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (context, index) {
-                      final item = list[index] as TeachingItem;
+                      final item = list[index];
                       return ListTile(
                         tileColor: Theme.of(context).colorScheme.surface,
                         shape: RoundedRectangleBorder(

@@ -152,7 +152,7 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
           children: [
             const Text('Submit for assessment'),
             DropdownButtonFormField<String>(
-              value: _selectedConsultant,
+              initialValue: _selectedConsultant,
               items: const [],
               onChanged: (v) => setState(() => _selectedConsultant = v),
               decoration: const InputDecoration(labelText: 'Consultant'),

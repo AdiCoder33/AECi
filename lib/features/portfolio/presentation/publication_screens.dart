@@ -196,7 +196,7 @@ class _PublicationFormScreenState extends ConsumerState<PublicationFormScreen> {
           child: Column(
             children: [
               DropdownButtonFormField<String>(
-                value: _type,
+                initialValue: _type,
                 decoration: const InputDecoration(labelText: 'Type'),
                 items: const [
                   DropdownMenuItem(

@@ -522,7 +522,7 @@ class _QualitySection extends ConsumerWidget {
           if (entry.qualityIssues.isNotEmpty) ...[
             const SizedBox(height: 8),
             const Text('Issues:', style: TextStyle(color: Colors.orangeAccent)),
-            ...entry.qualityIssues.map((i) => Text('- $i')).toList(),
+            ...entry.qualityIssues.map((i) => Text('- $i')),
           ] else
             const Text('No issues detected'),
         ],

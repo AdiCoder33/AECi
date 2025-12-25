@@ -6,7 +6,6 @@ import '../../logbook/data/entries_repository.dart';
 import '../../logbook/domain/elog_entry.dart';
 import '../../logbook/presentation/widgets/entry_card.dart';
 import '../../clinical_cases/data/clinical_cases_repository.dart';
-import '../../clinical_cases/data/clinical_cases_repository.dart' show ClinicalCase;
 
 class GlobalSearchScreen extends ConsumerStatefulWidget {
   const GlobalSearchScreen({super.key});

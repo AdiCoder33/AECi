@@ -216,7 +216,7 @@ class _ResearchFormScreenState extends ConsumerState<ResearchFormScreen> {
               ValueListenableBuilder(
                 valueListenable: _status,
                 builder: (_, value, __) => DropdownButtonFormField<String>(
-                  value: value,
+                  initialValue: value,
                   decoration: const InputDecoration(labelText: 'Status'),
                   items: const [
                     DropdownMenuItem(value: 'Planned', child: Text('Planned')),

@@ -31,7 +31,7 @@ class _ClinicalCaseFormScreenState extends ConsumerState<ClinicalCaseFormScreen>
   final _chief = TextEditingController();
   final _diagnosis = TextEditingController();
   final _keywords = TextEditingController();
-  DateTime _examDate = DateTime.now();
+  final DateTime _examDate = DateTime.now();
   String _gender = 'male';
   String _durationUnit = 'days';
   int _durationValue = 1;
@@ -67,7 +67,7 @@ class _ClinicalCaseFormScreenState extends ConsumerState<ClinicalCaseFormScreen>
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _gender,
+                      initialValue: _gender,
                       items: const [
                         DropdownMenuItem(value: 'male', child: Text('Male')),
                         DropdownMenuItem(value: 'female', child: Text('Female')),
@@ -105,7 +105,7 @@ class _ClinicalCaseFormScreenState extends ConsumerState<ClinicalCaseFormScreen>
                   const SizedBox(width: 8),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _durationUnit,
+                      initialValue: _durationUnit,
                       items: const [
                         DropdownMenuItem(value: 'days', child: Text('Days')),
                         DropdownMenuItem(value: 'weeks', child: Text('Weeks')),

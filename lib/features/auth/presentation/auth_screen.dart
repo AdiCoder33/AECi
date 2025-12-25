@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:flutter/material.dart';
+import 'dart:math' as math;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../application/auth_controller.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
@@ -34,168 +35,240 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     final state = ref.watch(authControllerProvider);
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFEAF2FF), Color(0xFFF7F9FC)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
+      body: Stack(
+        children: [
+          // Animated circular bars background
+          const _AnimatedCircleBars(),
+          Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      top: -30,
-                      right: -50,
-                      child: Container(
-                        width: 140,
-                        height: 140,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.blue.withOpacity(0.08),
+                constraints: const BoxConstraints(maxWidth: 300),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color.fromARGB(238, 252, 252, 254),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color.fromARGB(255, 91, 138, 247).withOpacity(0.5),
+                        blurRadius: 30,
+                        offset: const Offset(0, 20),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Text(
+                          isCreatingAccount ? 'Register' : 'Login',
+                          style: const TextStyle(
+                            color: Color(0xFFFFA500),
+                            fontSize: 32,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 2,
+                          ),
                         ),
                       ),
-                    ),
-                    Card(
-                      elevation: 10,
-                      shadowColor: Colors.black12,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
+                      const SizedBox(height: 10),
+                      if (state.errorMessage != null) ...[
+                        _ErrorBanner(message: state.errorMessage!),
+                        const SizedBox(height: 12),
+                      ],
+                      _EmailPasswordFields(
+                        emailController: emailController,
+                        passwordController: passwordController,
+                        isLoading: state.isLoading,
+                        primaryLabel: isCreatingAccount ? 'Sign Up' : 'Login',
+                        onSubmit: () {
+                          final email = emailController.text.trim();
+                          final password = passwordController.text;
+                          if (email.isEmpty || password.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please enter both email and password.'),
+                              ),
+                            );
+                            return;
+                          }
+                          final notifier = ref.read(authControllerProvider.notifier);
+                          if (isCreatingAccount) {
+                            notifier.signUpWithEmailPassword(email: email, password: password);
+                          } else {
+                            notifier.signInWithEmailPassword(email: email, password: password);
+                          }
+                        },
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 28,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: const [
-                                CircleAvatar(
-                                  radius: 22,
-                                  backgroundColor: Color(0xFF0B5FFF),
-                                  child: Icon(Icons.book, color: Colors.white),
-                                ),
-                                SizedBox(width: 12),
-                                Text(
-                                  'Aravind E-Logbook',
-                                  style: TextStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
+                      const SizedBox(height: 1),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () {},
+                            child: const Text(
+                              'Forgot your password?',
+                              style: TextStyle(color: Colors.white70, fontSize: 12),
                             ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: const [
-                                Icon(Icons.verified_user, color: Color(0xFF0B5FFF)),
-                                SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    'Sign in securely with your Aravind account',
-                                    style: TextStyle(color: Color(0xFF475569)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 18),
-                            if (state.errorMessage != null) ...[
-                              _ErrorBanner(message: state.errorMessage!),
-                              const SizedBox(height: 12),
-                            ],
-                            _EmailPasswordFields(
-                              emailController: emailController,
-                              passwordController: passwordController,
-                              isLoading: state.isLoading,
-                              primaryLabel: isCreatingAccount
-                                  ? 'Create account'
-                                  : 'Continue with email',
-                              onSubmit: () {
-                                final email = emailController.text.trim();
-                                final password = passwordController.text;
-                                if (email.isEmpty || password.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Please enter both email and password.',
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                final notifier = ref.read(
-                                  authControllerProvider.notifier,
-                                );
-                                if (isCreatingAccount) {
-                                  notifier.signUpWithEmailPassword(
-                                    email: email,
-                                    password: password,
-                                  );
-                                } else {
-                                  notifier.signInWithEmailPassword(
-                                    email: email,
-                                    password: password,
-                                  );
-                                }
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  isCreatingAccount
-                                      ? 'Have an account?'
-                                      : 'Need an account?',
-                                  style: const TextStyle(color: Color(0xFF475569)),
-                                ),
-                                TextButton(
-                                  onPressed: state.isLoading
-                                      ? null
-                                      : () {
-                                          setState(() {
-                                            isCreatingAccount = !isCreatingAccount;
-                                          });
-                                        },
-                                  child: Text(
-                                    isCreatingAccount ? 'Sign in' : 'Create one',
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            const Divider(),
-                            const SizedBox(height: 12),
-                            _GoogleButton(isLoading: state.isLoading),
-                            const SizedBox(height: 20),
-                            Wrap(
-                              spacing: 12,
-                              runSpacing: 8,
-                              children: const [
-                                _FeaturePill(icon: Icons.note_alt, label: 'Log cases fast'),
-                                _FeaturePill(icon: Icons.insights, label: 'Track analytics'),
-                                _FeaturePill(icon: Icons.shield, label: 'Secure by Supabase'),
-                              ],
-                            ),
-                          ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 1),
+                      // Removed duplicate Login button
+                      const SizedBox(height: 1),
+                      Center(
+                        child: Text(
+                          'log in with',
+                          style: TextStyle(color: Colors.white60, fontSize: 13),
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 15),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _SocialIcon(
+                            color: const Color(0xFFdb4437),
+                            icon: Icons.g_mobiledata,
+                            onTap: () => ref.read(authControllerProvider.notifier).signInWithGoogle(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 25),
+                      Center(
+                        child: GestureDetector(
+                          onTap: state.isLoading
+                              ? null
+                              : () {
+                                  setState(() {
+                                    isCreatingAccount = !isCreatingAccount;
+                                  });
+                                },
+                          child: Text(
+                            isCreatingAccount ? 'Already have an account? Sign In' : "Don't have an account? Sign Up",
+                            style: const TextStyle(
+                              color: Color(0xFFFFA500),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// Animated circular bars background widget
+class _AnimatedCircleBars extends StatefulWidget {
+  const _AnimatedCircleBars();
+
+  @override
+  State<_AnimatedCircleBars> createState() => _AnimatedCircleBarsState();
+}
+
+class _AnimatedCircleBarsState extends State<_AnimatedCircleBars> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  static const int numBars = 50;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(seconds: 20))..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return CustomPaint(
+            painter: _CircleBarsPainter(_controller.value),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CircleBarsPainter extends CustomPainter {
+  final double progress;
+  static const int numBars = 50;
+  _CircleBarsPainter(this.progress);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.shortestSide / 2.2;
+    for (int i = 0; i < numBars; i++) {
+      final angle = (2 * math.pi * i / numBars) + (progress * 2 * math.pi);
+      final barLength = 35.0;
+      final barWidth = 8.0;
+      final isActive = i == (progress * numBars).floor() % numBars;
+      final paint = Paint()
+        ..style = PaintingStyle.fill
+        ..strokeCap = StrokeCap.round;
+      if (isActive) {
+        paint.shader = const LinearGradient(colors: [Color(0xFFFFA500), Color(0xFFFF8C00)])
+            .createShader(Rect.fromLTWH(0, 0, barWidth, barLength));
+      } else {
+        paint.color = const Color(0xFF4a5f7f);
+      }
+      final barCenter = Offset(
+        center.dx + radius * math.cos(angle),
+        center.dy + radius * math.sin(angle),
+      );
+      canvas.save();
+      canvas.translate(barCenter.dx, barCenter.dy);
+      canvas.rotate(angle);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(center: Offset(0, -barLength / 2), width: barWidth, height: barLength),
+          const Radius.circular(4),
         ),
+        paint,
+      );
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CircleBarsPainter oldDelegate) => oldDelegate.progress != progress;
+}
+
+class _SocialIcon extends StatelessWidget {
+  final Color color;
+  final IconData icon;
+  final VoidCallback? onTap;
+  const _SocialIcon({required this.color, required this.icon, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Colors.white, size: 22),
       ),
     );
   }

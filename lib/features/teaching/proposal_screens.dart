@@ -79,7 +79,7 @@ class _ProposalReviewScreenState extends ConsumerState<ProposalReviewScreen> {
                 maxLines: 3,
               ),
               DropdownButtonFormField<String>(
-                value: _scope,
+                initialValue: _scope,
                 items: const [
                   DropdownMenuItem(value: 'private', child: Text('Private')),
                   DropdownMenuItem(value: 'centre', child: Text('Centre')),

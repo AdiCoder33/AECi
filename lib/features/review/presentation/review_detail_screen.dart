@@ -42,7 +42,7 @@ class _ReviewDetailScreenState extends ConsumerState<ReviewDetailScreen> {
               Text('Status: ${entry.status}'),
               const SizedBox(height: 20),
               DropdownButtonFormField<String>(
-                value: _decision,
+                initialValue: _decision,
                 items: const [
                   DropdownMenuItem(
                     value: 'approved',

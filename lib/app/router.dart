@@ -98,11 +98,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           final authNotifier = ref.read(authControllerProvider.notifier);
           return _MainShell(
             location: state.matchedLocation,
-            child: child,
             name: profile?.name,
             designation: profile?.designation,
             centre: profile?.centre,
             onSignOut: authNotifier.signOut,
+            child: child,
           );
         },
         routes: [
