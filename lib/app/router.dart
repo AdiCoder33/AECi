@@ -13,6 +13,7 @@ import '../features/home/presentation/home_screen.dart';
 import '../features/profile/application/profile_controller.dart';
 import '../features/profile/presentation/create_profile_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
+import '../features/profile/presentation/profile_media_screen.dart';
 import '../features/logbook/presentation/logbook_screen.dart';
 import '../features/logbook/presentation/entry_detail_screen.dart';
 import '../features/logbook/presentation/entry_form_screen.dart';
@@ -156,6 +157,19 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const ProfileScreen(),
           ),
           GoRoute(
+            path: '/profile/edit',
+            name: 'editProfile',
+            builder: (context, state) {
+              final profile = ref.watch(profileControllerProvider).profile;
+              return CreateProfileScreen(profile: profile);
+            },
+          ),
+          GoRoute(
+            path: '/profile/media',
+            name: 'profileMedia',
+            builder: (context, state) => const ProfileMediaScreen(),
+          ),
+          GoRoute(
             path: '/research',
             name: 'researchList',
             builder: (context, state) => const ResearchListScreen(),
@@ -206,9 +220,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/search',
             name: 'search',
-            builder: (context, state) => GlobalSearchScreen(
-              initialQuery: state.extra as String?,
-            ),
+            builder: (context, state) =>
+                GlobalSearchScreen(initialQuery: state.extra as String?),
           ),
           GoRoute(
             path: '/review-queue',
@@ -308,9 +321,8 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: ':id/followup',
                 name: 'caseFollowupNew',
-                builder: (context, state) => CaseFollowupFormScreen(
-                  caseId: state.pathParameters['id']!,
-                ),
+                builder: (context, state) =>
+                    CaseFollowupFormScreen(caseId: state.pathParameters['id']!),
               ),
               GoRoute(
                 path: ':id/followup/:followupId',
@@ -323,9 +335,8 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: ':id/media',
                 name: 'caseMedia',
-                builder: (context, state) => CaseMediaScreen(
-                  caseId: state.pathParameters['id']!,
-                ),
+                builder: (context, state) =>
+                    CaseMediaScreen(caseId: state.pathParameters['id']!),
               ),
             ],
           ),
@@ -422,11 +433,31 @@ class _MainShell extends StatelessWidget {
         unselectedFontSize: 11,
         elevation: 8,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.book_outlined), activeIcon: Icon(Icons.book), label: 'Logbook'),
-          BottomNavigationBarItem(icon: Icon(Icons.medical_services_outlined), activeIcon: Icon(Icons.medical_services), label: 'Cases'),
-          BottomNavigationBarItem(icon: Icon(Icons.school_outlined), activeIcon: Icon(Icons.school), label: 'Teaching'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.book_outlined),
+            activeIcon: Icon(Icons.book),
+            label: 'Logbook',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.medical_services_outlined),
+            activeIcon: Icon(Icons.medical_services),
+            label: 'Cases',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.school_outlined),
+            activeIcon: Icon(Icons.school),
+            label: 'Teaching',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
         ],
       ),
     );
@@ -464,7 +495,10 @@ class _AppDrawer extends StatelessWidget {
               ),
               accountName: Text(name ?? 'Aravind Trainee'),
               accountEmail: Text(
-                [designation, centre].where((e) => (e ?? '').isNotEmpty).join(' | '),
+                [
+                  designation,
+                  centre,
+                ].where((e) => (e ?? '').isNotEmpty).join(' | '),
               ),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
@@ -486,7 +520,10 @@ class _AppDrawer extends StatelessWidget {
             const Divider(),
             ListTile(
               leading: const Icon(Icons.logout, color: Color(0xFFEF4444)),
-              title: const Text('Sign out', style: TextStyle(color: Color(0xFFEF4444))),
+              title: const Text(
+                'Sign out',
+                style: TextStyle(color: Color(0xFFEF4444)),
+              ),
               onTap: () async {
                 Navigator.pop(context);
                 final confirmed = await showDialog<bool>(
@@ -521,7 +558,12 @@ class _AppDrawer extends StatelessWidget {
     );
   }
 
-  Widget _item(BuildContext context, IconData icon, String label, String route) {
+  Widget _item(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String route,
+  ) {
     final selected = current.startsWith(route);
     return ListTile(
       leading: Icon(icon, color: selected ? const Color(0xFF0B5FFF) : null),

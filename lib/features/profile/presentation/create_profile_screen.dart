@@ -1,3 +1,4 @@
+import '../data/profile_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,7 +9,8 @@ import '../data/profile_constants.dart';
 import '../data/profile_model.dart';
 
 class CreateProfileScreen extends ConsumerStatefulWidget {
-  const CreateProfileScreen({super.key});
+  final Profile? profile;
+  const CreateProfileScreen({super.key, this.profile});
 
   @override
   ConsumerState<CreateProfileScreen> createState() =>
@@ -35,7 +37,24 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
   void initState() {
     super.initState();
     final auth = ref.read(authControllerProvider);
-    _emailController.text = auth.session?.user.email ?? '';
+    final profile = widget.profile;
+    if (profile != null) {
+      _nameController.text = profile.name;
+      _ageController.text = profile.age.toString();
+      _employeeIdController.text = profile.employeeId;
+      _phoneController.text = profile.phone;
+      _emailController.text = profile.email;
+      _idNumberController.text = profile.idNumber ?? '';
+      _hodController.text = profile.hodName ?? '';
+      _dob = profile.dob;
+      _dateOfJoining = profile.dateOfJoining;
+      _designation = profile.designation;
+      _centre = profile.centre;
+      _gender = profile.gender ?? profileGenders.first;
+      _degrees = List<String>.from(profile.degrees);
+    } else {
+      _emailController.text = auth.session?.user.email ?? '';
+    }
   }
 
   @override
@@ -84,12 +103,17 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                               height: 80,
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFF0B5FFF), Color(0xFF0A2E73)],
+                                  colors: [
+                                    Color(0xFF0B5FFF),
+                                    Color(0xFF0A2E73),
+                                  ],
                                 ),
                                 shape: BoxShape.circle,
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFF0B5FFF).withOpacity(0.3),
+                                    color: const Color(
+                                      0xFF0B5FFF,
+                                    ).withOpacity(0.3),
                                     blurRadius: 20,
                                     offset: const Offset(0, 8),
                                   ),
@@ -122,7 +146,9 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                             TextButton.icon(
                               onPressed: isSaving
                                   ? null
-                                  : () => ref.read(authControllerProvider.notifier).signOut(),
+                                  : () => ref
+                                        .read(authControllerProvider.notifier)
+                                        .signOut(),
                               icon: const Icon(Icons.logout, size: 16),
                               label: const Text('Sign Out'),
                               style: TextButton.styleFrom(
@@ -153,7 +179,9 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                                 ),
                                 const SizedBox(height: 16),
                                 if (profileState.errorMessage != null) ...[
-                                  _ErrorBanner(message: profileState.errorMessage!),
+                                  _ErrorBanner(
+                                    message: profileState.errorMessage!,
+                                  ),
                                   const SizedBox(height: 16),
                                 ],
                                 _FormField(
@@ -176,7 +204,9 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                                           final v = value?.trim() ?? '';
                                           if (v.isEmpty) return 'Required';
                                           final age = int.tryParse(v);
-                                          if (age == null || age < 18 || age > 80) {
+                                          if (age == null ||
+                                              age < 18 ||
+                                              age > 80) {
                                             return 'Age must be 18-80';
                                           }
                                           return null;
@@ -188,7 +218,8 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                                       child: _GenderDropdown(
                                         value: _gender,
                                         enabled: !isSaving,
-                                        onChanged: (value) => setState(() => _gender = value!),
+                                        onChanged: (value) =>
+                                            setState(() => _gender = value!),
                                       ),
                                     ),
                                   ],
@@ -202,15 +233,20 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                                           final now = DateTime.now();
                                           final picked = await showDatePicker(
                                             context: context,
-                                            initialDate: DateTime(now.year - 25),
+                                            initialDate: DateTime(
+                                              now.year - 25,
+                                            ),
                                             firstDate: DateTime(now.year - 80),
                                             lastDate: DateTime(now.year - 18),
                                             builder: (context, child) {
                                               return Theme(
                                                 data: Theme.of(context).copyWith(
-                                                  colorScheme: const ColorScheme.light(
-                                                    primary: Color(0xFF0B5FFF),
-                                                  ),
+                                                  colorScheme:
+                                                      const ColorScheme.light(
+                                                        primary: Color(
+                                                          0xFF0B5FFF,
+                                                        ),
+                                                      ),
                                                 ),
                                                 child: child!,
                                               );
@@ -244,13 +280,20 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                                           : (value) {
                                               setState(() {
                                                 if (value) {
-                                                  _degrees = [..._degrees, degree];
+                                                  _degrees = [
+                                                    ..._degrees,
+                                                    degree,
+                                                  ];
                                                 } else {
-                                                  _degrees = _degrees.where((d) => d != degree).toList();
+                                                  _degrees = _degrees
+                                                      .where((d) => d != degree)
+                                                      .toList();
                                                 }
                                               });
                                             },
-                                      selectedColor: const Color(0xFF0B5FFF).withOpacity(0.2),
+                                      selectedColor: const Color(
+                                        0xFF0B5FFF,
+                                      ).withOpacity(0.2),
                                       checkmarkColor: const Color(0xFF0B5FFF),
                                       side: BorderSide(
                                         color: selected
@@ -270,12 +313,14 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                                 _DesignationDropdown(
                                   value: _designation,
                                   enabled: !isSaving,
-                                  onChanged: (value) => setState(() => _designation = value!),
+                                  onChanged: (value) =>
+                                      setState(() => _designation = value!),
                                 ),
                                 _CentreDropdown(
                                   value: _centre,
                                   enabled: !isSaving,
-                                  onChanged: (value) => setState(() => _centre = value!),
+                                  onChanged: (value) =>
+                                      setState(() => _centre = value!),
                                 ),
                                 _ReadonlyField(
                                   label: 'Hospital',
@@ -318,23 +363,29 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                                             builder: (context, child) {
                                               return Theme(
                                                 data: Theme.of(context).copyWith(
-                                                  colorScheme: const ColorScheme.light(
-                                                    primary: Color(0xFF0B5FFF),
-                                                  ),
+                                                  colorScheme:
+                                                      const ColorScheme.light(
+                                                        primary: Color(
+                                                          0xFF0B5FFF,
+                                                        ),
+                                                      ),
                                                 ),
                                                 child: child!,
                                               );
                                             },
                                           );
                                           if (picked != null) {
-                                            setState(() => _dateOfJoining = picked);
+                                            setState(
+                                              () => _dateOfJoining = picked,
+                                            );
                                           }
                                         },
                                 ),
                                 if (_dateOfJoining != null)
                                   _ReadonlyField(
                                     label: 'Months into program',
-                                    value: '${_monthsIntoProgram(_dateOfJoining!)} months',
+                                    value:
+                                        '${_monthsIntoProgram(_dateOfJoining!)} months',
                                     icon: Icons.timeline,
                                   ),
                                 const SizedBox(height: 24),
@@ -369,7 +420,8 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                                   validator: (value) {
                                     final v = value?.trim() ?? '';
                                     if (v.isEmpty) return 'Required';
-                                    if (!v.contains('@')) return 'Enter valid email';
+                                    if (!v.contains('@'))
+                                      return 'Enter valid email';
                                     return null;
                                   },
                                 ),
@@ -384,7 +436,9 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                                       backgroundColor: const Color(0xFF0B5FFF),
                                       foregroundColor: Colors.white,
                                       elevation: 2,
-                                      shadowColor: const Color(0xFF0B5FFF).withOpacity(0.3),
+                                      shadowColor: const Color(
+                                        0xFF0B5FFF,
+                                      ).withOpacity(0.3),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
@@ -399,9 +453,13 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                                             ),
                                           )
                                         : const Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
                                             children: [
-                                              Icon(Icons.check_circle_outline, size: 20),
+                                              Icon(
+                                                Icons.check_circle_outline,
+                                                size: 20,
+                                              ),
                                               SizedBox(width: 8),
                                               Text(
                                                 'Complete Profile',
@@ -579,7 +637,10 @@ class _FormField extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
         ),
       ),
     );
@@ -636,24 +697,26 @@ class _DesignationDropdown extends StatelessWidget {
       child: DropdownButtonFormField<String>(
         value: value,
         items: profileDesignations
-            .map((d) => DropdownMenuItem(
-                  value: d,
-                  child: Row(
-                    children: [
-                      Icon(
-                        d == 'Consultant'
-                            ? Icons.medical_services
-                            : d == 'Resident'
-                                ? Icons.school
-                                : Icons.badge,
-                        size: 18,
-                        color: const Color(0xFF0B5FFF),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(d),
-                    ],
-                  ),
-                ))
+            .map(
+              (d) => DropdownMenuItem(
+                value: d,
+                child: Row(
+                  children: [
+                    Icon(
+                      d == 'Consultant'
+                          ? Icons.medical_services
+                          : d == 'Resident'
+                          ? Icons.school
+                          : Icons.badge,
+                      size: 18,
+                      color: const Color(0xFF0B5FFF),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(d),
+                  ],
+                ),
+              ),
+            )
             .toList(),
         onChanged: enabled ? onChanged : null,
         decoration: InputDecoration(
@@ -673,7 +736,10 @@ class _DesignationDropdown extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Color(0xFF0B5FFF), width: 2),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
         ),
       ),
     );
@@ -698,10 +764,7 @@ class _CentreDropdown extends StatelessWidget {
       child: DropdownButtonFormField<String>(
         value: value,
         items: profileCentres
-            .map((c) => DropdownMenuItem(
-                  value: c,
-                  child: Text(c),
-                ))
+            .map((c) => DropdownMenuItem(value: c, child: Text(c)))
             .toList(),
         onChanged: enabled ? onChanged : null,
         decoration: InputDecoration(
@@ -721,7 +784,10 @@ class _CentreDropdown extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Color(0xFF0B5FFF), width: 2),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
         ),
       ),
     );
@@ -768,7 +834,10 @@ class _GenderDropdown extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Color(0xFF0B5FFF), width: 2),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
         ),
       ),
     );
@@ -791,7 +860,7 @@ class _DobField extends StatelessWidget {
     final text = dob == null
         ? 'Select date of birth'
         : '${dob!.day.toString().padLeft(2, '0')}/${dob!.month.toString().padLeft(2, '0')}/${dob!.year}';
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: InkWell(
@@ -830,7 +899,9 @@ class _DobField extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 15,
                         color: dob == null ? Colors.grey[600] : Colors.black87,
-                        fontWeight: dob == null ? FontWeight.normal : FontWeight.w500,
+                        fontWeight: dob == null
+                            ? FontWeight.normal
+                            : FontWeight.w500,
                       ),
                     ),
                   ],
@@ -861,7 +932,7 @@ class _DateField extends StatelessWidget {
     final text = value == null
         ? 'Select date'
         : '${value!.day.toString().padLeft(2, '0')}/${value!.month.toString().padLeft(2, '0')}/${value!.year}';
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: InkWell(
@@ -879,7 +950,9 @@ class _DateField extends StatelessWidget {
               Icon(
                 Icons.calendar_month_outlined,
                 size: 20,
-                color: value == null ? Colors.grey[600] : const Color(0xFF0B5FFF),
+                color: value == null
+                    ? Colors.grey[600]
+                    : const Color(0xFF0B5FFF),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -899,8 +972,12 @@ class _DateField extends StatelessWidget {
                       text,
                       style: TextStyle(
                         fontSize: 15,
-                        color: value == null ? Colors.grey[600] : Colors.black87,
-                        fontWeight: value == null ? FontWeight.normal : FontWeight.w500,
+                        color: value == null
+                            ? Colors.grey[600]
+                            : Colors.black87,
+                        fontWeight: value == null
+                            ? FontWeight.normal
+                            : FontWeight.w500,
                       ),
                     ),
                   ],
@@ -935,9 +1012,7 @@ class _ReadonlyField extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF0B5FFF).withOpacity(0.05),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFF0B5FFF).withOpacity(0.2),
-          ),
+          border: Border.all(color: const Color(0xFF0B5FFF).withOpacity(0.2)),
         ),
         child: Row(
           children: [

@@ -1,3 +1,4 @@
+import 'create_profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,7 +19,16 @@ class ProfileScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Profile'),
         actions: [
-          TextButton(
+          IconButton(
+            icon: const Icon(Icons.edit, color: Color(0xFF0B5FFF)),
+            tooltip: 'Edit Profile',
+            onPressed: () {
+              context.push('/profile/edit');
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.redAccent),
+            tooltip: 'Logout',
             onPressed: () async {
               final confirmed = await showDialog<bool>(
                 context: context,
@@ -47,74 +57,139 @@ class ProfileScreen extends ConsumerWidget {
                 }
               }
             },
-            child: const Text(
-              'Logout',
-              style: TextStyle(color: Colors.redAccent),
-            ),
           ),
         ],
       ),
       body: profileState.isLoading
           ? const Center(child: CircularProgressIndicator())
           : profile == null
-              ? const Center(child: Text('No profile found'))
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      _ProfileSection(
-                        title: 'Personal Information',
-                        icon: Icons.person_outline,
-                        children: [
-                          _InfoTile(label: 'Name', value: profile.name),
-                          _InfoTile(label: 'Age', value: '${profile.age}'),
-                          _InfoTile(label: 'Gender', value: profile.gender ?? 'Not specified'),
-                          _InfoTile(
-                            label: 'Date of Birth',
-                            value: '${profile.dob.day}/${profile.dob.month}/${profile.dob.year}',
+          ? const Center(child: Text('No profile found'))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // Profile photo section
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        CircleAvatar(
+                          radius: 48,
+                          backgroundColor: const Color(0xFF0B5FFF),
+                          backgroundImage:
+                              profile.profilePhotoUrl != null &&
+                                  profile.profilePhotoUrl!.isNotEmpty
+                              ? NetworkImage(profile.profilePhotoUrl!)
+                              : null,
+                          child:
+                              profile.profilePhotoUrl == null ||
+                                  profile.profilePhotoUrl!.isEmpty
+                              ? const Icon(
+                                  Icons.person,
+                                  size: 48,
+                                  color: Colors.white,
+                                )
+                              : null,
+                        ),
+                        Positioned(
+                          bottom: 4,
+                          right: 4,
+                          child: GestureDetector(
+                            onTap: () {
+                              // Navigate to profile media screen for photo upload
+                              context.push('/profile/media');
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
+                              padding: const EdgeInsets.all(6),
+                              child: const Icon(
+                                Icons.edit,
+                                size: 20,
+                                color: Color(0xFF0B5FFF),
+                              ),
+                            ),
                           ),
-                          if (profile.degrees.isNotEmpty)
-                            _InfoTile(label: 'Degrees', value: profile.degrees.join(', ')),
-                        ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  _ProfileSection(
+                    title: 'Personal Information',
+                    icon: Icons.person_outline,
+                    children: [
+                      _InfoTile(label: 'Name', value: profile.name),
+                      _InfoTile(label: 'Age', value: '${profile.age}'),
+                      _InfoTile(
+                        label: 'Gender',
+                        value: profile.gender ?? 'Not specified',
                       ),
-                      const SizedBox(height: 16),
-                      _ProfileSection(
-                        title: 'Professional Details',
-                        icon: Icons.work_outline,
-                        children: [
-                          _InfoTile(label: 'Designation', value: profile.designation),
-                          _InfoTile(label: 'Centre', value: profile.centre),
-                          _InfoTile(label: 'Hospital', value: profile.hospital),
-                          _InfoTile(label: 'Employee ID', value: profile.employeeId),
-                          if (profile.idNumber != null)
-                            _InfoTile(label: 'ID Number', value: profile.idNumber!),
-                          if (profile.hodName != null)
-                            _InfoTile(label: 'HOD Name', value: profile.hodName!),
-                          if (profile.dateOfJoining != null)
-                            _InfoTile(
-                              label: 'Date of Joining',
-                              value:
-                                  '${profile.dateOfJoining!.day}/${profile.dateOfJoining!.month}/${profile.dateOfJoining!.year}',
-                            ),
-                          if (profile.dateOfJoining != null)
-                            _InfoTile(
-                              label: 'Months in Program',
-                              value: '${_monthsIntoProgram(profile.dateOfJoining!)} months',
-                            ),
-                        ],
+                      _InfoTile(
+                        label: 'Date of Birth',
+                        value:
+                            '${profile.dob.day}/${profile.dob.month}/${profile.dob.year}',
                       ),
-                      const SizedBox(height: 16),
-                      _ProfileSection(
-                        title: 'Contact Information',
-                        icon: Icons.contact_phone_outlined,
-                        children: [
-                          _InfoTile(label: 'Phone', value: profile.phone),
-                          _InfoTile(label: 'Email', value: profile.email),
-                        ],
-                      ),
+                      if (profile.degrees.isNotEmpty)
+                        _InfoTile(
+                          label: 'Degrees',
+                          value: profile.degrees.join(', '),
+                        ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  _ProfileSection(
+                    title: 'Professional Details',
+                    icon: Icons.work_outline,
+                    children: [
+                      _InfoTile(
+                        label: 'Designation',
+                        value: profile.designation,
+                      ),
+                      _InfoTile(label: 'Centre', value: profile.centre),
+                      _InfoTile(label: 'Hospital', value: profile.hospital),
+                      _InfoTile(
+                        label: 'Employee ID',
+                        value: profile.employeeId,
+                      ),
+                      if (profile.idNumber != null)
+                        _InfoTile(label: 'ID Number', value: profile.idNumber!),
+                      if (profile.hodName != null)
+                        _InfoTile(label: 'HOD Name', value: profile.hodName!),
+                      if (profile.dateOfJoining != null)
+                        _InfoTile(
+                          label: 'Date of Joining',
+                          value:
+                              '${profile.dateOfJoining!.day}/${profile.dateOfJoining!.month}/${profile.dateOfJoining!.year}',
+                        ),
+                      if (profile.dateOfJoining != null)
+                        _InfoTile(
+                          label: 'Months in Program',
+                          value:
+                              '${_monthsIntoProgram(profile.dateOfJoining!)} months',
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _ProfileSection(
+                    title: 'Contact Information',
+                    icon: Icons.contact_phone_outlined,
+                    children: [
+                      _InfoTile(label: 'Phone', value: profile.phone),
+                      _InfoTile(label: 'Email', value: profile.email),
+                    ],
+                  ),
+                ],
+              ),
+            ),
     );
   }
 
