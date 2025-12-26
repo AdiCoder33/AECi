@@ -20,6 +20,20 @@ class ProfileScreen extends ConsumerWidget {
         title: const Text('Profile'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.download, color: Color(0xFF0B5FFF)),
+            tooltip: 'Export Logbook',
+            onPressed: () {
+              context.push('/export');
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.archive, color: Color(0xFF0B5FFF)),
+            tooltip: 'Manage Space',
+            onPressed: () {
+              context.push('/storage-tools');
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.edit, color: Color(0xFF0B5FFF)),
             tooltip: 'Edit Profile',
             onPressed: () {

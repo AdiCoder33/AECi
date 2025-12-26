@@ -130,7 +130,10 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
           start: _start,
           end: _end,
         );
-        await exporter.shareFile(file);
+        if (file != null) {
+          await exporter.shareFile(file);
+        }
+        // On web, exportPdf handles sharing directly
       } else {
         final file = await exporter.exportCsv(
           entries: all,

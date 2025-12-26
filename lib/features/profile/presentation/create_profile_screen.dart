@@ -98,34 +98,6 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 20),
                         child: Column(
                           children: [
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF0B5FFF),
-                                    Color(0xFF0A2E73),
-                                  ],
-                                ),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(
-                                      0xFF0B5FFF,
-                                    ).withOpacity(0.3),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.person_add_rounded,
-                                color: Colors.white,
-                                size: 40,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
                             const Text(
                               'Complete Your Profile',
                               style: TextStyle(
@@ -139,20 +111,7 @@ class _CreateProfileScreenState extends ConsumerState<CreateProfileScreen> {
                               'Let\'s set up your professional profile',
                               style: TextStyle(
                                 fontSize: 15,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextButton.icon(
-                              onPressed: isSaving
-                                  ? null
-                                  : () => ref
-                                        .read(authControllerProvider.notifier)
-                                        .signOut(),
-                              icon: const Icon(Icons.logout, size: 16),
-                              label: const Text('Sign Out'),
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.redAccent,
+                                color: Colors.grey,
                               ),
                             ),
                           ],
