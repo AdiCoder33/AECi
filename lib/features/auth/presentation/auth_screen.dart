@@ -97,7 +97,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             const SizedBox(height: 8),
                             Row(
                               children: const [
-                                Icon(Icons.verified_user, color: Color(0xFF0B5FFF)),
+                                Icon(
+                                  Icons.verified_user,
+                                  color: Color(0xFF0B5FFF),
+                                ),
                                 SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
@@ -141,10 +144,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                     password: password,
                                   );
                                   // After sign-up, check if we need to switch to sign-in mode
-                                  final authState = ref.read(authControllerProvider);
-                                  if (authState.session == null && 
+                                  final authState = ref.read(
+                                    authControllerProvider,
+                                  );
+                                  if (authState.session == null &&
                                       authState.errorMessage != null &&
-                                      authState.errorMessage!.contains('created')) {
+                                      authState.errorMessage!.contains(
+                                        'created',
+                                      )) {
                                     // Switch back to sign-in mode for email confirmation flow
                                     if (mounted) {
                                       setState(() {
@@ -168,18 +175,23 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                   isCreatingAccount
                                       ? 'Have an account?'
                                       : 'Need an account?',
-                                  style: const TextStyle(color: Color(0xFF475569)),
+                                  style: const TextStyle(
+                                    color: Color(0xFF475569),
+                                  ),
                                 ),
                                 TextButton(
                                   onPressed: state.isLoading
                                       ? null
                                       : () {
                                           setState(() {
-                                            isCreatingAccount = !isCreatingAccount;
+                                            isCreatingAccount =
+                                                !isCreatingAccount;
                                           });
                                         },
                                   child: Text(
-                                    isCreatingAccount ? 'Sign in' : 'Create one',
+                                    isCreatingAccount
+                                        ? 'Sign in'
+                                        : 'Create one',
                                   ),
                                 ),
                               ],
@@ -188,16 +200,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             const Divider(),
                             const SizedBox(height: 12),
                             _GoogleButton(isLoading: state.isLoading),
-                            const SizedBox(height: 20),
-                            Wrap(
-                              spacing: 12,
-                              runSpacing: 8,
-                              children: const [
-                                _FeaturePill(icon: Icons.note_alt, label: 'Log cases fast'),
-                                _FeaturePill(icon: Icons.insights, label: 'Track analytics'),
-                                _FeaturePill(icon: Icons.shield, label: 'Secure by Supabase'),
-                              ],
-                            ),
                           ],
                         ),
                       ),
@@ -356,11 +358,7 @@ class _FeaturePill extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Theme.of(context).dividerColor),
         boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
+          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
         ],
       ),
       child: Row(
