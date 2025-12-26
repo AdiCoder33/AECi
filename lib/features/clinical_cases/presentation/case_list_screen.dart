@@ -27,15 +27,17 @@ class ClinicalCaseListScreen extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/cases/new'),
         backgroundColor: const Color(0xFF0B5FFF),
-        elevation: 3,
+        elevation: 4,
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text(
           'New Case',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
+            fontSize: 16,
           ),
         ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       body: cases.when(
         data: (list) {
@@ -71,44 +73,99 @@ class ClinicalCaseListScreen extends ConsumerWidget {
               ),
             );
           }
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Card(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columnSpacing: 20,
-                  headingRowHeight: 42,
-                  dataRowMinHeight: 48,
-                  columns: const [
-                    DataColumn(label: Text('Date')),
-                    DataColumn(label: Text('Patient')),
-                    DataColumn(label: Text('UID')),
-                    DataColumn(label: Text('MR')),
-                    DataColumn(label: Text('Diagnosis')),
-                    DataColumn(label: Text('Updated')),
-                    DataColumn(label: Text('Status')),
-                  ],
-                  rows: list.map((c) {
-                    final updated = c.updatedAt?.toIso8601String().split('T').first ?? '-';
-                    return DataRow(
-                      onSelectChanged: (_) => context.push('/cases/${c.id}'),
-                      cells: [
-                        DataCell(Text(
-                          c.dateOfExamination.toIso8601String().split('T').first,
-                        )),
-                        DataCell(Text(c.patientName)),
-                        DataCell(Text(c.uidNumber)),
-                        DataCell(Text(c.mrNumber)),
-                        DataCell(Text(c.diagnosis)),
-                        DataCell(Text(updated)),
-                        DataCell(_StatusBadge(status: c.status)),
+          return ListView.separated(
+            padding: const EdgeInsets.all(18),
+            itemCount: list.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 16),
+            itemBuilder: (context, index) {
+              final c = list[index];
+              final updated = c.updatedAt?.toIso8601String().split('T').first ?? '-';
+              return Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                elevation: 2,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () => context.push('/cases/${c.id}'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: const Color(0xFF0B5FFF).withOpacity(0.08),
+                          child: const Icon(Icons.person, color: Color(0xFF0B5FFF)),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    c.patientName,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: Color(0xFF0B172A),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  _StatusBadge(status: c.status),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'UID: ${c.uidNumber}   MR: ${c.mrNumber}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Diagnosis: ${c.diagnosis}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF0B5FFF),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(Icons.calendar_today, size: 14, color: Color(0xFF94A3B8)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    c.dateOfExamination.toIso8601String().split('T').first,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF94A3B8),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Icon(Icons.update, size: 14, color: Color(0xFF94A3B8)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    updated,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF94A3B8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right, color: Color(0xFF0B5FFF)),
                       ],
-                    );
-                  }).toList(),
+                    ),
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           );
         },
         loading: () => const Center(
