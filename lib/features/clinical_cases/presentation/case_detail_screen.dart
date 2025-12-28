@@ -30,7 +30,7 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
         title: const Text('Case Detail'),
         actions: [
           caseAsync.maybeWhen(
-            data: (c) => c.status == 'draft'
+            data: (c) => (c.status == 'draft' || c.status == 'submitted')
                 ? IconButton(
                     icon: const Icon(Icons.edit_outlined),
                     onPressed: () => context.push('/cases/${c.id}/edit'),

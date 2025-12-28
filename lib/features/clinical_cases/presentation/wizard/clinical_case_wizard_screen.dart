@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../application/clinical_case_wizard_controller.dart';
+import '../../application/clinical_cases_controller.dart';
 import '../../data/clinical_case_constants.dart';
 import 'steps/step1_patient.dart';
 import 'steps/step2_complaints.dart';
@@ -404,6 +405,8 @@ class _ClinicalCaseWizardScreenState
           ),
         ),
       );
+      // Force refresh of case detail after edit
+      ref.invalidate(clinicalCaseDetailProvider(id));
       context.go('/cases/$id');
     } catch (e) {
       if (!mounted) return;
