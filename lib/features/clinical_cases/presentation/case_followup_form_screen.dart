@@ -150,58 +150,77 @@ class _CaseFollowupFormScreenState
                             : _friendlyInterval(_intervalDays),
                       ),
                       const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _ucvaRe,
-                        decoration:
-                            const InputDecoration(labelText: 'UCVA - RE'),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _EyeTextField(
+                              label: 'RE',
+                              fieldLabel: 'UCVA',
+                              controller: _ucvaRe,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _EyeTextField(
+                              label: 'LE',
+                              fieldLabel: 'UCVA',
+                              controller: _ucvaLe,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _ucvaLe,
-                        decoration:
-                            const InputDecoration(labelText: 'UCVA - LE'),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _EyeDropdown(
+                              label: 'RE',
+                              fieldLabel: 'BCVA',
+                              value: _bcvaRe,
+                              onChanged: (v) => setState(() => _bcvaRe = v),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _EyeDropdown(
+                              label: 'LE',
+                              fieldLabel: 'BCVA',
+                              value: _bcvaLe,
+                              onChanged: (v) => setState(() => _bcvaLe = v),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        value: _bcvaRe.isEmpty ? null : _bcvaRe,
-                        items: bcvaOptions
-                            .map((o) =>
-                                DropdownMenuItem(value: o, child: Text(o)))
-                            .toList(),
-                        decoration:
-                            const InputDecoration(labelText: 'BCVA - RE'),
-                        onChanged: (v) =>
-                            setState(() => _bcvaRe = v ?? ''),
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        value: _bcvaLe.isEmpty ? null : _bcvaLe,
-                        items: bcvaOptions
-                            .map((o) =>
-                                DropdownMenuItem(value: o, child: Text(o)))
-                            .toList(),
-                        decoration:
-                            const InputDecoration(labelText: 'BCVA - LE'),
-                        onChanged: (v) =>
-                            setState(() => _bcvaLe = v ?? ''),
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _iopRe,
-                        decoration:
-                            const InputDecoration(labelText: 'IOP - RE'),
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
-                        validator: _numberValidator,
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _iopLe,
-                        decoration:
-                            const InputDecoration(labelText: 'IOP - LE'),
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
-                        validator: _numberValidator,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _EyeTextField(
+                              label: 'RE',
+                              fieldLabel: 'IOP',
+                              controller: _iopRe,
+                              keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
+                              validator: _numberValidator,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _EyeTextField(
+                              label: 'LE',
+                              fieldLabel: 'IOP',
+                              controller: _iopLe,
+                              keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
+                              validator: _numberValidator,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 12),
                       SwitchListTile(
@@ -354,6 +373,10 @@ class _CaseFollowupFormScreenState
     final lines = <String>[];
     for (final eyeKey in ['RE', 'LE']) {
       final eye = Map<String, dynamic>.from(anterior[eyeKey] as Map? ?? {});
+      final lidsSummary = _formatLids(eye);
+      if (lidsSummary.isNotEmpty) {
+        lines.add('$eyeKey Lids: $lidsSummary');
+      }
       final abnormal = <String>[];
       for (final field in anteriorSegments) {
         final data = Map<String, dynamic>.from(eye[field] as Map? ?? {});
@@ -368,8 +391,48 @@ class _CaseFollowupFormScreenState
     return lines.join('\n');
   }
 
+  String _formatLids(Map<String, dynamic> eye) {
+    final findings =
+        (eye['lids_findings'] as List?)?.cast<String>() ?? <String>[];
+    final otherNotes = (eye['lids_other_notes'] as String?) ?? '';
+    if (findings.isNotEmpty) {
+      final buffer = findings.join(', ');
+      if (findings.contains('Other') && otherNotes.trim().isNotEmpty) {
+        return '$buffer (Other: $otherNotes)';
+      }
+      return buffer;
+    }
+    final legacy = eye['Lids'] as Map?;
+    if (legacy != null) {
+      final status = (legacy['status'] as String?) ?? 'normal';
+      final notes = (legacy['notes'] as String?) ?? '';
+      if (status == 'abnormal' && notes.trim().isNotEmpty) {
+        return 'Abnormal ($notes)';
+      }
+      return 'Normal';
+    }
+    return '';
+  }
+
   String _formatFundus(Map<String, dynamic>? fundus) {
     if (fundus == null || fundus.isEmpty) return '-';
+    if (fundus.containsKey('RE') || fundus.containsKey('LE')) {
+      final lines = <String>[];
+      for (final eyeKey in ['RE', 'LE']) {
+        final eye = Map<String, dynamic>.from(fundus[eyeKey] as Map? ?? {});
+        final values = <String>[];
+        for (final field in fundusFields) {
+          final value = (eye[field] as String?) ?? '-';
+          values.add('${field.toUpperCase()}: $value');
+        }
+        final others = (eye['others'] as String?) ?? '';
+        if (others.trim().isNotEmpty) {
+          values.add('OTHERS: $others');
+        }
+        lines.add('$eyeKey ${values.join(' | ')}');
+      }
+      return lines.join('\n');
+    }
     final lines = <String>[];
     for (final field in fundusFields) {
       final value = (fundus[field] as String?) ?? '-';
@@ -415,6 +478,82 @@ class _ReadonlyTile extends StatelessWidget {
           Expanded(child: Text(value)),
         ],
       ),
+    );
+  }
+}
+
+class _EyeTextField extends StatelessWidget {
+  const _EyeTextField({
+    required this.label,
+    required this.fieldLabel,
+    required this.controller,
+    this.keyboardType,
+    this.validator,
+  });
+
+  final String label;
+  final String fieldLabel;
+  final TextEditingController controller;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: controller,
+          decoration: InputDecoration(labelText: fieldLabel),
+          keyboardType: keyboardType,
+          validator: validator,
+        ),
+      ],
+    );
+  }
+}
+
+class _EyeDropdown extends StatelessWidget {
+  const _EyeDropdown({
+    required this.label,
+    required this.fieldLabel,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final String fieldLabel;
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<String>(
+          value: value.isEmpty ? null : value,
+          items: bcvaOptions
+              .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+              .toList(),
+          decoration: InputDecoration(labelText: fieldLabel),
+          onChanged: (v) => onChanged(v ?? ''),
+        ),
+      ],
     );
   }
 }

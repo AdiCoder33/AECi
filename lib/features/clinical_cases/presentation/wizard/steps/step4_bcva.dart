@@ -25,29 +25,65 @@ class Step4Bcva extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          DropdownButtonFormField<String>(
-            value: bcvaRe.isEmpty ? null : bcvaRe,
-            items: bcvaOptions
-                .map((o) => DropdownMenuItem(value: o, child: Text(o)))
-                .toList(),
-            decoration: const InputDecoration(labelText: 'BCVA - Right Eye'),
-            validator: (value) =>
-                (value == null || value.isEmpty) ? 'Required' : null,
-            onChanged: (value) => onBcvaReChanged(value ?? ''),
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            value: bcvaLe.isEmpty ? null : bcvaLe,
-            items: bcvaOptions
-                .map((o) => DropdownMenuItem(value: o, child: Text(o)))
-                .toList(),
-            decoration: const InputDecoration(labelText: 'BCVA - Left Eye'),
-            validator: (value) =>
-                (value == null || value.isEmpty) ? 'Required' : null,
-            onChanged: (value) => onBcvaLeChanged(value ?? ''),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _EyeField(
+                  label: 'RE',
+                  value: bcvaRe,
+                  onChanged: onBcvaReChanged,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _EyeField(
+                  label: 'LE',
+                  value: bcvaLe,
+                  onChanged: onBcvaLeChanged,
+                ),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+}
+
+class _EyeField extends StatelessWidget {
+  const _EyeField({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<String>(
+          value: value.isEmpty ? null : value,
+          items: bcvaOptions
+              .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+              .toList(),
+          decoration: const InputDecoration(labelText: 'BCVA'),
+          validator: (val) => (val == null || val.isEmpty) ? 'Required' : null,
+          onChanged: (val) => onChanged(val ?? ''),
+        ),
+      ],
     );
   }
 }
