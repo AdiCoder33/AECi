@@ -19,18 +19,25 @@ class Step5Iop extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          TextFormField(
-            controller: iopReController,
-            decoration: const InputDecoration(labelText: 'IOP - Right Eye (mmHg)'),
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            validator: _validateNumber,
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: iopLeController,
-            decoration: const InputDecoration(labelText: 'IOP - Left Eye (mmHg)'),
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            validator: _validateNumber,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _EyeField(
+                  label: 'RE',
+                  controller: iopReController,
+                  validator: _validateNumber,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _EyeField(
+                  label: 'LE',
+                  controller: iopLeController,
+                  validator: _validateNumber,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -42,5 +49,39 @@ class Step5Iop extends StatelessWidget {
     final parsed = num.tryParse(value);
     if (parsed == null) return 'Enter a valid number';
     return null;
+  }
+}
+
+class _EyeField extends StatelessWidget {
+  const _EyeField({
+    required this.label,
+    required this.controller,
+    required this.validator,
+  });
+
+  final String label;
+  final TextEditingController controller;
+  final String? Function(String?) validator;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: 'IOP (mmHg)'),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          validator: validator,
+        ),
+      ],
+    );
   }
 }

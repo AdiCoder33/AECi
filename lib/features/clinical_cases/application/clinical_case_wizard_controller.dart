@@ -205,8 +205,9 @@ class ClinicalCaseWizardController
         bcvaLe: data.bcvaLe ?? '',
         iopRe: data.iopRe?.toString() ?? '',
         iopLe: data.iopLe?.toString() ?? '',
-        anteriorSegment: data.anteriorSegment ?? _initialAnterior(),
-        fundus: data.fundus ?? _initialFundus(),
+        anteriorSegment:
+            _normalizeAnterior(data.anteriorSegment ?? _initialAnterior()),
+        fundus: _normalizeFundus(data.fundus ?? _initialFundus()),
         diagnosis: data.diagnosis,
         keywords: data.keywords,
         status: data.status,
@@ -277,6 +278,31 @@ class ClinicalCaseWizardController
     state = state.copyWith(status: status);
     return state.caseId!;
   }
+
+  void setLidsFindings({
+    required String eye,
+    required List<String> findings,
+  }) {
+    final next = _copyAnterior(state.anteriorSegment);
+    final eyeMap = Map<String, dynamic>.from(next[eye] as Map? ?? {});
+    eyeMap['lids_findings'] = findings;
+    if (!findings.contains('Other')) {
+      eyeMap['lids_other_notes'] = '';
+    }
+    next[eye] = eyeMap;
+    state = state.copyWith(anteriorSegment: next);
+  }
+
+  void setLidsOtherNotes({
+    required String eye,
+    required String notes,
+  }) {
+    final next = _copyAnterior(state.anteriorSegment);
+    final eyeMap = Map<String, dynamic>.from(next[eye] as Map? ?? {});
+    eyeMap['lids_other_notes'] = notes;
+    next[eye] = eyeMap;
+    state = state.copyWith(anteriorSegment: next);
+  }
 }
 
 final clinicalCaseWizardProvider = StateNotifierProvider.autoDispose<
@@ -287,8 +313,14 @@ final clinicalCaseWizardProvider = StateNotifierProvider.autoDispose<
 });
 
 Map<String, dynamic> _initialAnterior() {
-  final re = <String, Map<String, String>>{};
-  final le = <String, Map<String, String>>{};
+  final re = <String, dynamic>{
+    'lids_findings': <String>[],
+    'lids_other_notes': '',
+  };
+  final le = <String, dynamic>{
+    'lids_findings': <String>[],
+    'lids_other_notes': '',
+  };
   for (final field in anteriorSegments) {
     re[field] = {'status': 'normal', 'notes': ''};
     le[field] = {'status': 'normal', 'notes': ''};
@@ -296,7 +328,55 @@ Map<String, dynamic> _initialAnterior() {
   return {'RE': re, 'LE': le};
 }
 
+Map<String, dynamic> _normalizeAnterior(Map<String, dynamic> anterior) {
+  final next = _copyAnterior(anterior);
+  for (final eyeKey in ['RE', 'LE']) {
+    final eye = Map<String, dynamic>.from(next[eyeKey] as Map? ?? {});
+    if (!eye.containsKey('lids_findings')) {
+      final legacy = eye['Lids'] as Map?;
+      if (legacy != null) {
+        final status = legacy['status'] as String? ?? 'normal';
+        final notes = (legacy['notes'] as String?) ?? '';
+        if (status == 'normal') {
+          eye['lids_findings'] = <String>['Normal'];
+          eye['lids_other_notes'] = '';
+        } else if (notes.trim().length >= 3) {
+          eye['lids_findings'] = <String>['Other'];
+          eye['lids_other_notes'] = notes;
+        } else {
+          eye['lids_findings'] = <String>[];
+          eye['lids_other_notes'] = '';
+        }
+      } else {
+        eye['lids_findings'] = <String>[];
+        eye['lids_other_notes'] = '';
+      }
+    }
+    next[eyeKey] = eye;
+  }
+  return next;
+}
+
+Map<String, dynamic> _copyAnterior(Map<String, dynamic> source) {
+  final copy = <String, dynamic>{};
+  for (final entry in source.entries) {
+    if (entry.value is Map) {
+      copy[entry.key] = Map<String, dynamic>.from(entry.value as Map);
+    } else {
+      copy[entry.key] = entry.value;
+    }
+  }
+  return copy;
+}
+
 Map<String, dynamic> _initialFundus() {
+  return {
+    'RE': _emptyFundus(),
+    'LE': _emptyFundus(),
+  };
+}
+
+Map<String, dynamic> _emptyFundus() {
   return {
     'media': '',
     'disc': '',
@@ -305,4 +385,29 @@ Map<String, dynamic> _initialFundus() {
     'macula': '',
     'others': '',
   };
+}
+
+Map<String, dynamic> _normalizeFundus(Map<String, dynamic> fundus) {
+  if (fundus.containsKey('RE') || fundus.containsKey('LE')) {
+    final re = Map<String, dynamic>.from(fundus['RE'] as Map? ?? {});
+    final le = Map<String, dynamic>.from(fundus['LE'] as Map? ?? {});
+    return {
+      'RE': _ensureFundus(re),
+      'LE': _ensureFundus(le),
+    };
+  }
+  return {
+    'RE': _ensureFundus(fundus),
+    'LE': _ensureFundus({}),
+  };
+}
+
+Map<String, dynamic> _ensureFundus(Map<String, dynamic> fundus) {
+  final next = _emptyFundus();
+  for (final entry in fundus.entries) {
+    if (next.containsKey(entry.key)) {
+      next[entry.key] = entry.value;
+    }
+  }
+  return next;
 }

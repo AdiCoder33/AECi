@@ -207,6 +207,10 @@ class _ClinicalCaseWizardScreenState
         formKey: _formKeys[5],
         anterior: wizard.anteriorSegment,
         onChanged: (value) => notifier.update(anteriorSegment: value),
+        onLidsFindingsChanged: (eye, findings) =>
+            notifier.setLidsFindings(eye: eye, findings: findings),
+        onLidsOtherNotesChanged: (eye, notes) =>
+            notifier.setLidsOtherNotes(eye: eye, notes: notes),
       ),
       Step7Fundus(
         formKey: _formKeys[6],
@@ -301,23 +305,28 @@ class _ClinicalCaseWizardScreenState
 
     if (_stepIndex == 5) {
       final issues = _anteriorIssues(state.anteriorSegment);
+      final lidsIssues = _lidsIssues(state.anteriorSegment);
       if (issues.isNotEmpty) {
         if (showErrors) {
           _showError('Add notes for abnormal anterior findings.');
         }
         return false;
       }
+      if (lidsIssues.isNotEmpty) {
+        if (showErrors) {
+          _showError('Please complete lids findings for both eyes.');
+        }
+        return false;
+      }
     }
 
     if (_stepIndex == 6) {
-      for (final field in fundusFields) {
-        final value = state.fundus[field] as String? ?? '';
-        if (value.isEmpty) {
-          if (showErrors) {
-            _showError('Please complete all fundus fields.');
-          }
-          return false;
+      final issues = _fundusIssues(state.fundus);
+      if (issues.isNotEmpty) {
+        if (showErrors) {
+          _showError('Please complete all fundus fields for both eyes.');
         }
+        return false;
       }
     }
 
@@ -357,13 +366,10 @@ class _ClinicalCaseWizardScreenState
         return num.tryParse(_iopReController.text) != null &&
             num.tryParse(_iopLeController.text) != null;
       case 5:
-        return _anteriorIssues(state.anteriorSegment).isEmpty;
+        return _anteriorIssues(state.anteriorSegment).isEmpty &&
+            _lidsIssues(state.anteriorSegment).isEmpty;
       case 6:
-        for (final field in fundusFields) {
-          final value = state.fundus[field] as String? ?? '';
-          if (value.isEmpty) return false;
-        }
-        return true;
+        return _fundusIssues(state.fundus).isEmpty;
       case 7:
         return _diagnosisController.text.trim().isNotEmpty &&
             state.keywords.isNotEmpty &&
@@ -382,6 +388,41 @@ class _ClinicalCaseWizardScreenState
         final status = (data['status'] as String?) ?? 'normal';
         final notes = (data['notes'] as String?) ?? '';
         if (status == 'abnormal' && notes.trim().isEmpty) {
+          issues.add('$eyeKey $field');
+        }
+      }
+    }
+    return issues;
+  }
+
+  List<String> _lidsIssues(Map<String, dynamic> anterior) {
+    final issues = <String>[];
+    for (final eyeKey in ['RE', 'LE']) {
+      final eye = Map<String, dynamic>.from(anterior[eyeKey] as Map? ?? {});
+      final findings =
+          (eye['lids_findings'] as List?)?.cast<String>() ?? <String>[];
+      final otherNotes = (eye['lids_other_notes'] as String?) ?? '';
+      if (findings.isEmpty) {
+        issues.add('$eyeKey lids required');
+        continue;
+      }
+      if (findings.contains('Normal') && findings.length > 1) {
+        issues.add('$eyeKey lids normal exclusive');
+      }
+      if (findings.contains('Other') && otherNotes.trim().length < 3) {
+        issues.add('$eyeKey lids other notes');
+      }
+    }
+    return issues;
+  }
+
+  List<String> _fundusIssues(Map<String, dynamic> fundus) {
+    final issues = <String>[];
+    for (final eyeKey in ['RE', 'LE']) {
+      final eye = Map<String, dynamic>.from(fundus[eyeKey] as Map? ?? {});
+      for (final field in fundusFields) {
+        final value = eye[field] as String? ?? '';
+        if (value.isEmpty) {
           issues.add('$eyeKey $field');
         }
       }
