@@ -88,7 +88,9 @@ class _EyeSection extends StatelessWidget {
         (eye['lids_findings'] as List?)?.cast<String>() ?? <String>[];
     final lidsOtherNotes = (eye['lids_other_notes'] as String?) ?? '';
     final hasOther = lidsFindings.contains('Other');
-    final lidsStatus = _lidsStatus(lidsFindings);
+    final isNormal = lidsFindings.contains('Normal');
+    final abnormalFindings =
+        lidsFindings.where((item) => item != 'Normal').toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -99,25 +101,47 @@ class _EyeSection extends StatelessWidget {
               ),
         ),
         const SizedBox(height: 12),
-        MultiSelectSheetField(
-          label: 'Lids',
-          options: anteriorLidsOptions,
-          selected: lidsFindings,
-          onChanged: (next) {
-            final normalized = _normalizeLids(next);
-            onLidsFindingsChanged(eyeKey, normalized);
-          },
-        ),
-        const SizedBox(height: 6),
         Text(
-          'Status: $lidsStatus',
+          'Lids',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: lidsStatus == 'Abnormal'
-                    ? Theme.of(context).colorScheme.error
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
         ),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 8,
+          children: [
+            ChoiceChip(
+              label: const Text('Normal'),
+              selected: isNormal,
+              onSelected: (_) {
+                onLidsFindingsChanged(eyeKey, ['Normal']);
+                onLidsOtherNotesChanged(eyeKey, '');
+              },
+            ),
+            ChoiceChip(
+              label: const Text('Abnormal'),
+              selected: !isNormal,
+              onSelected: (_) {
+                onLidsFindingsChanged(eyeKey, abnormalFindings);
+              },
+            ),
+          ],
+        ),
+        if (!isNormal) ...[
+          const SizedBox(height: 8),
+          MultiSelectSheetField(
+            label: 'Lids findings',
+            options: anteriorLidsOptions
+                .where((item) => item != 'Normal')
+                .toList(),
+            selected: abnormalFindings,
+            onChanged: (next) {
+              onLidsFindingsChanged(eyeKey, next);
+            },
+          ),
+        ],
         if (hasOther) ...[
           const SizedBox(height: 8),
           TextFormField(
@@ -215,20 +239,5 @@ class _EyeSection extends StatelessWidget {
     return copy;
   }
 
-  List<String> _normalizeLids(List<String> next) {
-    final normalized = next.toList();
-    if (normalized.contains('Normal') && normalized.length > 1) {
-      return ['Normal'];
-    }
-    if (!normalized.contains('Normal')) {
-      return normalized;
-    }
-    return normalized;
-  }
-
-  String _lidsStatus(List<String> findings) {
-    if (findings.isEmpty) return 'Required';
-    if (findings.contains('Normal')) return 'Normal';
-    return 'Abnormal';
-  }
+  
 }

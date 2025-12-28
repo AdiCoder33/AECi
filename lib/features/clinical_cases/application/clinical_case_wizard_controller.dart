@@ -314,11 +314,11 @@ final clinicalCaseWizardProvider = StateNotifierProvider.autoDispose<
 
 Map<String, dynamic> _initialAnterior() {
   final re = <String, dynamic>{
-    'lids_findings': <String>[],
+    'lids_findings': <String>['Normal'],
     'lids_other_notes': '',
   };
   final le = <String, dynamic>{
-    'lids_findings': <String>[],
+    'lids_findings': <String>['Normal'],
     'lids_other_notes': '',
   };
   for (final field in anteriorSegments) {
@@ -344,12 +344,17 @@ Map<String, dynamic> _normalizeAnterior(Map<String, dynamic> anterior) {
           eye['lids_findings'] = <String>['Other'];
           eye['lids_other_notes'] = notes;
         } else {
-          eye['lids_findings'] = <String>[];
+          eye['lids_findings'] = <String>['Normal'];
           eye['lids_other_notes'] = '';
         }
       } else {
-        eye['lids_findings'] = <String>[];
+        eye['lids_findings'] = <String>['Normal'];
         eye['lids_other_notes'] = '';
+      }
+    } else {
+      final list = (eye['lids_findings'] as List?)?.cast<String>() ?? [];
+      if (list.isEmpty) {
+        eye['lids_findings'] = <String>['Normal'];
       }
     }
     next[eyeKey] = eye;
