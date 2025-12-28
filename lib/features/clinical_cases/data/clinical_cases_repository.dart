@@ -62,38 +62,38 @@ class ClinicalCase {
   final DateTime? updatedAt;
 
   factory ClinicalCase.fromMap(Map<String, dynamic> map) => ClinicalCase(
-        id: map['id'] as String,
-        createdBy: map['created_by'] as String,
-        dateOfExamination: DateTime.parse(map['date_of_examination'] as String),
-        patientName: map['patient_name'] as String,
-        uidNumber: map['uid_number'] as String,
-        mrNumber: map['mr_number'] as String,
-        patientGender: map['patient_gender'] as String,
-        patientAge: map['patient_age'] as int,
-        chiefComplaint: map['chief_complaint'] as String,
-        complaintDurationValue: map['complaint_duration_value'] as int,
-        complaintDurationUnit: map['complaint_duration_unit'] as String,
-        systemicHistory: (map['systemic_history'] as List?) ?? const [],
-        keywords: (map['keywords'] as List).cast<String>(),
-        diagnosis: map['diagnosis'] as String,
-        status: map['status'] as String? ?? 'draft',
-        bcvaRe: map['bcva_re'] as String?,
-        bcvaLe: map['bcva_le'] as String?,
-        iopRe: map['iop_re'] as num?,
-        iopLe: map['iop_le'] as num?,
-        anteriorSegment: map['anterior_segment'] != null
-            ? Map<String, dynamic>.from(map['anterior_segment'] as Map)
-            : null,
-        fundus: map['fundus'] != null
-            ? Map<String, dynamic>.from(map['fundus'] as Map)
-            : null,
-        diagnosisOther: map['diagnosis_other'] as String?,
-        management: map['management'] as String?,
-        learningPoint: map['learning_point'] as String?,
-        updatedAt: map['updated_at'] != null
-            ? DateTime.parse(map['updated_at'] as String)
-            : null,
-      );
+    id: map['id'] as String,
+    createdBy: map['created_by'] as String,
+    dateOfExamination: DateTime.parse(map['date_of_examination'] as String),
+    patientName: map['patient_name'] as String,
+    uidNumber: map['uid_number'] as String,
+    mrNumber: map['mr_number'] as String,
+    patientGender: map['patient_gender'] as String,
+    patientAge: map['patient_age'] as int,
+    chiefComplaint: map['chief_complaint'] as String,
+    complaintDurationValue: map['complaint_duration_value'] as int,
+    complaintDurationUnit: map['complaint_duration_unit'] as String,
+    systemicHistory: (map['systemic_history'] as List?) ?? const [],
+    keywords: (map['keywords'] as List).cast<String>(),
+    diagnosis: map['diagnosis'] as String,
+    status: map['status'] as String? ?? 'draft',
+    bcvaRe: map['bcva_re'] as String?,
+    bcvaLe: map['bcva_le'] as String?,
+    iopRe: map['iop_re'] as num?,
+    iopLe: map['iop_le'] as num?,
+    anteriorSegment: map['anterior_segment'] != null
+        ? Map<String, dynamic>.from(map['anterior_segment'] as Map)
+        : null,
+    fundus: map['fundus'] != null
+        ? Map<String, dynamic>.from(map['fundus'] as Map)
+        : null,
+    diagnosisOther: map['diagnosis_other'] as String?,
+    management: map['management'] as String?,
+    learningPoint: map['learning_point'] as String?,
+    updatedAt: map['updated_at'] != null
+        ? DateTime.parse(map['updated_at'] as String)
+        : null,
+  );
 }
 
 class CaseFollowup {
@@ -130,21 +130,21 @@ class CaseFollowup {
   final String? management;
 
   factory CaseFollowup.fromMap(Map<String, dynamic> map) => CaseFollowup(
-        id: map['id'] as String,
-        caseId: map['case_id'] as String,
-        followupIndex: map['followup_index'] as int,
-        dateOfExamination: DateTime.parse(map['date_of_examination'] as String),
-        intervalDays: map['interval_days'] as int,
-        ucvaRe: map['ucva_re'] as String?,
-        ucvaLe: map['ucva_le'] as String?,
-        bcvaRe: map['bcva_re'] as String?,
-        bcvaLe: map['bcva_le'] as String?,
-        iopRe: map['iop_re'] as num?,
-        iopLe: map['iop_le'] as num?,
-        anteriorSegmentFindings: map['anterior_segment_findings'] as String?,
-        fundusFindings: map['fundus_findings'] as String?,
-        management: map['management'] as String?,
-      );
+    id: map['id'] as String,
+    caseId: map['case_id'] as String,
+    followupIndex: map['followup_index'] as int,
+    dateOfExamination: DateTime.parse(map['date_of_examination'] as String),
+    intervalDays: map['interval_days'] as int,
+    ucvaRe: map['ucva_re'] as String?,
+    ucvaLe: map['ucva_le'] as String?,
+    bcvaRe: map['bcva_re'] as String?,
+    bcvaLe: map['bcva_le'] as String?,
+    iopRe: map['iop_re'] as num?,
+    iopLe: map['iop_le'] as num?,
+    anteriorSegmentFindings: map['anterior_segment_findings'] as String?,
+    fundusFindings: map['fundus_findings'] as String?,
+    management: map['management'] as String?,
+  );
 }
 
 class CaseMediaItem {
@@ -166,14 +166,14 @@ class CaseMediaItem {
   final String? note;
 
   factory CaseMediaItem.fromMap(Map<String, dynamic> map) => CaseMediaItem(
-        id: map['id'] as String,
-        caseId: map['case_id'] as String,
-        followupId: map['followup_id'] as String?,
-        category: map['category'] as String,
-        mediaType: map['media_type'] as String,
-        storagePath: map['storage_path'] as String,
-        note: map['note'] as String?,
-      );
+    id: map['id'] as String,
+    caseId: map['case_id'] as String,
+    followupId: map['followup_id'] as String?,
+    category: map['category'] as String,
+    mediaType: map['media_type'] as String,
+    storagePath: map['storage_path'] as String,
+    note: map['note'] as String?,
+  );
 }
 
 class ClinicalCasesRepository {
@@ -220,14 +220,23 @@ class ClinicalCasesRepository {
     if (uid == null) throw AuthException('Not signed in');
     data['created_by'] = uid;
     data['status'] = data['status'] ?? 'draft';
-    final inserted =
-        await _client.from('clinical_cases').insert(data).select('id').maybeSingle();
+    final inserted = await _client
+        .from('clinical_cases')
+        .insert(data)
+        .select('id')
+        .maybeSingle();
     if (inserted == null) throw PostgrestException(message: 'Create failed');
     return inserted['id'] as String;
   }
 
   Future<void> updateCaseDraft(String id, Map<String, dynamic> data) async {
-    await _client.from('clinical_cases').update(data).eq('id', id);
+    final response = await _client
+        .from('clinical_cases')
+        .update(data)
+        .eq('id', id);
+    print('[DEBUG] updateCaseDraft response:');
+    print(response);
+    // No error thrown if no row is updated, just print for debugging
   }
 
   Future<void> addFollowup(String caseId, Map<String, dynamic> data) async {
@@ -235,7 +244,10 @@ class ClinicalCasesRepository {
     await _client.from('case_followups').insert(data);
   }
 
-  Future<void> updateFollowup(String followupId, Map<String, dynamic> data) async {
+  Future<void> updateFollowup(
+    String followupId,
+    Map<String, dynamic> data,
+  ) async {
     await _client.from('case_followups').update(data).eq('id', followupId);
   }
 
@@ -261,8 +273,11 @@ class ClinicalCasesRepository {
   }
 
   Future<List<CaseMediaItem>> listMedia(String caseId) async {
-    final rows =
-        await _client.from('case_media').select('*').eq('case_id', caseId).order('created_at');
+    final rows = await _client
+        .from('case_media')
+        .select('*')
+        .eq('case_id', caseId)
+        .order('created_at');
     return (rows as List)
         .map((e) => CaseMediaItem.fromMap(Map<String, dynamic>.from(e)))
         .toList();
@@ -298,7 +313,8 @@ class ClinicalCasesRepository {
   }
 }
 
-final clinicalCasesRepositoryProvider =
-    Provider<ClinicalCasesRepository>((ref) {
+final clinicalCasesRepositoryProvider = Provider<ClinicalCasesRepository>((
+  ref,
+) {
   return ClinicalCasesRepository(ref.watch(supabaseClientProvider));
 });

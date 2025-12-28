@@ -1,3 +1,4 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/clinical_cases_repository.dart';
@@ -55,30 +56,30 @@ class ClinicalCaseWizardState {
   final String status;
 
   factory ClinicalCaseWizardState.initial() => ClinicalCaseWizardState(
-        caseId: null,
-        isLoading: false,
-        errorMessage: null,
-        dateOfExamination: DateTime.now(),
-        patientName: '',
-        uidNumber: '',
-        mrNumber: '',
-        patientGender: 'male',
-        patientAge: null,
-        chiefComplaint: '',
-        complaintDurationValue: null,
-        complaintDurationUnit: complaintUnits.first,
-        systemicHistory: const [],
-        systemicOther: '',
-        bcvaRe: '',
-        bcvaLe: '',
-        iopRe: '',
-        iopLe: '',
-        anteriorSegment: _initialAnterior(),
-        fundus: _initialFundus(),
-        diagnosis: '',
-        keywords: const [],
-        status: 'draft',
-      );
+    caseId: null,
+    isLoading: false,
+    errorMessage: null,
+    dateOfExamination: DateTime.now(),
+    patientName: '',
+    uidNumber: '',
+    mrNumber: '',
+    patientGender: 'male',
+    patientAge: null,
+    chiefComplaint: '',
+    complaintDurationValue: null,
+    complaintDurationUnit: complaintUnits.first,
+    systemicHistory: const [],
+    systemicOther: '',
+    bcvaRe: '',
+    bcvaLe: '',
+    iopRe: '',
+    iopLe: '',
+    anteriorSegment: _initialAnterior(),
+    fundus: _initialFundus(),
+    diagnosis: '',
+    keywords: const [],
+    status: 'draft',
+  );
 
   ClinicalCaseWizardState copyWith({
     String? caseId,
@@ -118,7 +119,8 @@ class ClinicalCaseWizardState {
       chiefComplaint: chiefComplaint ?? this.chiefComplaint,
       complaintDurationValue:
           complaintDurationValue ?? this.complaintDurationValue,
-      complaintDurationUnit: complaintDurationUnit ?? this.complaintDurationUnit,
+      complaintDurationUnit:
+          complaintDurationUnit ?? this.complaintDurationUnit,
       systemicHistory: systemicHistory ?? this.systemicHistory,
       systemicOther: systemicOther ?? this.systemicOther,
       bcvaRe: bcvaRe ?? this.bcvaRe,
@@ -167,7 +169,7 @@ class ClinicalCaseWizardState {
 class ClinicalCaseWizardController
     extends StateNotifier<ClinicalCaseWizardState> {
   ClinicalCaseWizardController(this._repo)
-      : super(ClinicalCaseWizardState.initial());
+    : super(ClinicalCaseWizardState.initial());
 
   final ClinicalCasesRepository _repo;
 
@@ -205,8 +207,9 @@ class ClinicalCaseWizardController
         bcvaLe: data.bcvaLe ?? '',
         iopRe: data.iopRe?.toString() ?? '',
         iopLe: data.iopLe?.toString() ?? '',
-        anteriorSegment:
-            _normalizeAnterior(data.anteriorSegment ?? _initialAnterior()),
+        anteriorSegment: _normalizeAnterior(
+          data.anteriorSegment ?? _initialAnterior(),
+        ),
         fundus: _normalizeFundus(data.fundus ?? _initialFundus()),
         diagnosis: data.diagnosis,
         keywords: data.keywords,
@@ -214,10 +217,7 @@ class ClinicalCaseWizardController
         isLoading: false,
       );
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }
   }
 
@@ -268,7 +268,13 @@ class ClinicalCaseWizardController
   }
 
   Future<String> save({required String status}) async {
+    // Print the current user's UID for debugging RLS issues
+    print(
+      '[DEBUG] Current user UID: ${Supabase.instance.client.auth.currentUser?.id}',
+    );
     final data = state.toMap(status);
+    print('[DEBUG] save() called with data:');
+    print(data);
     if (state.caseId == null) {
       final id = await _repo.createCaseDraft(data);
       state = state.copyWith(caseId: id, status: status);
@@ -279,10 +285,7 @@ class ClinicalCaseWizardController
     return state.caseId!;
   }
 
-  void setLidsFindings({
-    required String eye,
-    required List<String> findings,
-  }) {
+  void setLidsFindings({required String eye, required List<String> findings}) {
     final next = _copyAnterior(state.anteriorSegment);
     final eyeMap = Map<String, dynamic>.from(next[eye] as Map? ?? {});
     eyeMap['lids_findings'] = findings;
@@ -293,10 +296,7 @@ class ClinicalCaseWizardController
     state = state.copyWith(anteriorSegment: next);
   }
 
-  void setLidsOtherNotes({
-    required String eye,
-    required String notes,
-  }) {
+  void setLidsOtherNotes({required String eye, required String notes}) {
     final next = _copyAnterior(state.anteriorSegment);
     final eyeMap = Map<String, dynamic>.from(next[eye] as Map? ?? {});
     eyeMap['lids_other_notes'] = notes;
@@ -305,12 +305,15 @@ class ClinicalCaseWizardController
   }
 }
 
-final clinicalCaseWizardProvider = StateNotifierProvider.autoDispose<
-    ClinicalCaseWizardController, ClinicalCaseWizardState>((ref) {
-  return ClinicalCaseWizardController(
-    ref.watch(clinicalCasesRepositoryProvider),
-  );
-});
+final clinicalCaseWizardProvider =
+    StateNotifierProvider.autoDispose<
+      ClinicalCaseWizardController,
+      ClinicalCaseWizardState
+    >((ref) {
+      return ClinicalCaseWizardController(
+        ref.watch(clinicalCasesRepositoryProvider),
+      );
+    });
 
 Map<String, dynamic> _initialAnterior() {
   final re = <String, dynamic>{
@@ -370,10 +373,7 @@ Map<String, dynamic> _copyAnterior(Map<String, dynamic> source) {
 }
 
 Map<String, dynamic> _initialFundus() {
-  return {
-    'RE': _emptyFundus(),
-    'LE': _emptyFundus(),
-  };
+  return {'RE': _emptyFundus(), 'LE': _emptyFundus()};
 }
 
 Map<String, dynamic> _emptyFundus() {
@@ -391,15 +391,9 @@ Map<String, dynamic> _normalizeFundus(Map<String, dynamic> fundus) {
   if (fundus.containsKey('RE') || fundus.containsKey('LE')) {
     final re = Map<String, dynamic>.from(fundus['RE'] as Map? ?? {});
     final le = Map<String, dynamic>.from(fundus['LE'] as Map? ?? {});
-    return {
-      'RE': _ensureFundus(re),
-      'LE': _ensureFundus(le),
-    };
+    return {'RE': _ensureFundus(re), 'LE': _ensureFundus(le)};
   }
-  return {
-    'RE': _ensureFundus(fundus),
-    'LE': _ensureFundus({}),
-  };
+  return {'RE': _ensureFundus(fundus), 'LE': _ensureFundus({})};
 }
 
 Map<String, dynamic> _ensureFundus(Map<String, dynamic> fundus) {
