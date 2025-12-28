@@ -27,13 +27,14 @@ class AuthStateModel {
 
   AuthStateModel copyWith({
     Session? session,
+    bool clearSession = false,
     bool? isLoading,
     String? errorMessage,
     bool clearError = false,
     bool? initialized,
   }) {
     return AuthStateModel(
-      session: session ?? this.session,
+      session: clearSession ? null : (session ?? this.session),
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
       initialized: initialized ?? this.initialized,
@@ -108,7 +109,7 @@ class AuthController extends StateNotifier<AuthStateModel> {
     } catch (_) {
       state = state.copyWith(errorMessage: 'Unable to sign out. Please retry.');
     } finally {
-      state = state.copyWith(isLoading: false, session: null);
+      state = state.copyWith(isLoading: false, clearSession: true);
     }
   }
 
@@ -122,18 +123,26 @@ class AuthController extends StateNotifier<AuthStateModel> {
         email: email.trim(),
         password: password,
       );
-      // If email confirmation is on, session may be null.
-      state = state.copyWith(
-        session: response.session ?? state.session,
-        errorMessage: response.session == null
-            ? 'Check your email to confirm your account.'
-            : null,
-      );
+      // If email confirmation is enabled, session will be null until user confirms
+      // If autoconfirm is on in Supabase, session will be available immediately
+      if (response.session != null) {
+        // Auto-confirm is enabled - user is signed in immediately
+        state = state.copyWith(
+          session: response.session,
+          clearError: true,
+        );
+      } else {
+        // Email confirmation required
+        state = state.copyWith(
+          session: null,
+          errorMessage: '✅ Account created! Check your email to confirm your account and then sign in.',
+        );
+      }
     } on AuthException catch (error) {
       state = state.copyWith(errorMessage: error.message);
-    } catch (_) {
+    } catch (e) {
       state = state.copyWith(
-        errorMessage: 'Unable to create account. Please try again.',
+        errorMessage: 'Unable to create account. Error: ${e.toString()}',
       );
     } finally {
       state = state.copyWith(isLoading: false);

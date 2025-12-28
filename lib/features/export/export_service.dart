@@ -1,4 +1,7 @@
 import 'dart:io';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:printing/printing.dart';
 
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
@@ -46,15 +49,23 @@ class ExportService {
     return file;
   }
 
-  Future<File> exportPdf({
+  Future<File?> exportPdf({
     required List<ElogEntry> entries,
     required Profile? profile,
     required DateTime? start,
     required DateTime? end,
   }) async {
+    final fontData = await rootBundle.load('assets/fonts/NotoSans-Regular.ttf');
+    final font = pw.Font.ttf(fontData);
     final doc = pw.Document();
     doc.addPage(
       pw.MultiPage(
+        theme: pw.ThemeData.withFont(
+          base: font,
+          bold: font,
+          italic: font,
+          boldItalic: font,
+        ),
         build: (context) {
           return [
             pw.Text('Aravind E-Logbook', style: pw.TextStyle(fontSize: 20)),
@@ -114,10 +125,19 @@ class ExportService {
       ),
     );
 
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/elogbook_portfolio.pdf');
-    await file.writeAsBytes(await doc.save());
-    return file;
+    if (kIsWeb) {
+      // On web, use Printing.sharePdf to download/share the PDF
+      await Printing.sharePdf(
+        bytes: await doc.save(),
+        filename: 'elogbook_portfolio.pdf',
+      );
+      return null;
+    } else {
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/elogbook_portfolio.pdf');
+      await file.writeAsBytes(await doc.save());
+      return file;
+    }
   }
 
   Future<void> shareFile(File file) async {

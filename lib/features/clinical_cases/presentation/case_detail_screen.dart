@@ -155,15 +155,16 @@ class _SummaryTab extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _InfoRow(label: 'BCVA RE', value: c.bcvaRe ?? '-'),
-              _InfoRow(label: 'BCVA LE', value: c.bcvaLe ?? '-'),
-              _InfoRow(
-                label: 'IOP RE',
-                value: c.iopRe?.toString() ?? '-',
+              _EyePairRow(
+                label: 'BCVA',
+                right: c.bcvaRe ?? '-',
+                left: c.bcvaLe ?? '-',
               ),
-              _InfoRow(
-                label: 'IOP LE',
-                value: c.iopLe?.toString() ?? '-',
+              const SizedBox(height: 8),
+              _EyePairRow(
+                label: 'IOP',
+                right: c.iopRe?.toString() ?? '-',
+                left: c.iopLe?.toString() ?? '-',
               ),
             ],
           ),
@@ -261,6 +262,10 @@ class _SummaryTab extends StatelessWidget {
     final lines = <String>[];
     for (final eyeKey in ['RE', 'LE']) {
       final eye = Map<String, dynamic>.from(anterior[eyeKey] as Map? ?? {});
+      final lidsSummary = _formatLids(eye);
+      if (lidsSummary.isNotEmpty) {
+        lines.add('$eyeKey Lids: $lidsSummary');
+      }
       final abnormal = <String>[];
       for (final field in anteriorSegments) {
         final data = Map<String, dynamic>.from(eye[field] as Map? ?? {});
@@ -279,8 +284,48 @@ class _SummaryTab extends StatelessWidget {
     return lines.join('\n');
   }
 
+  String _formatLids(Map<String, dynamic> eye) {
+    final findings =
+        (eye['lids_findings'] as List?)?.cast<String>() ?? <String>[];
+    final otherNotes = (eye['lids_other_notes'] as String?) ?? '';
+    if (findings.isNotEmpty) {
+      final buffer = findings.join(', ');
+      if (findings.contains('Other') && otherNotes.trim().isNotEmpty) {
+        return '$buffer (Other: $otherNotes)';
+      }
+      return buffer;
+    }
+    final legacy = eye['Lids'] as Map?;
+    if (legacy != null) {
+      final status = (legacy['status'] as String?) ?? 'normal';
+      final notes = (legacy['notes'] as String?) ?? '';
+      if (status == 'abnormal' && notes.trim().isNotEmpty) {
+        return 'Abnormal ($notes)';
+      }
+      return 'Normal';
+    }
+    return '';
+  }
+
   String _formatFundus(Map<String, dynamic>? fundus) {
     if (fundus == null || fundus.isEmpty) return '-';
+    if (fundus.containsKey('RE') || fundus.containsKey('LE')) {
+      final lines = <String>[];
+      for (final eyeKey in ['RE', 'LE']) {
+        final eye = Map<String, dynamic>.from(fundus[eyeKey] as Map? ?? {});
+        final values = <String>[];
+        for (final field in fundusFields) {
+          final value = (eye[field] as String?) ?? '-';
+          values.add('${field.toUpperCase()}: $value');
+        }
+        final others = (eye['others'] as String?) ?? '';
+        if (others.trim().isNotEmpty) {
+          values.add('OTHERS: $others');
+        }
+        lines.add('$eyeKey ${values.join(' | ')}');
+      }
+      return lines.join('\n');
+    }
     final lines = <String>[];
     for (final field in fundusFields) {
       final value = (fundus[field] as String?) ?? '-';
@@ -369,6 +414,58 @@ class _InfoRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _EyePairRow extends StatelessWidget {
+  const _EyePairRow({
+    required this.label,
+    required this.right,
+    required this.left,
+  });
+
+  final String label;
+  final String right;
+  final String left;
+
+  @override
+  Widget build(BuildContext context) {
+    final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        );
+    final valueStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onSurface,
+        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: labelStyle),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('RE', style: labelStyle),
+                  Text(right, style: valueStyle),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('LE', style: labelStyle),
+                  Text(left, style: valueStyle),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

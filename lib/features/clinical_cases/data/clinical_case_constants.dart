@@ -25,7 +25,6 @@ const systemicOptions = [
 ];
 
 const anteriorSegments = [
-  'Lids',
   'Conjunctiva',
   'Cornea',
   'Anterior Chamber',
