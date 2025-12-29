@@ -18,6 +18,7 @@ class HomeScreen extends ConsumerWidget {
     final isConsultant = profile?.designation == 'Consultant';
     final fellowStats = ref.watch(fellowDashboardProvider);
     final consultantStats = ref.watch(consultantDashboardProvider);
+    final profilePhotoUrl = profile?.profilePhotoUrl;
 
     return Scaffold(
       appBar: AppBar(
@@ -42,6 +43,7 @@ class HomeScreen extends ConsumerWidget {
                 name: displayName,
                 designation: profile?.designation,
                 centre: profile?.aravindCentre ?? profile?.centre,
+                profilePhotoUrl: profilePhotoUrl,
                 onTap: () => context.go('/profile'),
               ),
               const SizedBox(height: 16),
@@ -68,47 +70,80 @@ class HomeScreen extends ConsumerWidget {
                     Text(
                       'Logbook Overview',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     fellowStats.when(
                       data: (stats) => _StatsGrid(
                         stats: [
-                          _StatData('Drafts', stats.drafts, Icons.edit_note, const Color(0xFFF59E0B)),
-                          _StatData('Submitted', stats.submitted, Icons.upload_file, const Color(0xFF0B5FFF)),
-                          _StatData('Approved', stats.approved, Icons.check_circle_outline, const Color(0xFF10B981)),
+                          _StatData(
+                            'Drafts',
+                            stats.drafts,
+                            Icons.edit_note,
+                            const Color(0xFFF59E0B),
+                          ),
+                          _StatData(
+                            'Submitted',
+                            stats.submitted,
+                            Icons.upload_file,
+                            const Color(0xFF0B5FFF),
+                          ),
+                          _StatData(
+                            'Approved',
+                            stats.approved,
+                            Icons.check_circle_outline,
+                            const Color(0xFF10B981),
+                          ),
                         ],
                       ),
-                      loading: () => const Center(child: CircularProgressIndicator()),
-                      error: (e, _) => Text('Stats error: $e', style: const TextStyle(color: Colors.red)),
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (e, _) => Text(
+                        'Stats error: $e',
+                        style: const TextStyle(color: Colors.red),
+                      ),
                     ),
                     if (isConsultant) ...[
                       const SizedBox(height: 20),
                       Text(
                         'Consultant Dashboard',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       consultantStats.when(
                         data: (stats) => _StatsGrid(
                           stats: [
-                            _StatData('Pending', stats.pending, Icons.pending_actions, const Color(0xFFF59E0B)),
-                            _StatData('Approved', stats.approvalsThisMonth, Icons.verified_outlined, const Color(0xFF10B981)),
+                            _StatData(
+                              'Pending',
+                              stats.pending,
+                              Icons.pending_actions,
+                              const Color(0xFFF59E0B),
+                            ),
+                            _StatData(
+                              'Approved',
+                              stats.approvalsThisMonth,
+                              Icons.verified_outlined,
+                              const Color(0xFF10B981),
+                            ),
                           ],
                         ),
-                        loading: () => const Center(child: CircularProgressIndicator()),
-                        error: (e, _) => Text('Error: $e', style: const TextStyle(color: Colors.red)),
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (e, _) => Text(
+                          'Error: $e',
+                          style: const TextStyle(color: Colors.red),
+                        ),
                       ),
                     ],
                     const SizedBox(height: 20),
                     Text(
                       'Quick Actions',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     _ActionGrid(isConsultant: isConsultant),
@@ -132,14 +167,51 @@ class _ActionGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tiles = <_ActionTile>[
-      _ActionTile('Teaching', Icons.school, '/teaching', const Color(0xFFF59E0B)),
-      _ActionTile('Analytics', Icons.insights, '/analytics', const Color(0xFF8B5CF6)),
-      _ActionTile('Research', Icons.science, '/research', const Color(0xFFEC4899)),
-      _ActionTile('Publications', Icons.slideshow, '/publications', const Color(0xFF06B6D4)),
-      if (isConsultant) _ActionTile('Reviews', Icons.rate_review, '/review-queue', const Color(0xFFEF4444)),
+      _ActionTile(
+        'Teaching',
+        Icons.school,
+        '/teaching',
+        const Color(0xFFF59E0B),
+      ),
+      _ActionTile(
+        'Analytics',
+        Icons.insights,
+        '/analytics',
+        const Color(0xFF8B5CF6),
+      ),
+      _ActionTile(
+        'Research',
+        Icons.science,
+        '/research',
+        const Color(0xFFEC4899),
+      ),
+      _ActionTile(
+        'Publications',
+        Icons.slideshow,
+        '/publications',
+        const Color(0xFF06B6D4),
+      ),
       if (isConsultant)
-        _ActionTile('Case Assessments', Icons.fact_check, '/cases/assessment-queue', const Color(0xFF0B5FFF)),
-      if (isConsultant) _ActionTile('Proposals', Icons.inbox, '/teaching/proposals', const Color(0xFF6366F1)),
+        _ActionTile(
+          'Reviews',
+          Icons.rate_review,
+          '/review-queue',
+          const Color(0xFFEF4444),
+        ),
+      if (isConsultant)
+        _ActionTile(
+          'Case Assessments',
+          Icons.fact_check,
+          '/cases/assessment-queue',
+          const Color(0xFF0B5FFF),
+        ),
+      if (isConsultant)
+        _ActionTile(
+          'Proposals',
+          Icons.inbox,
+          '/teaching/proposals',
+          const Color(0xFF6366F1),
+        ),
     ];
 
     return GridView.count(
@@ -199,10 +271,7 @@ class _ActionTile extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
             ),
           ],
         ),
@@ -216,12 +285,14 @@ class _ProfileHeader extends StatelessWidget {
     required this.name,
     required this.designation,
     required this.centre,
+    required this.profilePhotoUrl,
     required this.onTap,
   });
 
   final String? name;
   final String? designation;
   final String? centre;
+  final String? profilePhotoUrl;
   final VoidCallback onTap;
 
   @override
@@ -254,7 +325,22 @@ class _ProfileHeader extends StatelessWidget {
                 color: Colors.white.withOpacity(0.2),
                 border: Border.all(color: Colors.white, width: 2),
               ),
-              child: const Icon(Icons.visibility, color: Colors.white, size: 32),
+              child: (profilePhotoUrl?.isNotEmpty ?? false)
+                  ? ClipOval(
+                      child: Image.network(
+                        profilePhotoUrl!,
+                        width: 72,
+                        height: 72,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(
+                              Icons.person,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                      ),
+                    )
+                  : const Icon(Icons.visibility, color: Colors.white, size: 32),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -271,7 +357,10 @@ class _ProfileHeader extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    [designation, centre].where((e) => (e ?? '').isNotEmpty).join(' | '),
+                    [
+                      designation,
+                      centre,
+                    ].where((e) => (e ?? '').isNotEmpty).join(' | '),
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.9),
                       fontSize: 14,
@@ -328,35 +417,40 @@ class _StatsGrid extends StatelessWidget {
               ),
             ],
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: stat.color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: stat.color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(stat.icon, color: stat.color, size: 20),
                 ),
-                child: Icon(stat.icon, color: stat.color, size: 20),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '${stat.value}',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
+                const SizedBox(height: 6),
+                Text(
+                  '${stat.value}',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                stat.label,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 10, color: Color(0xFF475569)),
-              ),
-            ],
+                const SizedBox(height: 3),
+                Text(
+                  stat.label,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF475569),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

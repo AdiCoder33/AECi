@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../application/clinical_case_wizard_controller.dart';
+import '../../application/clinical_cases_controller.dart';
 import '../../data/clinical_case_constants.dart';
 import 'steps/step1_patient.dart';
 import 'steps/step2_complaints.dart';
@@ -112,8 +113,7 @@ class _ClinicalCaseWizardScreenState
     _mrController.text = state.mrNumber;
     _ageController.text = state.patientAge?.toString() ?? '';
     _chiefController.text = state.chiefComplaint;
-    _durationController.text =
-        state.complaintDurationValue?.toString() ?? '';
+    _durationController.text = state.complaintDurationValue?.toString() ?? '';
     _systemicOtherController.text = state.systemicOther;
     _iopReController.text = state.iopRe;
     _iopLeController.text = state.iopLe;
@@ -125,17 +125,17 @@ class _ClinicalCaseWizardScreenState
   Widget build(BuildContext context) {
     final wizard = ref.watch(clinicalCaseWizardProvider);
     final notifier = ref.read(clinicalCaseWizardProvider.notifier);
-    ref.listen<ClinicalCaseWizardState>(clinicalCaseWizardProvider,
-        (previous, next) {
+    ref.listen<ClinicalCaseWizardState>(clinicalCaseWizardProvider, (
+      previous,
+      next,
+    ) {
       if (next.caseId != null && !_prefilled && !next.isLoading) {
         _prefillFromState(next);
       }
     });
 
     if (wizard.isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final titles = [
@@ -170,8 +170,7 @@ class _ClinicalCaseWizardScreenState
         mrController: _mrController,
         ageController: _ageController,
         gender: wizard.patientGender,
-        onGenderChanged: (value) =>
-            notifier.update(patientGender: value),
+        onGenderChanged: (value) => notifier.update(patientGender: value),
       ),
       Step2Complaints(
         formKey: _formKeys[1],
@@ -186,8 +185,7 @@ class _ClinicalCaseWizardScreenState
         child: Step3Systemic(
           selected: wizard.systemicHistory,
           otherController: _systemicOtherController,
-          onSelectionChanged: (next) =>
-              notifier.update(systemicHistory: next),
+          onSelectionChanged: (next) => notifier.update(systemicHistory: next),
         ),
       ),
       Step4Bcva(
@@ -228,9 +226,7 @@ class _ClinicalCaseWizardScreenState
     final isLast = _stepIndex == steps.length - 1;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Clinical Case Wizard'),
-      ),
+      appBar: AppBar(title: const Text('Clinical Case Wizard')),
       body: Column(
         children: [
           WizardHeader(
@@ -239,10 +235,7 @@ class _ClinicalCaseWizardScreenState
             title: titles[_stepIndex],
           ),
           Expanded(
-            child: IndexedStack(
-              index: _stepIndex,
-              children: steps,
-            ),
+            child: IndexedStack(index: _stepIndex, children: steps),
           ),
           WizardFooter(
             isFirst: _stepIndex == 0,
@@ -275,7 +268,10 @@ class _ClinicalCaseWizardScreenState
     return _isStepComplete(wizard);
   }
 
-  bool _validateStep({ClinicalCaseWizardState? wizard, bool showErrors = false}) {
+  bool _validateStep({
+    ClinicalCaseWizardState? wizard,
+    bool showErrors = false,
+  }) {
     final ClinicalCaseWizardState state =
         wizard ?? ref.read(clinicalCaseWizardProvider);
     if (showErrors) {
@@ -445,6 +441,8 @@ class _ClinicalCaseWizardScreenState
           ),
         ),
       );
+      // Force refresh of case detail after edit
+      ref.invalidate(clinicalCaseDetailProvider(id));
       context.go('/cases/$id');
     } catch (e) {
       if (!mounted) return;
@@ -459,10 +457,7 @@ class _ClinicalCaseWizardScreenState
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.redAccent,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
     );
   }
 }

@@ -30,14 +30,12 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
         title: const Text('Case Detail'),
         actions: [
           caseAsync.maybeWhen(
-            data: (c) {
-              final canEdit = c.status == 'draft' || c.status == 'submitted';
-              if (!canEdit) return const SizedBox.shrink();
-              return IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: () => context.push('/cases/${c.id}/edit'),
-              );
-            },
+            data: (c) => (c.status == 'draft' || c.status == 'submitted')
+                ? IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () => context.push('/cases/${c.id}/edit'),
+                  )
+                : const SizedBox.shrink(),
             orElse: () => const SizedBox.shrink(),
           ),
         ],
@@ -94,9 +92,7 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
           );
         },
         loading: () => const Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF0B5FFF),
-          ),
+          child: CircularProgressIndicator(color: Color(0xFF0B5FFF)),
         ),
         error: (e, _) => Center(child: Text('Error: $e')),
       ),
@@ -408,10 +404,7 @@ class _InfoRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 13,
-                color: Color(0xFF1E293B),
-              ),
+              style: const TextStyle(fontSize: 13, color: Color(0xFF1E293B)),
             ),
           ),
         ],
@@ -434,12 +427,12 @@ class _EyePairRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        );
+      fontWeight: FontWeight.w600,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    );
     final valueStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: Theme.of(context).colorScheme.onSurface,
-        );
+      color: Theme.of(context).colorScheme.onSurface,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -499,8 +492,10 @@ class _FollowupsTab extends ConsumerWidget {
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final f = list[index];
-                  final date =
-                      f.dateOfExamination.toIso8601String().split('T').first;
+                  final date = f.dateOfExamination
+                      .toIso8601String()
+                      .split('T')
+                      .first;
                   return Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -605,7 +600,10 @@ class _MediaTab extends ConsumerWidget {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () => context.push('/cases/$caseId/media'),
-                  icon: const Icon(Icons.add_photo_alternate, color: Colors.white),
+                  icon: const Icon(
+                    Icons.add_photo_alternate,
+                    color: Colors.white,
+                  ),
                   label: const Text('Add Media'),
                 ),
               ),
@@ -673,10 +671,7 @@ class _MediaTile extends ConsumerWidget {
               item.category.replaceAll('_', ' '),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
             if (item.note != null && item.note!.isNotEmpty)
               Text(
@@ -777,7 +772,8 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
   Widget build(BuildContext context) {
     final mutation = ref.watch(assessmentMutationProvider);
     final profileState = ref.watch(profileControllerProvider);
-    final centre = profileState.profile?.aravindCentre ??
+    final centre =
+        profileState.profile?.aravindCentre ??
         profileState.profile?.centre ??
         '';
     final monthKey = _monthKey(DateTime.now());
@@ -842,8 +838,9 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
                                   ),
                                 );
                               },
-                              loading: () =>
-                                  const CircularProgressIndicator(strokeWidth: 2),
+                              loading: () => const CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
                               error: (e, _) => Text('Error: $e'),
                             ),
                         ],
@@ -876,8 +873,9 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
     final authState = ref.watch(authControllerProvider);
     final isAssignee =
         authState.session?.user.id == assessment.assignedConsultantId;
-    final consultantProfileAsync =
-        ref.watch(profileByIdProvider(assessment.assignedConsultantId));
+    final consultantProfileAsync = ref.watch(
+      profileByIdProvider(assessment.assignedConsultantId),
+    );
 
     return Container(
       color: const Color(0xFFF7F9FC),
@@ -893,11 +891,7 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            _StatusPill(status: assessment.status),
-                          ],
-                        ),
+                        Row(children: [_StatusPill(status: assessment.status)]),
                         const SizedBox(height: 12),
                         consultantProfileAsync.when(
                           data: (profile) {

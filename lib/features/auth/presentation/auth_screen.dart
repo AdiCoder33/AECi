@@ -78,18 +78,33 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              children: const [
-                                CircleAvatar(
-                                  radius: 22,
-                                  backgroundColor: Color(0xFF0B5FFF),
-                                  child: Icon(Icons.book, color: Colors.white),
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.asset(
+                                    'assets/logo.png',
+                                    width: 48,
+                                    height: 48,
+                                    fit: BoxFit.contain,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Icon(
+                                              Icons.book,
+                                              size: 48,
+                                              color: Color(0xFF0B5FFF),
+                                            ),
+                                  ),
                                 ),
-                                SizedBox(width: 12),
-                                Text(
-                                  'Aravind E-Logbook',
-                                  style: TextStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.w700,
+                                const SizedBox(width: 12),
+                                const Expanded(
+                                  child: Text(
+                                    'Aravind E-Logbook',
+                                    style: TextStyle(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                               ],
