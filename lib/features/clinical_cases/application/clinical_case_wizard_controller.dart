@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/clinical_cases_repository.dart';
 import '../data/clinical_case_constants.dart';
+import '../domain/constants/anterior_segment_options.dart';
+import '../domain/constants/fundus_options.dart';
 
 class ClinicalCaseWizardState {
   const ClinicalCaseWizardState({
@@ -283,25 +285,162 @@ class ClinicalCaseWizardController
     required String eye,
     required List<String> findings,
   }) {
-    final next = _copyAnterior(state.anteriorSegment);
-    final eyeMap = Map<String, dynamic>.from(next[eye] as Map? ?? {});
-    eyeMap['lids_findings'] = findings;
-    if (!findings.contains('Other')) {
-      eyeMap['lids_other_notes'] = '';
-    }
-    next[eye] = eyeMap;
-    state = state.copyWith(anteriorSegment: next);
+    setAnteriorSegmentSelection(
+      eye: eye,
+      sectionKey: 'lids',
+      selectedList: findings,
+    );
   }
 
   void setLidsOtherNotes({
     required String eye,
     required String notes,
   }) {
+    setAnteriorSegmentOther(
+      eye: eye,
+      sectionKey: 'lids',
+      otherText: notes,
+    );
+  }
+
+  void setAnteriorSegmentSelection({
+    required String eye,
+    required String sectionKey,
+    required List<String> selectedList,
+  }) {
     final next = _copyAnterior(state.anteriorSegment);
     final eyeMap = Map<String, dynamic>.from(next[eye] as Map? ?? {});
-    eyeMap['lids_other_notes'] = notes;
+    final section =
+        Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
+    final normalized = _normalizeSelection(selectedList);
+    section['selected'] = normalized;
+    final descriptions =
+        Map<String, dynamic>.from(section['descriptions'] as Map? ?? {});
+    descriptions.removeWhere((key, _) => !normalized.contains(key));
+    section['descriptions'] = descriptions;
+    if (!normalized.contains('Other')) {
+      section['other'] = '';
+    }
+    eyeMap[sectionKey] = section;
     next[eye] = eyeMap;
     state = state.copyWith(anteriorSegment: next);
+  }
+
+  void setAnteriorSegmentDescription({
+    required String eye,
+    required String sectionKey,
+    required String option,
+    required String description,
+  }) {
+    final next = _copyAnterior(state.anteriorSegment);
+    final eyeMap = Map<String, dynamic>.from(next[eye] as Map? ?? {});
+    final section =
+        Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
+    final descriptions =
+        Map<String, dynamic>.from(section['descriptions'] as Map? ?? {});
+    descriptions[option] = description;
+    section['descriptions'] = descriptions;
+    eyeMap[sectionKey] = section;
+    next[eye] = eyeMap;
+    state = state.copyWith(anteriorSegment: next);
+  }
+
+  void setAnteriorSegmentOther({
+    required String eye,
+    required String sectionKey,
+    required String otherText,
+  }) {
+    final next = _copyAnterior(state.anteriorSegment);
+    final eyeMap = Map<String, dynamic>.from(next[eye] as Map? ?? {});
+    final section =
+        Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
+    section['other'] = otherText;
+    eyeMap[sectionKey] = section;
+    next[eye] = eyeMap;
+    state = state.copyWith(anteriorSegment: next);
+  }
+
+  void setAnteriorSegmentRemarks({
+    required String eye,
+    required String remarks,
+  }) {
+    final next = _copyAnterior(state.anteriorSegment);
+    final eyeMap = Map<String, dynamic>.from(next[eye] as Map? ?? {});
+    eyeMap['remarks'] = remarks;
+    next[eye] = eyeMap;
+    state = state.copyWith(anteriorSegment: next);
+  }
+
+  void setFundusSelection({
+    required String sectionKey,
+    required List<String> selectedList,
+    String? eye,
+  }) {
+    final targetEye = eye ?? 'RE';
+    final next = _copyFundus(state.fundus);
+    final eyeMap = Map<String, dynamic>.from(next[targetEye] as Map? ?? {});
+    final section =
+        Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
+    final normalized = _normalizeSelection(selectedList);
+    section['selected'] = normalized;
+    final descriptions =
+        Map<String, dynamic>.from(section['descriptions'] as Map? ?? {});
+    descriptions.removeWhere((key, _) => !normalized.contains(key));
+    section['descriptions'] = descriptions;
+    if (!normalized.contains('Other')) {
+      section['other'] = '';
+    }
+    eyeMap[sectionKey] = section;
+    next[targetEye] = eyeMap;
+    state = state.copyWith(fundus: next);
+  }
+
+  void setFundusDescription({
+    required String sectionKey,
+    required String option,
+    required String description,
+    String? eye,
+  }) {
+    final targetEye = eye ?? 'RE';
+    final next = _copyFundus(state.fundus);
+    final eyeMap = Map<String, dynamic>.from(next[targetEye] as Map? ?? {});
+    final section =
+        Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
+    final descriptions =
+        Map<String, dynamic>.from(section['descriptions'] as Map? ?? {});
+    descriptions[option] = description;
+    section['descriptions'] = descriptions;
+    eyeMap[sectionKey] = section;
+    next[targetEye] = eyeMap;
+    state = state.copyWith(fundus: next);
+  }
+
+  void setFundusOther({
+    required String sectionKey,
+    required String otherText,
+    String? eye,
+  }) {
+    final targetEye = eye ?? 'RE';
+    final next = _copyFundus(state.fundus);
+    final eyeMap = Map<String, dynamic>.from(next[targetEye] as Map? ?? {});
+    final section =
+        Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
+    section['other'] = otherText;
+    eyeMap[sectionKey] = section;
+    next[targetEye] = eyeMap;
+    state = state.copyWith(fundus: next);
+  }
+
+  void setFundusRemarks({
+    required String remarks,
+    String? eye,
+  }) {
+    final targetEye = eye ?? 'RE';
+    final next = _copyFundus(state.fundus);
+    final eyeMap = Map<String, dynamic>.from(next[targetEye] as Map? ?? {});
+    eyeMap['remarks'] = remarks;
+    next[targetEye] = eyeMap;
+    state = state.copyWith(fundus: next);
   }
 }
 
@@ -313,50 +452,59 @@ final clinicalCaseWizardProvider = StateNotifierProvider.autoDispose<
 });
 
 Map<String, dynamic> _initialAnterior() {
-  final re = <String, dynamic>{
-    'lids_findings': <String>['Normal'],
-    'lids_other_notes': '',
-  };
-  final le = <String, dynamic>{
-    'lids_findings': <String>['Normal'],
-    'lids_other_notes': '',
-  };
-  for (final field in anteriorSegments) {
-    re[field] = {'status': 'normal', 'notes': ''};
-    le[field] = {'status': 'normal', 'notes': ''};
+  final re = <String, dynamic>{};
+  final le = <String, dynamic>{};
+  for (final section in anteriorSegmentSections) {
+    re[section.key] = _emptyAnteriorSection();
+    le[section.key] = _emptyAnteriorSection();
   }
+  re['remarks'] = '';
+  le['remarks'] = '';
   return {'RE': re, 'LE': le};
 }
 
 Map<String, dynamic> _normalizeAnterior(Map<String, dynamic> anterior) {
-  final next = _copyAnterior(anterior);
+  final hasEyes = anterior.containsKey('RE') || anterior.containsKey('LE');
+  final source = hasEyes ? anterior : {'RE': anterior, 'LE': {}};
+  final next = _copyAnterior(source);
   for (final eyeKey in ['RE', 'LE']) {
-    final eye = Map<String, dynamic>.from(next[eyeKey] as Map? ?? {});
-    if (!eye.containsKey('lids_findings')) {
-      final legacy = eye['Lids'] as Map?;
-      if (legacy != null) {
-        final status = legacy['status'] as String? ?? 'normal';
+    final rawEye = Map<String, dynamic>.from(next[eyeKey] as Map? ?? {});
+    final eye = <String, dynamic>{};
+    for (final section in anteriorSegmentSections) {
+      final key = section.key;
+      if (rawEye[key] is Map) {
+        eye[key] = _normalizeSection(rawEye[key] as Map);
+        continue;
+      }
+      if (key == 'lids' && rawEye['lids_findings'] is List) {
+        final list = (rawEye['lids_findings'] as List?)?.cast<String>() ?? [];
+        final otherNotes = (rawEye['lids_other_notes'] as String?) ?? '';
+        eye[key] = {
+          'selected': _normalizeSelection(list),
+          'descriptions': <String, String>{},
+          'other': otherNotes,
+        };
+        continue;
+      }
+      final legacyLabel = _legacyAnteriorLabel(key);
+      if (legacyLabel != null && rawEye[legacyLabel] is Map) {
+        final legacy = rawEye[legacyLabel] as Map;
+        final status = (legacy['status'] as String?) ?? 'normal';
         final notes = (legacy['notes'] as String?) ?? '';
-        if (status == 'normal') {
-          eye['lids_findings'] = <String>['Normal'];
-          eye['lids_other_notes'] = '';
-        } else if (notes.trim().length >= 3) {
-          eye['lids_findings'] = <String>['Other'];
-          eye['lids_other_notes'] = notes;
+        if (status == 'abnormal' && notes.trim().isNotEmpty) {
+          eye[key] = {
+            'selected': <String>['Other'],
+            'descriptions': <String, String>{},
+            'other': notes,
+          };
         } else {
-          eye['lids_findings'] = <String>['Normal'];
-          eye['lids_other_notes'] = '';
+          eye[key] = _emptyAnteriorSection();
         }
-      } else {
-        eye['lids_findings'] = <String>['Normal'];
-        eye['lids_other_notes'] = '';
+        continue;
       }
-    } else {
-      final list = (eye['lids_findings'] as List?)?.cast<String>() ?? [];
-      if (list.isEmpty) {
-        eye['lids_findings'] = <String>['Normal'];
-      }
+      eye[key] = _emptyAnteriorSection();
     }
+    eye['remarks'] = (rawEye['remarks'] as String?) ?? '';
     next[eyeKey] = eye;
   }
   return next;
@@ -376,43 +524,138 @@ Map<String, dynamic> _copyAnterior(Map<String, dynamic> source) {
 
 Map<String, dynamic> _initialFundus() {
   return {
-    'RE': _emptyFundus(),
-    'LE': _emptyFundus(),
+    'RE': _emptyFundusEye(),
+    'LE': _emptyFundusEye(),
   };
 }
 
-Map<String, dynamic> _emptyFundus() {
-  return {
-    'media': '',
-    'disc': '',
-    'vessels': '',
-    'background': '',
-    'macula': '',
-    'others': '',
-  };
+Map<String, dynamic> _emptyFundusEye() {
+  final eye = <String, dynamic>{};
+  for (final section in fundusSections) {
+    eye[section.key] = _emptyFundusSection();
+  }
+  eye['remarks'] = '';
+  return eye;
 }
 
 Map<String, dynamic> _normalizeFundus(Map<String, dynamic> fundus) {
-  if (fundus.containsKey('RE') || fundus.containsKey('LE')) {
-    final re = Map<String, dynamic>.from(fundus['RE'] as Map? ?? {});
-    final le = Map<String, dynamic>.from(fundus['LE'] as Map? ?? {});
-    return {
-      'RE': _ensureFundus(re),
-      'LE': _ensureFundus(le),
-    };
+  final hasEyes = fundus.containsKey('RE') || fundus.containsKey('LE');
+  final source = hasEyes ? fundus : {'RE': fundus, 'LE': {}};
+  final next = _copyFundus(source);
+  for (final eyeKey in ['RE', 'LE']) {
+    final rawEye = Map<String, dynamic>.from(next[eyeKey] as Map? ?? {});
+    final eye = <String, dynamic>{};
+    for (final section in fundusSections) {
+      if (rawEye[section.key] is Map) {
+        eye[section.key] = _normalizeSection(rawEye[section.key] as Map);
+      } else {
+        final legacy = _legacyFundusValue(rawEye, section.key);
+        if (legacy.isNotEmpty) {
+          eye[section.key] = {
+            'selected': <String>[legacy],
+            'descriptions': <String, String>{},
+            'other': '',
+          };
+        } else {
+          eye[section.key] = _emptyFundusSection();
+        }
+      }
+    }
+    eye['remarks'] = (rawEye['remarks'] as String?) ?? '';
+    next[eyeKey] = eye;
   }
+  return next;
+}
+
+Map<String, dynamic> _copyFundus(Map<String, dynamic> source) {
+  final copy = <String, dynamic>{};
+  for (final entry in source.entries) {
+    if (entry.value is Map) {
+      copy[entry.key] = Map<String, dynamic>.from(entry.value as Map);
+    } else {
+      copy[entry.key] = entry.value;
+    }
+  }
+  return copy;
+}
+
+Map<String, dynamic> _emptyAnteriorSection() {
   return {
-    'RE': _ensureFundus(fundus),
-    'LE': _ensureFundus({}),
+    'selected': <String>[],
+    'descriptions': <String, String>{},
+    'other': '',
   };
 }
 
-Map<String, dynamic> _ensureFundus(Map<String, dynamic> fundus) {
-  final next = _emptyFundus();
-  for (final entry in fundus.entries) {
-    if (next.containsKey(entry.key)) {
-      next[entry.key] = entry.value;
-    }
+Map<String, dynamic> _emptyFundusSection() {
+  return {
+    'selected': <String>[],
+    'descriptions': <String, String>{},
+    'other': '',
+  };
+}
+
+Map<String, dynamic> _normalizeSection(Map raw) {
+  final selected = (raw['selected'] as List?)?.cast<String>() ?? <String>[];
+  final descriptions =
+      Map<String, String>.from(raw['descriptions'] as Map? ?? {});
+  final other = (raw['other'] as String?) ?? '';
+  return {
+    'selected': _normalizeSelection(selected),
+    'descriptions': descriptions,
+    'other': other,
+  };
+}
+
+List<String> _normalizeSelection(List<String> selected) {
+  final deduped = <String>{};
+  for (final item in selected) {
+    if (item.trim().isEmpty) continue;
+    deduped.add(item);
   }
-  return next;
+  final list = deduped.toList();
+  if (list.contains('Normal') && list.length > 1) {
+    return ['Normal'];
+  }
+  return list;
+}
+
+String? _legacyAnteriorLabel(String sectionKey) {
+  switch (sectionKey) {
+    case 'conjunctiva':
+      return 'Conjunctiva';
+    case 'cornea':
+      return 'Cornea';
+    case 'anterior_chamber':
+      return 'Anterior Chamber';
+    case 'pupil':
+      return 'Pupil';
+    case 'lens':
+      return 'Lens';
+    case 'iris':
+      return 'Iris';
+  }
+  return null;
+}
+
+String _legacyFundusValue(Map<String, dynamic> rawEye, String sectionKey) {
+  switch (sectionKey) {
+    case 'media':
+      return (rawEye['media'] as String?) ??
+          (rawEye['Media'] as String?) ??
+          '';
+    case 'optic_disc':
+      return (rawEye['optic_disc'] as String?) ??
+          (rawEye['disc'] as String?) ??
+          '';
+    case 'vessels':
+      return (rawEye['vessels'] as String?) ?? '';
+    case 'background_retina':
+      return (rawEye['background_retina'] as String?) ??
+          (rawEye['background'] as String?) ??
+          '';
+    case 'macula':
+      return (rawEye['macula'] as String?) ?? '';
+  }
+  return '';
 }

@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../application/clinical_case_wizard_controller.dart';
 import '../../data/clinical_case_constants.dart';
+import '../../domain/constants/anterior_segment_options.dart';
+import '../../domain/constants/fundus_options.dart';
 import 'steps/step1_patient.dart';
 import 'steps/step2_complaints.dart';
 import 'steps/step3_systemic.dart';
@@ -205,16 +207,52 @@ class _ClinicalCaseWizardScreenState
       Step6Anterior(
         formKey: _formKeys[5],
         anterior: wizard.anteriorSegment,
-        onChanged: (value) => notifier.update(anteriorSegment: value),
-        onLidsFindingsChanged: (eye, findings) =>
-            notifier.setLidsFindings(eye: eye, findings: findings),
-        onLidsOtherNotesChanged: (eye, notes) =>
-            notifier.setLidsOtherNotes(eye: eye, notes: notes),
+        onSelectionChanged: (eye, sectionKey, selected) =>
+            notifier.setAnteriorSegmentSelection(
+              eye: eye,
+              sectionKey: sectionKey,
+              selectedList: selected,
+            ),
+        onDescriptionChanged: (eye, sectionKey, option, description) =>
+            notifier.setAnteriorSegmentDescription(
+              eye: eye,
+              sectionKey: sectionKey,
+              option: option,
+              description: description,
+            ),
+        onOtherChanged: (eye, sectionKey, other) =>
+            notifier.setAnteriorSegmentOther(
+              eye: eye,
+              sectionKey: sectionKey,
+              otherText: other,
+            ),
+        onRemarksChanged: (eye, remarks) =>
+            notifier.setAnteriorSegmentRemarks(eye: eye, remarks: remarks),
       ),
       Step7Fundus(
         formKey: _formKeys[6],
         fundus: wizard.fundus,
-        onChanged: (value) => notifier.update(fundus: value),
+        onSelectionChanged: (eye, sectionKey, selected) =>
+            notifier.setFundusSelection(
+              eye: eye,
+              sectionKey: sectionKey,
+              selectedList: selected,
+            ),
+        onDescriptionChanged: (eye, sectionKey, option, description) =>
+            notifier.setFundusDescription(
+              eye: eye,
+              sectionKey: sectionKey,
+              option: option,
+              description: description,
+            ),
+        onOtherChanged: (eye, sectionKey, other) =>
+            notifier.setFundusOther(
+              eye: eye,
+              sectionKey: sectionKey,
+              otherText: other,
+            ),
+        onRemarksChanged: (eye, remarks) =>
+            notifier.setFundusRemarks(eye: eye, remarks: remarks),
       ),
       Step8DiagnosisKeywords(
         formKey: _formKeys[7],
@@ -304,16 +342,9 @@ class _ClinicalCaseWizardScreenState
 
     if (_stepIndex == 5) {
       final issues = _anteriorIssues(state.anteriorSegment);
-      final lidsIssues = _lidsIssues(state.anteriorSegment);
       if (issues.isNotEmpty) {
         if (showErrors) {
-          _showError('Add notes for abnormal anterior findings.');
-        }
-        return false;
-      }
-      if (lidsIssues.isNotEmpty) {
-        if (showErrors) {
-          _showError('Please complete lids findings for both eyes.');
+          _showError('Complete anterior segment selections.');
         }
         return false;
       }
@@ -323,7 +354,7 @@ class _ClinicalCaseWizardScreenState
       final issues = _fundusIssues(state.fundus);
       if (issues.isNotEmpty) {
         if (showErrors) {
-          _showError('Please complete all fundus fields for both eyes.');
+          _showError('Complete fundus selections for both eyes.');
         }
         return false;
       }
@@ -365,8 +396,7 @@ class _ClinicalCaseWizardScreenState
         return num.tryParse(_iopReController.text) != null &&
             num.tryParse(_iopLeController.text) != null;
       case 5:
-        return _anteriorIssues(state.anteriorSegment).isEmpty &&
-            _lidsIssues(state.anteriorSegment).isEmpty;
+        return _anteriorIssues(state.anteriorSegment).isEmpty;
       case 6:
         return _fundusIssues(state.fundus).isEmpty;
       case 7:
@@ -382,34 +412,32 @@ class _ClinicalCaseWizardScreenState
     final issues = <String>[];
     for (final eyeKey in ['RE', 'LE']) {
       final eye = Map<String, dynamic>.from(anterior[eyeKey] as Map? ?? {});
-      for (final field in anteriorSegments) {
-        final data = Map<String, dynamic>.from(eye[field] as Map? ?? {});
-        final status = (data['status'] as String?) ?? 'normal';
-        final notes = (data['notes'] as String?) ?? '';
-        if (status == 'abnormal' && notes.trim().isEmpty) {
-          issues.add('$eyeKey $field');
+      for (final section in anteriorSegmentSections) {
+        final sectionData =
+            Map<String, dynamic>.from(eye[section.key] as Map? ?? {});
+        final selected =
+            (sectionData['selected'] as List?)?.cast<String>() ?? <String>[];
+        final descriptions =
+            Map<String, dynamic>.from(sectionData['descriptions'] as Map? ?? {});
+        final other = (sectionData['other'] as String?) ?? '';
+        if (selected.isEmpty) {
+          issues.add('$eyeKey ${section.label}');
+          continue;
         }
-      }
-    }
-    return issues;
-  }
-
-  List<String> _lidsIssues(Map<String, dynamic> anterior) {
-    final issues = <String>[];
-    for (final eyeKey in ['RE', 'LE']) {
-      final eye = Map<String, dynamic>.from(anterior[eyeKey] as Map? ?? {});
-      final findings =
-          (eye['lids_findings'] as List?)?.cast<String>() ?? <String>[];
-      final otherNotes = (eye['lids_other_notes'] as String?) ?? '';
-      if (findings.isEmpty) {
-        issues.add('$eyeKey lids required');
-        continue;
-      }
-      if (findings.contains('Normal') && findings.length > 1) {
-        issues.add('$eyeKey lids normal exclusive');
-      }
-      if (findings.contains('Other') && otherNotes.trim().length < 3) {
-        issues.add('$eyeKey lids other notes');
+        if (selected.contains('Normal') && selected.length > 1) {
+          issues.add('$eyeKey ${section.label} normal exclusive');
+        }
+        if (selected.contains('Other') && other.trim().length < 3) {
+          issues.add('$eyeKey ${section.label} other');
+        }
+        for (final option in selected) {
+          if (_isDescriptiveOption(option)) {
+            final desc = (descriptions[option] ?? '').toString();
+            if (desc.trim().length < 3) {
+              issues.add('$eyeKey ${section.label} $option');
+            }
+          }
+        }
       }
     }
     return issues;
@@ -419,14 +447,41 @@ class _ClinicalCaseWizardScreenState
     final issues = <String>[];
     for (final eyeKey in ['RE', 'LE']) {
       final eye = Map<String, dynamic>.from(fundus[eyeKey] as Map? ?? {});
-      for (final field in fundusFields) {
-        final value = eye[field] as String? ?? '';
-        if (value.isEmpty) {
-          issues.add('$eyeKey $field');
+      for (final section in fundusSections) {
+        final sectionData =
+            Map<String, dynamic>.from(eye[section.key] as Map? ?? {});
+        final selected =
+            (sectionData['selected'] as List?)?.cast<String>() ?? <String>[];
+        final descriptions =
+            Map<String, dynamic>.from(sectionData['descriptions'] as Map? ?? {});
+        final other = (sectionData['other'] as String?) ?? '';
+        if (selected.isEmpty) {
+          issues.add('$eyeKey ${section.label}');
+          continue;
+        }
+        if (selected.contains('Normal') && selected.length > 1) {
+          issues.add('$eyeKey ${section.label} normal exclusive');
+        }
+        if (selected.contains('Other') && other.trim().length < 3) {
+          issues.add('$eyeKey ${section.label} other');
+        }
+        for (final option in selected) {
+          if (_isDescriptiveOption(option)) {
+            final desc = (descriptions[option] ?? '').toString();
+            if (desc.trim().length < 3) {
+              issues.add('$eyeKey ${section.label} $option');
+            }
+          }
         }
       }
     }
     return issues;
+  }
+
+  bool _isDescriptiveOption(String option) {
+    final normalized = option.toLowerCase();
+    return normalized.contains('descriptive') ||
+        normalized.contains('decriptive');
   }
 
   Future<void> _saveCase(ClinicalCaseWizardState wizard, String status) async {

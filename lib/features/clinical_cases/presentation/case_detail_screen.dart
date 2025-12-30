@@ -5,7 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../application/clinical_cases_controller.dart';
 import '../application/assessment_controller.dart';
-import '../data/clinical_case_constants.dart';
+import '../domain/constants/anterior_segment_options.dart';
+import '../domain/constants/fundus_options.dart';
 import '../data/clinical_cases_repository.dart';
 import '../../profile/application/profile_controller.dart';
 import '../../auth/application/auth_controller.dart';
@@ -264,49 +265,19 @@ class _SummaryTab extends StatelessWidget {
     final lines = <String>[];
     for (final eyeKey in ['RE', 'LE']) {
       final eye = Map<String, dynamic>.from(anterior[eyeKey] as Map? ?? {});
-      final lidsSummary = _formatLids(eye);
-      if (lidsSummary.isNotEmpty) {
-        lines.add('$eyeKey Lids: $lidsSummary');
-      }
-      final abnormal = <String>[];
-      for (final field in anteriorSegments) {
-        final data = Map<String, dynamic>.from(eye[field] as Map? ?? {});
-        final status = (data['status'] as String?) ?? 'normal';
-        final notes = (data['notes'] as String?) ?? '';
-        if (status == 'abnormal') {
-          abnormal.add('$field: $notes');
+      for (final section in anteriorSegmentSections) {
+        final sectionData = _coerceSection(eye[section.key]);
+        final summary = _formatSection(sectionData);
+        if (summary.isNotEmpty) {
+          lines.add('$eyeKey ${section.label}: $summary');
         }
       }
-      if (abnormal.isEmpty) {
-        lines.add('$eyeKey: All normal');
-      } else {
-        lines.add('$eyeKey: ${abnormal.join('; ')}');
+      final remarks = (eye['remarks'] as String?) ?? '';
+      if (remarks.trim().isNotEmpty) {
+        lines.add('$eyeKey Remarks: $remarks');
       }
     }
     return lines.join('\n');
-  }
-
-  String _formatLids(Map<String, dynamic> eye) {
-    final findings =
-        (eye['lids_findings'] as List?)?.cast<String>() ?? <String>[];
-    final otherNotes = (eye['lids_other_notes'] as String?) ?? '';
-    if (findings.isNotEmpty) {
-      final buffer = findings.join(', ');
-      if (findings.contains('Other') && otherNotes.trim().isNotEmpty) {
-        return '$buffer (Other: $otherNotes)';
-      }
-      return buffer;
-    }
-    final legacy = eye['Lids'] as Map?;
-    if (legacy != null) {
-      final status = (legacy['status'] as String?) ?? 'normal';
-      final notes = (legacy['notes'] as String?) ?? '';
-      if (status == 'abnormal' && notes.trim().isNotEmpty) {
-        return 'Abnormal ($notes)';
-      }
-      return 'Normal';
-    }
-    return '';
   }
 
   String _formatFundus(Map<String, dynamic>? fundus) {
@@ -315,29 +286,92 @@ class _SummaryTab extends StatelessWidget {
       final lines = <String>[];
       for (final eyeKey in ['RE', 'LE']) {
         final eye = Map<String, dynamic>.from(fundus[eyeKey] as Map? ?? {});
-        final values = <String>[];
-        for (final field in fundusFields) {
-          final value = (eye[field] as String?) ?? '-';
-          values.add('${field.toUpperCase()}: $value');
+        for (final section in fundusSections) {
+          final sectionData = _coerceSection(eye[section.key]);
+          final summary = _formatSection(sectionData);
+          if (summary.isNotEmpty) {
+            lines.add('$eyeKey ${section.label}: $summary');
+          }
         }
-        final others = (eye['others'] as String?) ?? '';
-        if (others.trim().isNotEmpty) {
-          values.add('OTHERS: $others');
+        final remarks = (eye['remarks'] as String?) ?? '';
+        if (remarks.trim().isNotEmpty) {
+          lines.add('$eyeKey Remarks: $remarks');
         }
-        lines.add('$eyeKey ${values.join(' | ')}');
       }
       return lines.join('\n');
     }
     final lines = <String>[];
-    for (final field in fundusFields) {
-      final value = (fundus[field] as String?) ?? '-';
-      lines.add('${field.toUpperCase()}: $value');
+    for (final section in fundusSections) {
+      final sectionData = _coerceSection(fundus[section.key]);
+      final summary = _formatSection(sectionData);
+      if (summary.isNotEmpty) {
+        lines.add('${section.label}: $summary');
+      }
     }
-    final others = (fundus['others'] as String?) ?? '';
-    if (others.trim().isNotEmpty) {
-      lines.add('OTHERS: $others');
+    final remarks = (fundus['remarks'] as String?) ?? '';
+    if (remarks.trim().isNotEmpty) {
+      lines.add('Remarks: $remarks');
     }
     return lines.join('\n');
+  }
+
+  String _formatSection(Map<String, dynamic> sectionData) {
+    final selected =
+        (sectionData['selected'] as List?)?.cast<String>() ?? <String>[];
+    if (selected.isEmpty) return '';
+    final descriptions =
+        Map<String, dynamic>.from(sectionData['descriptions'] as Map? ?? {});
+    final other = (sectionData['other'] as String?) ?? '';
+    final parts = <String>[];
+    for (final option in selected) {
+      if (option == 'Other') {
+        if (other.trim().isNotEmpty) {
+          parts.add('Other: $other');
+        } else {
+          parts.add('Other');
+        }
+        continue;
+      }
+      final desc = (descriptions[option] ?? '').toString().trim();
+      if (desc.isNotEmpty) {
+        parts.add('$option: $desc');
+      } else {
+        parts.add(option);
+      }
+    }
+    return parts.join(', ');
+  }
+
+  Map<String, dynamic> _coerceSection(dynamic raw) {
+    if (raw is Map && raw.containsKey('selected')) {
+      return Map<String, dynamic>.from(raw);
+    }
+    if (raw is Map && raw.containsKey('status')) {
+      final status = (raw['status'] as String?) ?? '';
+      final notes = (raw['notes'] as String?) ?? '';
+      if (status == 'abnormal' && notes.trim().isNotEmpty) {
+        return {
+          'selected': <String>['Other'],
+          'descriptions': <String, String>{},
+          'other': notes,
+        };
+      }
+      if (status.isNotEmpty) {
+        return {
+          'selected': <String>['Normal'],
+          'descriptions': <String, String>{},
+          'other': '',
+        };
+      }
+    }
+    if (raw is String && raw.trim().isNotEmpty) {
+      return {
+        'selected': <String>[raw],
+        'descriptions': <String, String>{},
+        'other': '',
+      };
+    }
+    return {};
   }
 }
 

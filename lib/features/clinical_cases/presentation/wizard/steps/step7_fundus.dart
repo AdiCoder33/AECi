@@ -1,18 +1,31 @@
 import 'package:flutter/material.dart';
 
-import '../../../data/clinical_case_constants.dart';
+import '../../../domain/constants/fundus_options.dart';
+import '../../widgets/taxonomy_multi_select_field.dart';
 
 class Step7Fundus extends StatelessWidget {
   const Step7Fundus({
     super.key,
     required this.formKey,
     required this.fundus,
-    required this.onChanged,
+    required this.onSelectionChanged,
+    required this.onDescriptionChanged,
+    required this.onOtherChanged,
+    required this.onRemarksChanged,
   });
 
   final GlobalKey<FormState> formKey;
   final Map<String, dynamic> fundus;
-  final ValueChanged<Map<String, dynamic>> onChanged;
+  final void Function(String eye, String sectionKey, List<String> selected)
+      onSelectionChanged;
+  final void Function(
+    String eye,
+    String sectionKey,
+    String option,
+    String description,
+  ) onDescriptionChanged;
+  final void Function(String eye, String sectionKey, String other) onOtherChanged;
+  final void Function(String eye, String remarks) onRemarksChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +45,10 @@ class Step7Fundus extends StatelessWidget {
                       label: 'RE',
                       eyeKey: 'RE',
                       fundus: fundus,
-                      onChanged: onChanged,
+                      onSelectionChanged: onSelectionChanged,
+                      onDescriptionChanged: onDescriptionChanged,
+                      onOtherChanged: onOtherChanged,
+                      onRemarksChanged: onRemarksChanged,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -41,7 +57,10 @@ class Step7Fundus extends StatelessWidget {
                       label: 'LE',
                       eyeKey: 'LE',
                       fundus: fundus,
-                      onChanged: onChanged,
+                      onSelectionChanged: onSelectionChanged,
+                      onDescriptionChanged: onDescriptionChanged,
+                      onOtherChanged: onOtherChanged,
+                      onRemarksChanged: onRemarksChanged,
                     ),
                   ),
                 ],
@@ -59,17 +78,30 @@ class _EyeFundus extends StatelessWidget {
     required this.label,
     required this.eyeKey,
     required this.fundus,
-    required this.onChanged,
+    required this.onSelectionChanged,
+    required this.onDescriptionChanged,
+    required this.onOtherChanged,
+    required this.onRemarksChanged,
   });
 
   final String label;
   final String eyeKey;
   final Map<String, dynamic> fundus;
-  final ValueChanged<Map<String, dynamic>> onChanged;
+  final void Function(String eye, String sectionKey, List<String> selected)
+      onSelectionChanged;
+  final void Function(
+    String eye,
+    String sectionKey,
+    String option,
+    String description,
+  ) onDescriptionChanged;
+  final void Function(String eye, String sectionKey, String other) onOtherChanged;
+  final void Function(String eye, String remarks) onRemarksChanged;
 
   @override
   Widget build(BuildContext context) {
     final eye = Map<String, dynamic>.from(fundus[eyeKey] as Map? ?? {});
+    final remarks = (eye['remarks'] as String?) ?? '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -80,58 +112,62 @@ class _EyeFundus extends StatelessWidget {
               ),
         ),
         const SizedBox(height: 12),
-        ...fundusFields.map((field) {
-          final current = eye[field] as String? ?? '';
-          final labelText = '${field[0].toUpperCase()}${field.substring(1)}';
+        ...fundusSections.map((section) {
+          final sectionData =
+              Map<String, dynamic>.from(eye[section.key] as Map? ?? {});
+          final selected =
+              (sectionData['selected'] as List?)?.cast<String>() ?? <String>[];
+          final descriptions =
+              Map<String, String>.from(sectionData['descriptions'] as Map? ?? {});
+          final other = (sectionData['other'] as String?) ?? '';
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: DropdownButtonFormField<String>(
-              value: current.isEmpty ? null : current,
-              items: fundusOptions
-                  .map((o) => DropdownMenuItem(value: o, child: Text(o)))
-                  .toList(),
-              decoration: InputDecoration(labelText: labelText),
-              validator: (value) =>
-                  (value == null || value.isEmpty) ? 'Required' : null,
-              onChanged: (value) {
-                final next = _copyFundus(fundus);
-                final nextEye = Map<String, dynamic>.from(next[eyeKey] as Map);
-                nextEye[field] = value ?? '';
-                next[eyeKey] = nextEye;
-                onChanged(next);
-              },
+            child: Card(
+              elevation: 0,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: TaxonomyMultiSelectField(
+                  label: section.label,
+                  options: section.options,
+                  selected: selected,
+                  descriptions: descriptions,
+                  otherValue: other,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Select at least one';
+                    }
+                    if (value.contains('Normal') && value.length > 1) {
+                      return 'Normal must be selected alone';
+                    }
+                    return null;
+                  },
+                  onSelectionChanged: (next) =>
+                      onSelectionChanged(eyeKey, section.key, next),
+                  onDescriptionChanged: (option, description) =>
+                      onDescriptionChanged(
+                        eyeKey,
+                        section.key,
+                        option,
+                        description,
+                      ),
+                  onOtherChanged: (value) =>
+                      onOtherChanged(eyeKey, section.key, value),
+                ),
+              ),
             ),
           );
         }),
+        const SizedBox(height: 8),
         TextFormField(
-          key: ValueKey('${eyeKey}_fundus_${eye['others'] ?? ''}'),
-          initialValue: eye['others'] as String? ?? '',
+          key: ValueKey('$eyeKey-fundus-remarks-$remarks'),
+          initialValue: remarks,
           decoration: const InputDecoration(
-            labelText: 'Others (optional)',
+            labelText: 'Remarks (optional)',
           ),
-          onChanged: (value) {
-            final next = _copyFundus(fundus);
-            final nextEye = Map<String, dynamic>.from(next[eyeKey] as Map);
-            nextEye['others'] = value;
-            next[eyeKey] = nextEye;
-            onChanged(next);
-          },
+          maxLines: 3,
+          onChanged: (value) => onRemarksChanged(eyeKey, value),
         ),
       ],
     );
-  }
-
-  Map<String, dynamic> _copyFundus(Map<String, dynamic> source) {
-    final copy = <String, dynamic>{};
-    for (final entry in source.entries) {
-      if (entry.value is Map) {
-        copy[entry.key] = Map<String, dynamic>.from(entry.value as Map);
-      } else {
-        copy[entry.key] = entry.value;
-      }
-    }
-    if (!copy.containsKey('RE')) copy['RE'] = {};
-    if (!copy.containsKey('LE')) copy['LE'] = {};
-    return copy;
   }
 }
