@@ -300,47 +300,62 @@ class _ProfileHeader extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [Color(0xFF0B5FFF), Color(0xFF0A2E73)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
+          borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF0B5FFF).withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: const Color(0xFF0B5FFF).withOpacity(0.18),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: Row(
           children: [
             Container(
-              width: 72,
-              height: 72,
+              width: 84,
+              height: 84,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.2),
-                border: Border.all(color: Colors.white, width: 2),
+                color: Colors.white.withOpacity(0.35),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.7),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.white.withOpacity(0.18),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: (profilePhotoUrl?.isNotEmpty ?? false)
                   ? ClipOval(
                       child: Image.network(
                         profilePhotoUrl!,
-                        width: 72,
-                        height: 72,
+                        width: 84,
+                        height: 84,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) =>
                             const Icon(
                               Icons.person,
-                              color: Colors.white,
-                              size: 32,
+                              color: Color(0xFF0B5FFF),
+                              size: 36,
                             ),
                       ),
                     )
-                  : const Icon(Icons.visibility, color: Colors.white, size: 32),
+                  : const Icon(
+                      Icons.person,
+                      color: Color(0xFF0B5FFF),
+                      size: 36,
+                    ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -391,54 +406,62 @@ class _StatsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 0.95,
-      ),
-      itemCount: stats.length,
-      itemBuilder: (context, index) {
-        final stat = stats[index];
-        return Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE5EAF2)),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 6,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: SingleChildScrollView(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: stats.map((stat) {
+        return Expanded(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.7),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: stat.color.withOpacity(0.18)),
+              boxShadow: [
+                BoxShadow(
+                  color: stat.color.withOpacity(0.13),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+              backgroundBlendMode: BlendMode.overlay,
+            ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: stat.color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    gradient: LinearGradient(
+                      colors: [
+                        stat.color.withOpacity(0.22),
+                        stat.color.withOpacity(0.09),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: stat.color.withOpacity(0.10),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: Icon(stat.icon, color: stat.color, size: 20),
+                  child: Icon(stat.icon, color: stat.color, size: 32),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  stat.value.toString(),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                    color: stat.color,
+                    letterSpacing: 0.3,
+                  ),
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  '${stat.value}',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 3),
                 Text(
                   stat.label,
                   textAlign: TextAlign.center,
@@ -453,7 +476,7 @@ class _StatsGrid extends StatelessWidget {
             ),
           ),
         );
-      },
+      }).toList(),
     );
   }
 }
