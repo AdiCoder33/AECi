@@ -24,7 +24,7 @@ class TaxonomyMultiSelectField extends StatelessWidget {
   final ValueChanged<List<String>> onSelectionChanged;
   final void Function(String option, String value) onDescriptionChanged;
   final ValueChanged<String> onOtherChanged;
-  final String? Function(List<String>?)? validator;
+  final String? Function(List<String>)? validator;
   final String hintText;
   final bool enableSearch;
 
@@ -34,7 +34,9 @@ class TaxonomyMultiSelectField extends StatelessWidget {
     return FormField<List<String>>(
       key: ValueKey('$label-${selected.join('|')}'),
       initialValue: selected,
-      validator: validator,
+      validator: validator == null
+          ? null
+          : (value) => validator!(value ?? const []),
       builder: (state) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,

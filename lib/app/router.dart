@@ -36,6 +36,10 @@ import '../features/clinical_cases/presentation/assessment_queue_screen.dart';
 import '../features/clinical_cases/presentation/case_followup_form_screen.dart';
 import '../features/clinical_cases/presentation/case_media_screen.dart';
 import '../features/clinical_cases/presentation/wizard/clinical_case_wizard_screen.dart';
+import '../features/reviewer/presentation/reviewer_queue_screen.dart';
+import '../features/reviewer/presentation/reviewer_reviewed_screen.dart';
+import '../features/reviewer/presentation/reviewer_assessment_screen.dart';
+import '../features/reviewer/data/reviewer_repository.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
@@ -54,6 +58,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final onCreateProfile = state.matchedLocation == '/profile/create';
       final onProfileView = state.matchedLocation == '/profile';
       final hasProfile = profileState.profile != null;
+      final isReviewer = profileState.profile?.designation == 'Reviewer';
       final onLoadingRoute = state.matchedLocation == '/loading';
 
       if (!authState.initialized || (loggedIn && !profileState.initialized)) {
@@ -78,8 +83,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/home';
       }
 
-      if (loggedIn && hasProfile && onProfileView && !onAuthRoute) {
-        return null;
+      if (loggedIn && hasProfile && isReviewer) {
+        final onReviewerRoute = state.matchedLocation.startsWith('/reviewer');
+        final onProfileRoute = state.matchedLocation.startsWith('/profile');
+        if (!onReviewerRoute && !onProfileRoute) {
+          return '/reviewer/pending';
+        }
       }
 
       return null;
@@ -110,6 +119,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: profile?.name,
             designation: profile?.designation,
             centre: profile?.aravindCentre ?? profile?.centre,
+            isReviewer: profile?.designation == 'Reviewer',
             onSignOut: authNotifier.signOut,
           );
         },
@@ -340,6 +350,26 @@ final routerProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
+          GoRoute(
+            path: '/reviewer/pending',
+            name: 'reviewerPending',
+            builder: (context, state) => const ReviewerQueueScreen(),
+            routes: [
+              GoRoute(
+                path: 'assess/:type/:id',
+                name: 'reviewerAssess',
+                builder: (context, state) {
+                  final item = state.extra as ReviewItem;
+                  return ReviewerAssessmentScreen(item: item);
+                },
+              ),
+            ],
+          ),
+          GoRoute(
+            path: '/reviewer/reviewed',
+            name: 'reviewerReviewed',
+            builder: (context, state) => const ReviewerReviewedScreen(),
+          ),
         ],
       ),
     ],
@@ -369,6 +399,7 @@ class _MainShell extends StatelessWidget {
     this.name,
     this.designation,
     this.centre,
+    this.isReviewer = false,
     this.onSignOut,
   });
 
@@ -377,9 +408,14 @@ class _MainShell extends StatelessWidget {
   final String? name;
   final String? designation;
   final String? centre;
+  final bool isReviewer;
   final Future<void> Function()? onSignOut;
 
   int get _index {
+    if (isReviewer) {
+      if (location.startsWith('/reviewer/reviewed')) return 1;
+      return 0;
+    }
     if (location.startsWith('/logbook')) return 1;
     if (location.startsWith('/cases')) return 2;
     if (location.startsWith('/teaching')) return 3;
@@ -388,6 +424,17 @@ class _MainShell extends StatelessWidget {
   }
 
   void _onTap(BuildContext context, int i) {
+    if (isReviewer) {
+      switch (i) {
+        case 0:
+          context.go('/reviewer/pending');
+          break;
+        case 1:
+          context.go('/reviewer/reviewed');
+          break;
+      }
+      return;
+    }
     switch (i) {
       case 0:
         context.go('/home');
@@ -432,33 +479,46 @@ class _MainShell extends StatelessWidget {
         selectedFontSize: 12,
         unselectedFontSize: 11,
         elevation: 8,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.book_outlined),
-            activeIcon: Icon(Icons.book),
-            label: 'Logbook',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.medical_services_outlined),
-            activeIcon: Icon(Icons.medical_services),
-            label: 'Cases',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.school_outlined),
-            activeIcon: Icon(Icons.school),
-            label: 'Teaching',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+        items: isReviewer
+            ? const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.assignment_outlined),
+                  activeIcon: Icon(Icons.assignment),
+                  label: 'To Assess',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.check_circle_outline),
+                  activeIcon: Icon(Icons.check_circle),
+                  label: 'Reviewed',
+                ),
+              ]
+            : const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home_outlined),
+                  activeIcon: Icon(Icons.home),
+                  label: 'Home',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.book_outlined),
+                  activeIcon: Icon(Icons.book),
+                  label: 'Logbook',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.medical_services_outlined),
+                  activeIcon: Icon(Icons.medical_services),
+                  label: 'Cases',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.school_outlined),
+                  activeIcon: Icon(Icons.school),
+                  label: 'Teaching',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person_outline),
+                  activeIcon: Icon(Icons.person),
+                  label: 'Profile',
+                ),
+              ],
       ),
     );
   }
@@ -483,6 +543,7 @@ class _AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isReviewer = designation == 'Reviewer';
     return Drawer(
       child: SafeArea(
         child: ListView(
@@ -508,15 +569,21 @@ class _AppDrawer extends StatelessWidget {
                 ),
               ),
             ),
-            _item(context, Icons.home, 'Dashboard', '/home'),
-            _item(context, Icons.book, 'Logbook', '/logbook'),
-            _item(context, Icons.list_alt, 'Cases', '/cases'),
-            _item(context, Icons.school, 'Teaching Library', '/teaching'),
-            _item(context, Icons.person, 'Profile', '/profile'),
-            _item(context, Icons.search, 'Global Search', '/search'),
-            _item(context, Icons.insights, 'Analytics', '/analytics'),
-            _item(context, Icons.rate_review, 'Review Queue', '/review-queue'),
-            _item(context, Icons.archive, 'Storage Tools', '/storage-tools'),
+            if (isReviewer) ...[
+              _item(context, Icons.assignment, 'Profiles to Assess', '/reviewer/pending'),
+              _item(context, Icons.check_circle, 'Profiles Reviewed', '/reviewer/reviewed'),
+              _item(context, Icons.person, 'Profile', '/profile'),
+            ] else ...[
+              _item(context, Icons.home, 'Dashboard', '/home'),
+              _item(context, Icons.book, 'Logbook', '/logbook'),
+              _item(context, Icons.list_alt, 'Cases', '/cases'),
+              _item(context, Icons.school, 'Teaching Library', '/teaching'),
+              _item(context, Icons.person, 'Profile', '/profile'),
+              _item(context, Icons.search, 'Global Search', '/search'),
+              _item(context, Icons.insights, 'Analytics', '/analytics'),
+              _item(context, Icons.rate_review, 'Review Queue', '/review-queue'),
+              _item(context, Icons.archive, 'Storage Tools', '/storage-tools'),
+            ],
             const Divider(),
             ListTile(
               leading: const Icon(Icons.logout, color: Color(0xFFEF4444)),

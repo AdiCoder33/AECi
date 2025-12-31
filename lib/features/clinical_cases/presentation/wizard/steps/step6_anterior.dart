@@ -117,40 +117,37 @@ class _EyeSection extends StatefulWidget {
 }
 
 class _EyeSectionState extends State<_EyeSection> {
-  bool _showLidsOptions = false;
+  final Map<String, bool> _abnormalExpanded = {};
 
-  @override
-  void initState() {
-    super.initState();
-    _syncLids(force: true);
+  String _normalOptionForSection(AnteriorSection section) {
+    const normalMap = {
+      'lids': 'Normal',
+      'conjunctiva': 'Normal',
+      'cornea': 'Clear',
+      'anterior_chamber': 'Normal Depth',
+      'iris': 'Normal colour and pattern',
+      'pupil': 'Normal size and reaction to light',
+      'lens': 'Clear',
+      'ocular_movements': 'Full and free',
+      'corneal_reflex': 'Normal',
+      'globe': 'Normal',
+    };
+    final mapped = normalMap[section.key];
+    if (mapped != null && section.options.contains(mapped)) {
+      return mapped;
+    }
+    if (section.options.contains('Normal')) return 'Normal';
+    return section.options.isNotEmpty ? section.options.first : 'Normal';
   }
 
-  @override
-  void didUpdateWidget(covariant _EyeSection oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _syncLids();
-  }
-
-  void _syncLids({bool force = false}) {
-    final selected = _sectionSelected('lids');
-    if (selected.contains('Normal')) {
-      _showLidsOptions = false;
-      return;
-    }
-    if (selected.isNotEmpty) {
-      _showLidsOptions = true;
-      return;
-    }
-    if (force) {
-      _showLidsOptions = false;
-    }
-  }
-
-  List<String> _sectionSelected(String sectionKey) {
-    final eye = Map<String, dynamic>.from(widget.anterior[widget.eyeKey] as Map? ?? {});
-    final section =
-        Map<String, dynamic>.from(eye[sectionKey] as Map? ?? {});
-    return (section['selected'] as List?)?.cast<String>() ?? <String>[];
+  bool _isAbnormalSelected(
+    String sectionKey,
+    List<String> selected,
+    String normalOption,
+  ) {
+    if (selected.contains(normalOption)) return false;
+    if (selected.isNotEmpty) return true;
+    return _abnormalExpanded['${widget.eyeKey}|$sectionKey'] ?? false;
   }
 
   @override
@@ -176,158 +173,119 @@ class _EyeSectionState extends State<_EyeSection> {
           final descriptions =
               Map<String, String>.from(sectionData['descriptions'] as Map? ?? {});
           final other = (sectionData['other'] as String?) ?? '';
-          if (section.key == 'lids') {
-            final isNormal = selected.contains('Normal');
-            final lidsOptions =
-                section.options.where((o) => o != 'Normal').toList();
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Card(
-                elevation: 0,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        section.label,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        children: [
-                          ChoiceChip(
-                            label: const Text('Normal'),
-                            selected: isNormal,
-                            onSelected: (value) {
-                              if (!value) {
-                                widget.onSelectionChanged(
-                                  widget.eyeKey,
-                                  section.key,
-                                  <String>[],
-                                );
-                                return;
-                              }
-                              setState(() => _showLidsOptions = false);
-                              widget.onSelectionChanged(
-                                widget.eyeKey,
-                                section.key,
-                                <String>['Normal'],
-                              );
-                            },
-                          ),
-                          ChoiceChip(
-                            label: const Text('Abnormal'),
-                            selected: _showLidsOptions && !isNormal,
-                            onSelected: (value) {
-                              setState(() => _showLidsOptions = value);
-                              if (value && isNormal) {
-                                widget.onSelectionChanged(
-                                  widget.eyeKey,
-                                  section.key,
-                                  <String>[],
-                                );
-                              } else if (!value) {
-                                widget.onSelectionChanged(
-                                  widget.eyeKey,
-                                  section.key,
-                                  <String>[],
-                                );
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                      if (_showLidsOptions) ...[
-                        const SizedBox(height: 8),
-                        TaxonomyMultiSelectField(
-                          label: 'Lids findings',
-                          options: lidsOptions,
-                          selected: selected.where((o) => o != 'Normal').toList(),
-                          descriptions: descriptions,
-                          otherValue: other,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Select at least one';
-                            }
-                            if (value.contains('Normal') && value.length > 1) {
-                              return 'Normal must be selected alone';
-                            }
-                            return null;
-                          },
-                          onSelectionChanged: (next) =>
-                              widget.onSelectionChanged(
-                                widget.eyeKey,
-                                section.key,
-                                next,
-                              ),
-                          onDescriptionChanged: (option, description) =>
-                              widget.onDescriptionChanged(
-                                widget.eyeKey,
-                                section.key,
-                                option,
-                                description,
-                              ),
-                          onOtherChanged: (value) =>
-                              widget.onOtherChanged(
-                                widget.eyeKey,
-                                section.key,
-                                value,
-                              ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }
+          final normalOption = _normalOptionForSection(section);
+          final showOptions =
+              _isAbnormalSelected(section.key, selected, normalOption);
+          final abnormalKey = '${widget.eyeKey}|${section.key}';
+          final filteredOptions = section.options
+              .where((option) => option != normalOption)
+              .toList();
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Card(
               elevation: 0,
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: TaxonomyMultiSelectField(
-                  label: section.label,
-                  options: section.options,
-                  selected: selected,
-                  descriptions: descriptions,
-                  otherValue: other,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Select at least one';
-                    }
-                    if (value.contains('Normal') && value.length > 1) {
-                      return 'Normal must be selected alone';
-                    }
-                    return null;
-                  },
-                  onSelectionChanged: (next) =>
-                      widget.onSelectionChanged(
-                        widget.eyeKey,
-                        section.key,
-                        next,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      section.label,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('Normal'),
+                          selected: selected.contains(normalOption) &&
+                              !showOptions,
+                          onSelected: (value) {
+                            if (value) {
+                              setState(() => _abnormalExpanded[abnormalKey] = false);
+                              widget.onSelectionChanged(
+                                widget.eyeKey,
+                                section.key,
+                                <String>[normalOption],
+                              );
+                            } else {
+                              setState(() => _abnormalExpanded[abnormalKey] = true);
+                              widget.onSelectionChanged(
+                                widget.eyeKey,
+                                section.key,
+                                <String>[],
+                              );
+                            }
+                          },
+                        ),
+                        ChoiceChip(
+                          label: const Text('Abnormal'),
+                          selected: showOptions,
+                          onSelected: (value) {
+                            setState(() => _abnormalExpanded[abnormalKey] = value);
+                            if (value && selected.contains(normalOption)) {
+                              widget.onSelectionChanged(
+                                widget.eyeKey,
+                                section.key,
+                                <String>[],
+                              );
+                            } else if (!value) {
+                              widget.onSelectionChanged(
+                                widget.eyeKey,
+                                section.key,
+                                <String>[normalOption],
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                    if (showOptions) ...[
+                      const SizedBox(height: 8),
+                      TaxonomyMultiSelectField(
+                        label: '${section.label} findings',
+                        options: filteredOptions,
+                        selected:
+                            selected.where((o) => o != normalOption).toList(),
+                        descriptions: descriptions,
+                        otherValue: other,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Select at least one';
+                          }
+                          if (value.contains('Normal') && value.length > 1) {
+                            return 'Normal must be selected alone';
+                          }
+                          return null;
+                        },
+                        onSelectionChanged: (next) =>
+                            widget.onSelectionChanged(
+                              widget.eyeKey,
+                              section.key,
+                              next,
+                            ),
+                        onDescriptionChanged: (option, description) =>
+                            widget.onDescriptionChanged(
+                              widget.eyeKey,
+                              section.key,
+                              option,
+                              description,
+                            ),
+                        onOtherChanged: (value) =>
+                            widget.onOtherChanged(
+                              widget.eyeKey,
+                              section.key,
+                              value,
+                            ),
                       ),
-                  onDescriptionChanged: (option, description) =>
-                      widget.onDescriptionChanged(
-                        widget.eyeKey,
-                        section.key,
-                        option,
-                        description,
-                      ),
-                  onOtherChanged: (value) =>
-                      widget.onOtherChanged(
-                        widget.eyeKey,
-                        section.key,
-                        value,
-                      ),
+                    ],
+                  ],
                 ),
               ),
             ),

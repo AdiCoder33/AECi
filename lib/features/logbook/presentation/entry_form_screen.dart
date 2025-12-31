@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import '../application/logbook_providers.dart';
 import '../data/media_repository.dart';
 import '../domain/elog_entry.dart';
+import '../domain/surgical_learning_options.dart';
 import '../../quality/data/quality_repository.dart';
 import '../../taxonomy/data/taxonomy_repository.dart';
 
@@ -505,11 +506,8 @@ class _ModuleFields extends StatelessWidget {
                   v == null || v.trim().isEmpty ? 'Required' : null,
               enabled: enabled,
             ),
-            _buildField(
+            _buildSurgicalLearningDropdown(
               controller: teachingPointController,
-              label: 'Teaching point',
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
               enabled: enabled,
             ),
             _buildField(
@@ -572,6 +570,30 @@ class _ModuleFields extends StatelessWidget {
         enabled: enabled,
         decoration: InputDecoration(labelText: label),
         validator: validator,
+      ),
+    );
+  }
+
+  Widget _buildSurgicalLearningDropdown({
+    required TextEditingController controller,
+    required bool enabled,
+  }) {
+    final current = controller.text.trim();
+    final options = [...surgicalLearningOptions];
+    if (current.isNotEmpty && !options.contains(current)) {
+      options.insert(0, current);
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: DropdownButtonFormField<String>(
+        value: current.isEmpty ? null : current,
+        items: options
+            .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+            .toList(),
+        decoration: const InputDecoration(labelText: 'Teaching point'),
+        validator: (v) =>
+            v == null || v.trim().isEmpty ? 'Required' : null,
+        onChanged: enabled ? (v) => controller.text = v ?? '' : null,
       ),
     );
   }

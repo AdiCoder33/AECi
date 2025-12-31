@@ -312,7 +312,11 @@ class ClinicalCaseWizardController
     final eyeMap = Map<String, dynamic>.from(next[eye] as Map? ?? {});
     final section =
         Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
-    final normalized = _normalizeSelection(selectedList);
+    final normalOption = _normalOptionForAnteriorSection(sectionKey);
+    var normalized = _normalizeSelection(selectedList);
+    if (normalized.contains(normalOption) && normalized.length > 1) {
+      normalized = [normalOption];
+    }
     section['selected'] = normalized;
     final descriptions =
         Map<String, dynamic>.from(section['descriptions'] as Map? ?? {});
@@ -381,7 +385,11 @@ class ClinicalCaseWizardController
     final eyeMap = Map<String, dynamic>.from(next[targetEye] as Map? ?? {});
     final section =
         Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
-    final normalized = _normalizeSelection(selectedList);
+    final normalOption = _normalOptionForFundusSection(sectionKey);
+    var normalized = _normalizeSelection(selectedList);
+    if (normalized.contains(normalOption) && normalized.length > 1) {
+      normalized = [normalOption];
+    }
     section['selected'] = normalized;
     final descriptions =
         Map<String, dynamic>.from(section['descriptions'] as Map? ?? {});
@@ -620,6 +628,36 @@ List<String> _normalizeSelection(List<String> selected) {
   return list;
 }
 
+String _normalOptionForAnteriorSection(String sectionKey) {
+  const normalMap = {
+    'lids': 'Normal',
+    'conjunctiva': 'Normal',
+    'cornea': 'Clear',
+    'anterior_chamber': 'Normal Depth',
+    'iris': 'Normal colour and pattern',
+    'pupil': 'Normal size and reaction to light',
+    'lens': 'Clear',
+    'ocular_movements': 'Full and free',
+    'corneal_reflex': 'Normal',
+    'globe': 'Normal',
+  };
+  final mapped = normalMap[sectionKey];
+  if (mapped != null) return mapped;
+  return 'Normal';
+}
+
+String _normalOptionForFundusSection(String sectionKey) {
+  const normalMap = {
+    'media': 'Clear',
+    'optic_disc': 'Normal',
+    'vessels': 'Normal',
+    'background_retina': 'Normal',
+    'macula': 'Present',
+  };
+  final mapped = normalMap[sectionKey];
+  if (mapped != null) return mapped;
+  return 'Normal';
+}
 String? _legacyAnteriorLabel(String sectionKey) {
   switch (sectionKey) {
     case 'conjunctiva':

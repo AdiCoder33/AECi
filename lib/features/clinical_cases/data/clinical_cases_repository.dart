@@ -227,13 +227,12 @@ class ClinicalCasesRepository {
   }
 
   Future<void> updateCaseDraft(String id, Map<String, dynamic> data) async {
-    final updated = await _client
+    final rows = await _client
         .from('clinical_cases')
         .update(data)
         .eq('id', id)
-        .select('id')
-        .maybeSingle();
-    if (updated == null) {
+        .select('id');
+    if (rows is! List || rows.isEmpty) {
       throw PostgrestException(
         message: 'Update failed or not permitted for this case.',
       );

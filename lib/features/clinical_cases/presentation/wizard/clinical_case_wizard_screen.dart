@@ -420,11 +420,12 @@ class _ClinicalCaseWizardScreenState
         final descriptions =
             Map<String, dynamic>.from(sectionData['descriptions'] as Map? ?? {});
         final other = (sectionData['other'] as String?) ?? '';
+        final normalOption = _normalOptionForAnterior(section);
         if (selected.isEmpty) {
           issues.add('$eyeKey ${section.label}');
           continue;
         }
-        if (selected.contains('Normal') && selected.length > 1) {
+        if (selected.contains(normalOption) && selected.length > 1) {
           issues.add('$eyeKey ${section.label} normal exclusive');
         }
         if (selected.contains('Other') && other.trim().length < 3) {
@@ -443,6 +444,27 @@ class _ClinicalCaseWizardScreenState
     return issues;
   }
 
+  String _normalOptionForAnterior(AnteriorSection section) {
+    const normalMap = {
+      'lids': 'Normal',
+      'conjunctiva': 'Normal',
+      'cornea': 'Clear',
+      'anterior_chamber': 'Normal Depth',
+      'iris': 'Normal colour and pattern',
+      'pupil': 'Normal size and reaction to light',
+      'lens': 'Clear',
+      'ocular_movements': 'Full and free',
+      'corneal_reflex': 'Normal',
+      'globe': 'Normal',
+    };
+    final mapped = normalMap[section.key];
+    if (mapped != null && section.options.contains(mapped)) {
+      return mapped;
+    }
+    if (section.options.contains('Normal')) return 'Normal';
+    return section.options.isNotEmpty ? section.options.first : 'Normal';
+  }
+
   List<String> _fundusIssues(Map<String, dynamic> fundus) {
     final issues = <String>[];
     for (final eyeKey in ['RE', 'LE']) {
@@ -455,11 +477,12 @@ class _ClinicalCaseWizardScreenState
         final descriptions =
             Map<String, dynamic>.from(sectionData['descriptions'] as Map? ?? {});
         final other = (sectionData['other'] as String?) ?? '';
+        final normalOption = _normalOptionForFundus(section);
         if (selected.isEmpty) {
           issues.add('$eyeKey ${section.label}');
           continue;
         }
-        if (selected.contains('Normal') && selected.length > 1) {
+        if (selected.contains(normalOption) && selected.length > 1) {
           issues.add('$eyeKey ${section.label} normal exclusive');
         }
         if (selected.contains('Other') && other.trim().length < 3) {
@@ -476,6 +499,22 @@ class _ClinicalCaseWizardScreenState
       }
     }
     return issues;
+  }
+
+  String _normalOptionForFundus(FundusSection section) {
+    const normalMap = {
+      'media': 'Clear',
+      'optic_disc': 'Normal',
+      'vessels': 'Normal',
+      'background_retina': 'Normal',
+      'macula': 'Present',
+    };
+    final mapped = normalMap[section.key];
+    if (mapped != null && section.options.contains(mapped)) {
+      return mapped;
+    }
+    if (section.options.contains('Normal')) return 'Normal';
+    return section.options.isNotEmpty ? section.options.first : 'Normal';
   }
 
   bool _isDescriptiveOption(String option) {
