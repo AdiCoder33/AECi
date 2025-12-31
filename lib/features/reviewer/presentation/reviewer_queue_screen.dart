@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../application/reviewer_controller.dart';
 import '../../profile/application/profile_controller.dart';
+import 'widgets/reviewer_app_bar_actions.dart';
 
 class ReviewerQueueScreen extends ConsumerWidget {
   const ReviewerQueueScreen({super.key});
@@ -14,7 +15,10 @@ class ReviewerQueueScreen extends ConsumerWidget {
     final isReviewer = profileState.profile?.designation == 'Reviewer';
     final pendingAsync = ref.watch(reviewerPendingProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Profiles to Assess')),
+      appBar: AppBar(
+        title: const Text('Profiles to Assess'),
+        actions: const [ReviewerAppBarActions()],
+      ),
       body: !isReviewer
           ? const Center(child: Text('Reviewer access only.'))
           : pendingAsync.when(

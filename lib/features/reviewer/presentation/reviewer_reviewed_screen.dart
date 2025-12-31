@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../application/reviewer_controller.dart';
 import '../../profile/application/profile_controller.dart';
+import 'widgets/reviewer_app_bar_actions.dart';
 
 class ReviewerReviewedScreen extends ConsumerWidget {
   const ReviewerReviewedScreen({super.key});
@@ -13,7 +14,10 @@ class ReviewerReviewedScreen extends ConsumerWidget {
     final isReviewer = profileState.profile?.designation == 'Reviewer';
     final reviewedAsync = ref.watch(reviewerReviewedProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Profiles Reviewed')),
+      appBar: AppBar(
+        title: const Text('Profiles Reviewed'),
+        actions: const [ReviewerAppBarActions()],
+      ),
       body: !isReviewer
           ? const Center(child: Text('Reviewer access only.'))
           : reviewedAsync.when(
