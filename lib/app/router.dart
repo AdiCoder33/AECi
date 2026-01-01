@@ -28,6 +28,8 @@ import '../features/teaching/presentation/teaching_list_screen.dart';
 import '../features/analytics/presentation/analytics_screen.dart';
 import '../features/teaching/data/teaching_repository.dart';
 import '../features/teaching/proposal_screens.dart';
+import '../features/community/presentation/community_screen.dart';
+import '../features/community/presentation/community_profile_screen.dart';
 import '../features/taxonomy/presentation/keyword_suggestions_screen.dart';
 import '../features/clinical_cases/presentation/case_list_screen.dart';
 import '../features/clinical_cases/presentation/case_detail_screen.dart';
@@ -40,6 +42,8 @@ import '../features/reviewer/presentation/reviewer_queue_screen.dart';
 import '../features/reviewer/presentation/reviewer_reviewed_screen.dart';
 import '../features/reviewer/presentation/reviewer_assessment_screen.dart';
 import '../features/reviewer/data/reviewer_repository.dart';
+import '../features/community/presentation/community_screen.dart';
+import '../features/community/presentation/community_profile_screen.dart';
 import '../splash/splash_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -436,7 +440,12 @@ class _MainShell extends StatelessWidget {
       if (location.startsWith('/reviewer/reviewed')) return 1;
       return 0;
     }
-    if (location.startsWith('/cases')) return 1;
+    if (location.startsWith('/logbook') ||
+        location.startsWith('/cases') ||
+        location.startsWith('/publications') ||
+        location.startsWith('/review')) {
+      return 1;
+    }
     if (location.startsWith('/community')) return 2;
     if (location.startsWith('/teaching')) return 3;
     if (location.startsWith('/profile')) return 4;
@@ -460,7 +469,7 @@ class _MainShell extends StatelessWidget {
         context.go('/home');
         break;
       case 1:
-        context.go('/cases');
+        context.go('/logbook');
         break;
       case 2:
         context.go('/community');
@@ -519,9 +528,9 @@ class _MainShell extends StatelessWidget {
                   label: 'Home',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.medical_services_outlined),
-                  activeIcon: Icon(Icons.medical_services),
-                  label: 'Cases',
+                  icon: Icon(Icons.menu_book_outlined),
+                  activeIcon: Icon(Icons.menu_book),
+                  label: 'Logbook',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.groups_outlined),
@@ -605,7 +614,7 @@ class _AppDrawer extends StatelessWidget {
               _item(context, Icons.person, 'Profile', '/profile'),
             ] else ...[
               _item(context, Icons.home, 'Dashboard', '/home'),
-              _item(context, Icons.list_alt, 'Cases', '/cases'),
+              _item(context, Icons.menu_book, 'Logbook', '/logbook'),
               _item(context, Icons.groups, 'Community', '/community'),
               _item(context, Icons.school, 'Teaching Library', '/teaching'),
               _item(context, Icons.person, 'Profile', '/profile'),
