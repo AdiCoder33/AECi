@@ -40,6 +40,8 @@ import '../features/reviewer/presentation/reviewer_queue_screen.dart';
 import '../features/reviewer/presentation/reviewer_reviewed_screen.dart';
 import '../features/reviewer/presentation/reviewer_assessment_screen.dart';
 import '../features/reviewer/data/reviewer_repository.dart';
+import '../features/community/presentation/community_screen.dart';
+import '../features/community/presentation/community_profile_screen.dart';
 import '../splash/splash_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
