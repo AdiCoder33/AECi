@@ -2,19 +2,49 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../clinical_cases/application/clinical_cases_controller.dart';
+import '../../portfolio/application/portfolio_controller.dart';
+import '../../review/application/review_controller.dart';
 import '../application/logbook_providers.dart';
 import '../domain/elog_entry.dart';
+import '../domain/logbook_sections.dart';
 import 'widgets/entry_card.dart';
 
-class LogbookScreen extends ConsumerWidget {
+class LogbookScreen extends ConsumerStatefulWidget {
   const LogbookScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LogbookScreen> createState() => _LogbookScreenState();
+}
+
+class _LogbookScreenState extends ConsumerState<LogbookScreen> {
+  @override
+  Widget build(BuildContext context) {
+    final section = ref.watch(logbookSectionProvider);
     final module = ref.watch(moduleSelectionProvider);
-    final entries = ref.watch(entriesListProvider);
+    final isEntrySection = logbookEntrySections.contains(section);
+    final isCaseSection = logbookCaseSections.contains(section);
+    final isPublications = section == logbookSectionPublications;
+    final isReviews = section == logbookSectionReviews;
+    final entries = isEntrySection ? ref.watch(entriesListProvider) : null;
+    final cases = isCaseSection ? ref.watch(clinicalCaseListProvider) : null;
+    final publications =
+        isPublications ? ref.watch(publicationListProvider) : null;
+    final reviews = isReviews ? ref.watch(reviewControllerProvider) : null;
     final showMine = ref.watch(showMineProvider);
     final showDrafts = ref.watch(showDraftsProvider);
+
+    ref.listen<String>(logbookSectionProvider, (previous, next) {
+      final nextSection = logbookSections.firstWhere((s) => s.key == next);
+      final mappedModule = nextSection.moduleType;
+      if (mappedModule != null &&
+          ref.read(moduleSelectionProvider) != mappedModule) {
+        ref.read(moduleSelectionProvider.notifier).state = mappedModule;
+      }
+      if (next == logbookSectionReviews) {
+        ref.read(reviewControllerProvider.notifier).loadQueue();
+      }
+    });
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
@@ -38,7 +68,26 @@ class LogbookScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.pushNamed('logbookNew', extra: module),
+        onPressed: () {
+          switch (section) {
+            case logbookSectionOpdCases:
+            case logbookSectionRetinoblastoma:
+            case logbookSectionRop:
+              context.push('/cases/new');
+              return;
+            case logbookSectionAtlas:
+            case logbookSectionSurgicalRecord:
+            case logbookSectionLearning:
+              context.pushNamed('logbookNew', extra: module);
+              return;
+            case logbookSectionPublications:
+              context.pushNamed('pubNew');
+              return;
+            case logbookSectionReviews:
+              context.push('/review-queue');
+              return;
+          }
+        },
         backgroundColor: const Color(0xFF0B5FFF),
         elevation: 3,
         icon: const Icon(Icons.add, color: Colors.white),
@@ -58,135 +107,62 @@ class LogbookScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _ModuleSelector(
-                  selected: module,
+                _SectionSelector(
+                  selected: section,
                   onChanged: (value) =>
-                      ref.read(moduleSelectionProvider.notifier).state = value,
+                      ref.read(logbookSectionProvider.notifier).state = value,
                 ),
-                const SizedBox(height: 16),
-                _SearchBar(
-                  onChanged: (value) =>
-                      ref.read(searchQueryProvider.notifier).state = value,
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _FilterChip(
-                      label: 'My Entries',
-                      selected: showMine,
-                      onSelected: (v) =>
-                          ref.read(showMineProvider.notifier).state = v,
-                    ),
-                    _FilterChip(
-                      label: 'Drafts',
-                      selected: showDrafts,
-                      onSelected: (v) =>
-                          ref.read(showDraftsProvider.notifier).state = v,
-                    ),
-                    _FilterChip(
-                      label: 'Browse All',
-                      selected: !showMine && !showDrafts,
-                      onSelected: (v) {
-                        if (v) {
-                          ref.read(showMineProvider.notifier).state = false;
-                          ref.read(showDraftsProvider.notifier).state = false;
-                        }
-                      },
-                    ),
-                  ],
-                ),
+                if (isEntrySection) ...[
+                  const SizedBox(height: 16),
+                  _SearchBar(
+                    onChanged: (value) =>
+                        ref.read(searchQueryProvider.notifier).state = value,
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _FilterChip(
+                        label: 'My Entries',
+                        selected: showMine,
+                        onSelected: (v) =>
+                            ref.read(showMineProvider.notifier).state = v,
+                      ),
+                      _FilterChip(
+                        label: 'Drafts',
+                        selected: showDrafts,
+                        onSelected: (v) =>
+                            ref.read(showDraftsProvider.notifier).state = v,
+                      ),
+                      _FilterChip(
+                        label: 'Browse All',
+                        selected: !showMine && !showDrafts,
+                        onSelected: (v) {
+                          if (v) {
+                            ref.read(showMineProvider.notifier).state = false;
+                            ref.read(showDraftsProvider.notifier).state = false;
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
           const SizedBox(height: 2),
           Expanded(
-            child: entries.when(
-              data: (list) {
-                if (list.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.library_books_outlined,
-                          size: 80,
-                          color: Colors.grey[300],
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'No entries yet',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF64748B),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Tap \"New Entry\" to create your first logbook entry',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF94A3B8),
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: list.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final entry = list[index];
-                    return EntryCard(
-                      entry: entry,
-                      onTap: () => context.pushNamed(
-                        'logbookDetail',
-                        pathParameters: {'id': entry.id},
-                      ),
-                    );
-                  },
-                );
-              },
-              loading: () => const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFF0B5FFF),
-                ),
-              ),
-              error: (e, _) => Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 60,
-                      color: Colors.red[300],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Failed to load entries',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.red[700],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      e.toString(),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF64748B),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
+            child: _SectionBody(
+              isEntrySection: isEntrySection,
+              isCaseSection: isCaseSection,
+              isPublications: isPublications,
+              isReviews: isReviews,
+              entries: entries,
+              cases: cases,
+              publications: publications,
+              reviews: reviews,
+              section: section,
             ),
           ),
         ],
@@ -195,8 +171,8 @@ class LogbookScreen extends ConsumerWidget {
   }
 }
 
-class _ModuleSelector extends StatelessWidget {
-  const _ModuleSelector({required this.selected, required this.onChanged});
+class _SectionSelector extends StatelessWidget {
+  const _SectionSelector({required this.selected, required this.onChanged});
 
   final String selected;
   final ValueChanged<String> onChanged;
@@ -206,14 +182,14 @@ class _ModuleSelector extends StatelessWidget {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: moduleTypes
+        children: logbookSections
             .map(
               (m) => Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: _ModuleChip(
-                  label: m.toUpperCase(),
-                  selected: selected == m,
-                  onTap: () => onChanged(m),
+                  label: m.label,
+                  selected: selected == m.key,
+                  onTap: () => onChanged(m.key),
                 ),
               ),
             )
@@ -335,6 +311,258 @@ class _SearchBar extends StatelessWidget {
           fontSize: 14,
         ),
         onChanged: onChanged,
+      ),
+    );
+  }
+}
+
+class _SectionBody extends StatelessWidget {
+  const _SectionBody({
+    required this.isEntrySection,
+    required this.isCaseSection,
+    required this.isPublications,
+    required this.isReviews,
+    required this.entries,
+    required this.cases,
+    required this.publications,
+    required this.reviews,
+    required this.section,
+  });
+
+  final bool isEntrySection;
+  final bool isCaseSection;
+  final bool isPublications;
+  final bool isReviews;
+  final AsyncValue<List<ElogEntry>>? entries;
+  final AsyncValue<List<dynamic>>? cases;
+  final AsyncValue<List<dynamic>>? publications;
+  final ReviewQueueState? reviews;
+  final String section;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isEntrySection && entries != null) {
+      return entries!.when(
+        data: (list) {
+          if (list.isEmpty) {
+            return _EmptyState(
+              icon: Icons.library_books_outlined,
+              title: 'No entries yet',
+              subtitle: 'Tap "New Entry" to create your first logbook entry',
+            );
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: list.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final entry = list[index];
+              return EntryCard(
+                entry: entry,
+                onTap: () => context.pushNamed(
+                  'logbookDetail',
+                  pathParameters: {'id': entry.id},
+                ),
+              );
+            },
+          );
+        },
+        loading: () => const Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFF0B5FFF),
+          ),
+        ),
+        error: (e, _) => _ErrorState(message: e.toString()),
+      );
+    }
+
+    if (isCaseSection && cases != null) {
+      return cases!.when(
+        data: (list) {
+          if (list.isEmpty) {
+            return _EmptyState(
+              icon: Icons.medical_information_outlined,
+              title: 'No cases yet',
+              subtitle: 'Tap "New Entry" to create your first case',
+            );
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: list.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final c = list[index] as dynamic;
+              return Card(
+                child: ListTile(
+                  title: Text(c.patientName),
+                  subtitle: Text('UID ${c.uidNumber} | MR ${c.mrNumber}'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/cases/${c.id}'),
+                ),
+              );
+            },
+          );
+        },
+        loading: () => const Center(
+          child: CircularProgressIndicator(
+            color: Color(0xFF0B5FFF),
+          ),
+        ),
+        error: (e, _) => _ErrorState(message: e.toString()),
+      );
+    }
+
+    if (isPublications && publications != null) {
+      return publications!.when(
+        data: (items) {
+          if (items.isEmpty) {
+            return _EmptyState(
+              icon: Icons.article_outlined,
+              title: 'No publications yet',
+              subtitle: 'Tap "New Entry" to add a publication',
+            );
+          }
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final item = items[index] as dynamic;
+              return Card(
+                child: ListTile(
+                  title: Text(item.title),
+                  subtitle: Text(item.type ?? 'publication'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.pushNamed(
+                    'pubDetail',
+                    pathParameters: {'id': item.id},
+                  ),
+                ),
+              );
+            },
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => _ErrorState(message: e.toString()),
+      );
+    }
+
+    if (isReviews && reviews != null) {
+      if (reviews!.isLoading) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (reviews!.error != null) {
+        return _ErrorState(message: reviews!.error!);
+      }
+      if (reviews!.entries.isEmpty) {
+        return _EmptyState(
+          icon: Icons.rate_review_outlined,
+          title: 'No reviews pending',
+          subtitle: 'You have no submissions to review right now.',
+        );
+      }
+      return ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: reviews!.entries.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final entry = reviews!.entries[index];
+          return Card(
+            child: ListTile(
+              title: Text(entry.patientUniqueId),
+              subtitle: Text('MRN ${entry.mrn} | ${entry.moduleType}'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.pushNamed(
+                'reviewDetail',
+                pathParameters: {'id': entry.id},
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 80, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF94A3B8),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 60,
+            color: Colors.red[300],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Failed to load',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.red[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF64748B),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
