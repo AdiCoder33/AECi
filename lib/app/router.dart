@@ -40,6 +40,8 @@ import '../features/reviewer/presentation/reviewer_queue_screen.dart';
 import '../features/reviewer/presentation/reviewer_reviewed_screen.dart';
 import '../features/reviewer/presentation/reviewer_assessment_screen.dart';
 import '../features/reviewer/data/reviewer_repository.dart';
+import '../features/community/presentation/community_screen.dart';
+import '../features/community/presentation/community_profile_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
@@ -165,6 +167,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/profile',
             name: 'profile',
             builder: (context, state) => const ProfileScreen(),
+          ),
+          GoRoute(
+            path: '/community',
+            name: 'community',
+            builder: (context, state) => const CommunityScreen(),
+            routes: [
+              GoRoute(
+                path: ':id',
+                name: 'communityProfile',
+                builder: (context, state) => CommunityProfileScreen(
+                  profileId: state.pathParameters['id']!,
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: '/profile/edit',
@@ -416,8 +432,8 @@ class _MainShell extends StatelessWidget {
       if (location.startsWith('/reviewer/reviewed')) return 1;
       return 0;
     }
-    if (location.startsWith('/logbook')) return 1;
-    if (location.startsWith('/cases')) return 2;
+    if (location.startsWith('/cases')) return 1;
+    if (location.startsWith('/community')) return 2;
     if (location.startsWith('/teaching')) return 3;
     if (location.startsWith('/profile')) return 4;
     return 0;
@@ -440,10 +456,10 @@ class _MainShell extends StatelessWidget {
         context.go('/home');
         break;
       case 1:
-        context.go('/logbook');
+        context.go('/cases');
         break;
       case 2:
-        context.go('/cases');
+        context.go('/community');
         break;
       case 3:
         context.go('/teaching');
@@ -499,14 +515,14 @@ class _MainShell extends StatelessWidget {
                   label: 'Home',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.book_outlined),
-                  activeIcon: Icon(Icons.book),
-                  label: 'Logbook',
-                ),
-                BottomNavigationBarItem(
                   icon: Icon(Icons.medical_services_outlined),
                   activeIcon: Icon(Icons.medical_services),
                   label: 'Cases',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.groups_outlined),
+                  activeIcon: Icon(Icons.groups),
+                  label: 'Community',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.school_outlined),
@@ -575,8 +591,8 @@ class _AppDrawer extends StatelessWidget {
               _item(context, Icons.person, 'Profile', '/profile'),
             ] else ...[
               _item(context, Icons.home, 'Dashboard', '/home'),
-              _item(context, Icons.book, 'Logbook', '/logbook'),
               _item(context, Icons.list_alt, 'Cases', '/cases'),
+              _item(context, Icons.groups, 'Community', '/community'),
               _item(context, Icons.school, 'Teaching Library', '/teaching'),
               _item(context, Icons.person, 'Profile', '/profile'),
               _item(context, Icons.search, 'Global Search', '/search'),
