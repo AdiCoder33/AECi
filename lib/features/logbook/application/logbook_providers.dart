@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/cache/signed_url_cache.dart';
 import '../data/entries_repository.dart';
 import '../domain/elog_entry.dart';
+import '../domain/logbook_sections.dart';
 
+final logbookSectionProvider =
+    StateProvider<String>((ref) => logbookSectionOpdCases);
 final moduleSelectionProvider = StateProvider<String>((ref) => moduleCases);
 final searchQueryProvider = StateProvider<String>((ref) => '');
 final showMineProvider = StateProvider<bool>((ref) => true);
