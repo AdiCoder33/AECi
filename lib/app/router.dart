@@ -40,8 +40,7 @@ import '../features/reviewer/presentation/reviewer_queue_screen.dart';
 import '../features/reviewer/presentation/reviewer_reviewed_screen.dart';
 import '../features/reviewer/presentation/reviewer_assessment_screen.dart';
 import '../features/reviewer/data/reviewer_repository.dart';
-import '../features/community/presentation/community_screen.dart';
-import '../features/community/presentation/community_profile_screen.dart';
+import '../splash/splash_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authControllerProvider);
@@ -52,7 +51,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final refreshStream = StreamGroup.merge([authChanges, profileStream]);
 
   return GoRouter(
-    initialLocation: '/auth',
+    initialLocation: '/splash',
     refreshListenable: GoRouterRefreshStream(refreshStream),
     redirect: (context, state) {
       final loggedIn = authState.session != null;
@@ -96,6 +95,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/splash',
+        name: 'splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
       GoRoute(
         path: '/loading',
         name: 'loading',
@@ -586,8 +590,18 @@ class _AppDrawer extends StatelessWidget {
               ),
             ),
             if (isReviewer) ...[
-              _item(context, Icons.assignment, 'Profiles to Assess', '/reviewer/pending'),
-              _item(context, Icons.check_circle, 'Profiles Reviewed', '/reviewer/reviewed'),
+              _item(
+                context,
+                Icons.assignment,
+                'Profiles to Assess',
+                '/reviewer/pending',
+              ),
+              _item(
+                context,
+                Icons.check_circle,
+                'Profiles Reviewed',
+                '/reviewer/reviewed',
+              ),
               _item(context, Icons.person, 'Profile', '/profile'),
             ] else ...[
               _item(context, Icons.home, 'Dashboard', '/home'),
@@ -597,7 +611,12 @@ class _AppDrawer extends StatelessWidget {
               _item(context, Icons.person, 'Profile', '/profile'),
               _item(context, Icons.search, 'Global Search', '/search'),
               _item(context, Icons.insights, 'Analytics', '/analytics'),
-              _item(context, Icons.rate_review, 'Review Queue', '/review-queue'),
+              _item(
+                context,
+                Icons.rate_review,
+                'Review Queue',
+                '/review-queue',
+              ),
               _item(context, Icons.archive, 'Storage Tools', '/storage-tools'),
             ],
             const Divider(),
