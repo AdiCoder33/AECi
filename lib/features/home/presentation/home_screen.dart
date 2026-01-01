@@ -132,6 +132,7 @@ class _ActionGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tiles = <_ActionTile>[
+      _ActionTile('Submit', Icons.send, '/submit', const Color(0xFF0B5FFF)),
       _ActionTile('Teaching', Icons.school, '/teaching', const Color(0xFFF59E0B)),
       _ActionTile('Analytics', Icons.insights, '/analytics', const Color(0xFF8B5CF6)),
       _ActionTile('Research', Icons.science, '/research', const Color(0xFFEC4899)),

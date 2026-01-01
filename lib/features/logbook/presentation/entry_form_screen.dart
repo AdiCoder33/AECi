@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../application/logbook_providers.dart';
 import '../data/media_repository.dart';
 import '../domain/elog_entry.dart';
 import '../domain/surgical_learning_options.dart';
+import '../domain/atlas_media_types.dart';
 import '../../quality/data/quality_repository.dart';
 import '../../taxonomy/data/taxonomy_repository.dart';
 
@@ -33,6 +35,13 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
 
   final _keyDescriptionController = TextEditingController();
   final _additionalInfoController = TextEditingController();
+  final _atlasDiagnosisController = TextEditingController();
+  final _atlasBriefController = TextEditingController();
+  final _recordPatientNameController = TextEditingController();
+  final _recordAgeController = TextEditingController();
+  final _recordDiagnosisController = TextEditingController();
+  final _recordAssistedByController = TextEditingController();
+  final _recordDurationController = TextEditingController();
 
   final _preOpController = TextEditingController();
   final _surgicalVideoController = TextEditingController();
@@ -44,7 +53,12 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   String? _moduleType;
   String _currentStatus = statusDraft;
   List<String> _existingImagePaths = [];
+  List<String> _existingVideoPaths = [];
   final List<File> _newImages = [];
+  final List<File> _newVideos = [];
+  String? _mediaType;
+  String? _recordSex;
+  String? _recordSurgery;
 
   @override
   void initState() {
@@ -78,10 +92,15 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
           ];
           break;
         case moduleImages:
-          _keyDescriptionController.text =
-              payload['keyDescriptionOrPathology'] ?? '';
-          _additionalInfoController.text =
-              payload['additionalInformation'] ?? '';
+          _mediaType = payload['mediaType'] as String?;
+          _atlasDiagnosisController.text = payload['diagnosis'] ??
+              payload['keyDescriptionOrPathology'] ??
+              '';
+          _atlasBriefController.text = payload['briefDescription'] ??
+              payload['additionalInformation'] ??
+              '';
+          _keyDescriptionController.text = _atlasDiagnosisController.text;
+          _additionalInfoController.text = _atlasBriefController.text;
           _existingImagePaths = [
             ...List<String>.from(payload['uploadImagePaths'] ?? []),
             ...List<String>.from(payload['followUpVisitImagingPaths'] ?? []),
@@ -94,12 +113,22 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
           _surgeonController.text = payload['surgeon'] ?? '';
           break;
         case moduleRecords:
-          _preOpController.text = payload['preOpDiagnosisOrPathology'] ?? '';
-          _surgicalVideoController.text = payload['surgicalVideoLink'] ?? '';
-          _learningPointController.text =
-              payload['learningPointOrComplication'] ?? '';
-          _surgeonAssistantController.text =
-              payload['surgeonOrAssistant'] ?? '';
+          _recordPatientNameController.text =
+              payload['patientName'] ?? '';
+          _recordAgeController.text = payload['age']?.toString() ?? '';
+          final sex = payload['sex'] as String? ?? '';
+          _recordSex = sex.isEmpty
+              ? null
+              : '${sex[0].toUpperCase()}${sex.substring(1).toLowerCase()}';
+          _recordDiagnosisController.text =
+              payload['diagnosis'] ?? payload['preOpDiagnosisOrPathology'] ?? '';
+          _recordSurgery =
+              payload['surgery'] ?? payload['learningPointOrComplication'];
+          _recordAssistedByController.text =
+              payload['assistedBy'] ?? payload['surgeonOrAssistant'] ?? '';
+          _recordDurationController.text = payload['duration'] ?? '';
+          _existingVideoPaths =
+              List<String>.from(payload['videoPaths'] ?? []);
           break;
       }
     });
@@ -114,6 +143,13 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     _followUpDescController.dispose();
     _keyDescriptionController.dispose();
     _additionalInfoController.dispose();
+    _atlasDiagnosisController.dispose();
+    _atlasBriefController.dispose();
+    _recordPatientNameController.dispose();
+    _recordAgeController.dispose();
+    _recordDiagnosisController.dispose();
+    _recordAssistedByController.dispose();
+    _recordDurationController.dispose();
     _preOpController.dispose();
     _surgicalVideoController.dispose();
     _teachingPointController.dispose();
@@ -126,6 +162,8 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.entryId != null;
+    final isAtlas = _moduleType == moduleImages;
+    final isRecords = _moduleType == moduleRecords;
     final mutation = ref.watch(entryMutationProvider);
 
     return Scaffold(
@@ -137,60 +175,143 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              DropdownButtonFormField<String>(
-                value: _moduleType,
-                decoration: const InputDecoration(labelText: 'Module'),
-                items: moduleTypes
-                    .map(
-                      (m) => DropdownMenuItem(
-                        value: m,
-                        child: Text(m.toUpperCase()),
-                      ),
-                    )
-                    .toList(),
-                onChanged: isEditing ? null : (value) => setState(() => _moduleType = value),
-              ),
-              _buildText(
-                controller: _patientController,
-                label: 'Patient Unique ID',
-                validator: _required,
-                enabled: _canEditStatus,
-              ),
-              _buildText(
-                controller: _mrnController,
-                label: 'MRN',
-                validator: _required,
-                enabled: _canEditStatus,
-              ),
-              _buildText(
-                controller: _keywordsController,
-                label: 'Keywords (comma separated)',
-                validator: _required,
-                enabled: _canEditStatus,
-              ),
-              if (_canEditStatus)
-                _KeywordSuggestionsField(
-                  controller: _keywordsController,
+              if (!isAtlas && !isRecords)
+                DropdownButtonFormField<String>(
+                  value: _moduleType,
+                  decoration: const InputDecoration(labelText: 'Module'),
+                  items: moduleTypes
+                      .map(
+                        (m) => DropdownMenuItem(
+                          value: m,
+                          child: Text(m.toUpperCase()),
+                        ),
+                      )
+                      .toList(),
+                  onChanged:
+                      isEditing ? null : (value) => setState(() => _moduleType = value),
                 ),
-              const SizedBox(height: 12),
-              _ModuleFields(
-                moduleType: _moduleType ?? moduleCases,
-                briefDescController: _briefDescController,
-                followUpDescController: _followUpDescController,
-                keyDescriptionController: _keyDescriptionController,
-                additionalInfoController: _additionalInfoController,
-                preOpController: _preOpController,
-                surgicalVideoController: _surgicalVideoController,
-                teachingPointController: _teachingPointController,
-                surgeonController: _surgeonController,
-                learningPointController: _learningPointController,
-                surgeonAssistantController: _surgeonAssistantController,
-                enabled: _canEditStatus,
-              ),
-              if (_moduleType == moduleCases || _moduleType == moduleImages)
-                _ImagePickerSection(
-                  existingPaths: _existingImagePaths,
-                  newImages: _newImages,
+              if (isRecords) ...[
+                _buildText(
+                  controller: _recordPatientNameController,
+                  label: 'Patient name',
+                  validator: _required,
+                  enabled: _canEditStatus,
+                ),
+                _buildText(
+                  controller: _patientController,
+                  label: 'UID',
+                  validator: _required,
+                  enabled: _canEditStatus,
+                ),
+                _buildText(
+                  controller: _mrnController,
+                  label: 'MRN',
+                  validator: _required,
+                  enabled: _canEditStatus,
+                ),
+                _buildText(
+                  controller: _recordAgeController,
+                  label: 'Age',
+                  validator: _required,
+                  enabled: _canEditStatus,
+                  keyboardType: TextInputType.number,
+                ),
+                _buildSexDropdown(),
+                _buildText(
+                  controller: _recordDiagnosisController,
+                  label: 'Diagnosis',
+                  validator: _required,
+                  enabled: _canEditStatus,
+                ),
+                _buildSurgeryDropdown(),
+                _buildText(
+                  controller: _recordAssistedByController,
+                  label: 'Assisted by',
+                  validator: _required,
+                  enabled: _canEditStatus,
+                ),
+                _buildText(
+                  controller: _recordDurationController,
+                  label: 'Duration',
+                  validator: _required,
+                  enabled: _canEditStatus,
+                ),
+              ] else ...[
+                _buildText(
+                  controller: _patientController,
+                  label: 'Patient Unique ID',
+                  validator: _required,
+                  enabled: _canEditStatus,
+                ),
+                _buildText(
+                  controller: _mrnController,
+                  label: 'MRN',
+                  validator: _required,
+                  enabled: _canEditStatus,
+                ),
+                if (isAtlas)
+                  _ModuleFields(
+                    moduleType: _moduleType ?? moduleCases,
+                    briefDescController: _briefDescController,
+                    followUpDescController: _followUpDescController,
+                    keyDescriptionController: _keyDescriptionController,
+                    additionalInfoController: _additionalInfoController,
+                    atlasDiagnosisController: _atlasDiagnosisController,
+                    atlasBriefController: _atlasBriefController,
+                    mediaType: _mediaType,
+                    onMediaTypeChanged: (value) =>
+                        setState(() => _mediaType = value),
+                    preOpController: _preOpController,
+                    surgicalVideoController: _surgicalVideoController,
+                    teachingPointController: _teachingPointController,
+                    surgeonController: _surgeonController,
+                    learningPointController: _learningPointController,
+                    surgeonAssistantController: _surgeonAssistantController,
+                    enabled: _canEditStatus,
+                  ),
+                _buildText(
+                  controller: _keywordsController,
+                  label: 'Keywords (comma separated)',
+                  validator: _required,
+                  enabled: _canEditStatus,
+                ),
+                if (_canEditStatus && !isAtlas)
+                  _KeywordSuggestionsField(
+                    controller: _keywordsController,
+                  ),
+                const SizedBox(height: 12),
+                if (!isAtlas)
+                  _ModuleFields(
+                    moduleType: _moduleType ?? moduleCases,
+                    briefDescController: _briefDescController,
+                    followUpDescController: _followUpDescController,
+                    keyDescriptionController: _keyDescriptionController,
+                    additionalInfoController: _additionalInfoController,
+                    atlasDiagnosisController: _atlasDiagnosisController,
+                    atlasBriefController: _atlasBriefController,
+                    mediaType: _mediaType,
+                    onMediaTypeChanged: (value) =>
+                        setState(() => _mediaType = value),
+                    preOpController: _preOpController,
+                    surgicalVideoController: _surgicalVideoController,
+                    teachingPointController: _teachingPointController,
+                    surgeonController: _surgeonController,
+                    learningPointController: _learningPointController,
+                    surgeonAssistantController: _surgeonAssistantController,
+                    enabled: _canEditStatus,
+                  ),
+                if (_moduleType == moduleCases || _moduleType == moduleImages)
+                  _ImagePickerSection(
+                    existingPaths: _existingImagePaths,
+                    newImages: _newImages,
+                    onChanged: () => setState(() {}),
+                    enabled: _canEditStatus,
+                  ),
+              ],
+              if (isRecords)
+                _VideoPickerSection(
+                  existingPaths: _existingVideoPaths,
+                  newVideos: _newVideos,
                   onChanged: () => setState(() {}),
                   enabled: _canEditStatus,
                 ),
@@ -218,22 +339,24 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                               color: Colors.black,
                             ),
                           )
-                        : const Text(
-                            'Save Draft',
-                            style: TextStyle(color: Colors.black),
+                        : Text(
+                            (isAtlas || isRecords) ? 'Save' : 'Save Draft',
+                            style: const TextStyle(color: Colors.black),
                           ),
                   ),
                   const SizedBox(width: 12),
-                  ElevatedButton(
-                    onPressed: !_canEditStatus || mutation.isLoading
-                        ? null
-                        : () => _save(submit: true),
-                    child: const Text(
-                      'Submit for review',
-                      style: TextStyle(color: Colors.black),
+                  if (!isAtlas && !isRecords) ...[
+                    ElevatedButton(
+                      onPressed: !_canEditStatus || mutation.isLoading
+                          ? null
+                          : () => _save(submit: true),
+                      child: const Text(
+                        'Submit for review',
+                        style: TextStyle(color: Colors.black),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
+                    const SizedBox(width: 12),
+                  ],
                   TextButton(
                     onPressed: () => context.pop(),
                     child: const Text('Cancel'),
@@ -257,6 +380,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     required String label,
     String? Function(String?)? validator,
     bool enabled = true,
+    TextInputType? keyboardType,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -265,6 +389,59 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
         enabled: enabled,
         decoration: InputDecoration(labelText: label),
         validator: validator,
+        keyboardType: keyboardType,
+      ),
+    );
+  }
+
+  Widget _buildSexDropdown() {
+    const options = ['Male', 'Female'];
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: DropdownButtonFormField<String>(
+        value: _recordSex,
+        decoration: const InputDecoration(labelText: 'Sex'),
+        items: options
+            .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+            .toList(),
+        validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+        onChanged: _canEditStatus
+            ? (value) => setState(() => _recordSex = value)
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildSurgeryDropdown() {
+    final options = <String>[
+      'SOR',
+      'VH',
+      'RRD',
+      'SFIOL',
+      'MH',
+      'Scleral buckle',
+      'Belt buckle',
+      'ERM',
+      'TRD',
+      'PPL+PPV+SFIOL',
+      'ROP laser',
+    ];
+    final current = _recordSurgery;
+    if (current != null && current.isNotEmpty && !options.contains(current)) {
+      options.insert(0, current);
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: DropdownButtonFormField<String>(
+        value: current == null || current.isEmpty ? null : current,
+        decoration: const InputDecoration(labelText: 'Surgery'),
+        items: options
+            .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+            .toList(),
+        validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+        onChanged: _canEditStatus
+            ? (value) => setState(() => _recordSurgery = value)
+            : null,
       ),
     );
   }
@@ -280,11 +457,13 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
       return;
     }
     final module = _moduleType ?? moduleCases;
-    final keywords = _keywordsController.text
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
+    final keywords = module == moduleRecords
+        ? _buildRecordKeywords()
+        : _keywordsController.text
+            .split(',')
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList();
 
     final mediaRepo = ref.read(mediaRepositoryProvider);
     Map<String, dynamic> payload = _buildPayload(module);
@@ -308,6 +487,15 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
               .read(entryMutationProvider.notifier)
               .update(entryId, ElogEntryUpdate(payload: payload));
         }
+        if (module == moduleRecords) {
+          final videoPaths = await _uploadNewVideos(mediaRepo, entryId);
+          if (videoPaths.isNotEmpty) {
+            payload = _withNewVideos(payload, videoPaths);
+            await ref
+                .read(entryMutationProvider.notifier)
+                .update(entryId, ElogEntryUpdate(payload: payload));
+          }
+        }
         if (submit) {
           await ref.read(entryMutationProvider.notifier).update(
                 entryId,
@@ -323,6 +511,12 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
         final newPaths = await _uploadNewImages(mediaRepo, entryId);
         if (newPaths.isNotEmpty) {
           payload = _withNewPaths(module, payload, newPaths);
+        }
+        if (module == moduleRecords) {
+          final videoPaths = await _uploadNewVideos(mediaRepo, entryId);
+          if (videoPaths.isNotEmpty) {
+            payload = _withNewVideos(payload, videoPaths);
+          }
         }
         final update = ElogEntryUpdate(
           patientUniqueId: _patientController.text.trim(),
@@ -365,6 +559,18 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     return newPaths;
   }
 
+  Future<List<String>> _uploadNewVideos(
+    MediaRepository mediaRepo,
+    String entryId,
+  ) async {
+    final newPaths = <String>[];
+    for (final file in _newVideos) {
+      final path = await mediaRepo.uploadImage(entryId: entryId, file: file);
+      newPaths.add(path);
+    }
+    return newPaths;
+  }
+
   Map<String, dynamic> _buildPayload(String module) {
     switch (module) {
       case moduleCases:
@@ -378,8 +584,11 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
         final uploadPaths = _existingImagePaths;
         return {
           'uploadImagePaths': uploadPaths,
-          'keyDescriptionOrPathology': _keyDescriptionController.text.trim(),
-          'additionalInformation': _additionalInfoController.text.trim(),
+          'mediaType': _mediaType,
+          'diagnosis': _atlasDiagnosisController.text.trim(),
+          'briefDescription': _atlasBriefController.text.trim(),
+          'keyDescriptionOrPathology': _atlasDiagnosisController.text.trim(),
+          'additionalInformation': _atlasBriefController.text.trim(),
           'followUpVisitImagingPaths': <String>[],
         };
       case moduleLearning:
@@ -390,11 +599,23 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
           'surgeon': _surgeonController.text.trim(),
         };
       case moduleRecords:
+        final ageText = _recordAgeController.text.trim();
+        final age = int.tryParse(ageText);
+        final diagnosis = _recordDiagnosisController.text.trim();
+        final assistedBy = _recordAssistedByController.text.trim();
+        final surgery = _recordSurgery?.trim() ?? '';
         return {
-          'preOpDiagnosisOrPathology': _preOpController.text.trim(),
-          'surgicalVideoLink': _surgicalVideoController.text.trim(),
-          'learningPointOrComplication': _learningPointController.text.trim(),
-          'surgeonOrAssistant': _surgeonAssistantController.text.trim(),
+          'patientName': _recordPatientNameController.text.trim(),
+          'age': age ?? ageText,
+          'sex': _recordSex,
+          'diagnosis': diagnosis,
+          'surgery': surgery,
+          'assistedBy': assistedBy,
+          'duration': _recordDurationController.text.trim(),
+          'videoPaths': _existingVideoPaths,
+          'preOpDiagnosisOrPathology': diagnosis,
+          'learningPointOrComplication': surgery,
+          'surgeonOrAssistant': assistedBy,
         };
       default:
         return {};
@@ -421,6 +642,37 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     }
     return updated;
   }
+
+  Map<String, dynamic> _withNewVideos(
+    Map<String, dynamic> payload,
+    List<String> newPaths,
+  ) {
+    final updated = Map<String, dynamic>.from(payload);
+    final existing = List<String>.from(updated['videoPaths'] ?? []);
+    updated['videoPaths'] = [...existing, ...newPaths];
+    return updated;
+  }
+
+  List<String> _buildRecordKeywords() {
+    final seeds = [
+      _recordDiagnosisController.text.trim(),
+      _recordSurgery?.trim() ?? '',
+    ];
+    final keywords = <String>[];
+    for (final seed in seeds) {
+      if (seed.isEmpty) continue;
+      final parts = seed.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty);
+      for (final part in parts) {
+        if (keywords.every((k) => k.toLowerCase() != part.toLowerCase())) {
+          keywords.add(part);
+        }
+      }
+    }
+    if (keywords.isEmpty) {
+      keywords.add('record');
+    }
+    return keywords;
+  }
 }
 
 class _ModuleFields extends StatelessWidget {
@@ -430,6 +682,10 @@ class _ModuleFields extends StatelessWidget {
     required this.followUpDescController,
     required this.keyDescriptionController,
     required this.additionalInfoController,
+    required this.atlasDiagnosisController,
+    required this.atlasBriefController,
+    required this.mediaType,
+    required this.onMediaTypeChanged,
     required this.preOpController,
     required this.surgicalVideoController,
     required this.teachingPointController,
@@ -444,6 +700,10 @@ class _ModuleFields extends StatelessWidget {
   final TextEditingController followUpDescController;
   final TextEditingController keyDescriptionController;
   final TextEditingController additionalInfoController;
+  final TextEditingController atlasDiagnosisController;
+  final TextEditingController atlasBriefController;
+  final String? mediaType;
+  final ValueChanged<String?> onMediaTypeChanged;
   final TextEditingController preOpController;
   final TextEditingController surgicalVideoController;
   final TextEditingController teachingPointController;
@@ -475,16 +735,22 @@ class _ModuleFields extends StatelessWidget {
       case moduleImages:
         return Column(
           children: [
+            _buildMediaTypeDropdown(
+              value: mediaType,
+              onChanged: enabled ? onMediaTypeChanged : null,
+            ),
             _buildField(
-              controller: keyDescriptionController,
-              label: 'Key Description / Pathology',
+              controller: atlasDiagnosisController,
+              label: 'Diagnosis',
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Required' : null,
               enabled: enabled,
             ),
             _buildField(
-              controller: additionalInfoController,
-              label: 'Additional Information (optional)',
+              controller: atlasBriefController,
+              label: 'Brief description',
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Required' : null,
               enabled: enabled,
             ),
           ],
@@ -597,6 +863,29 @@ class _ModuleFields extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildMediaTypeDropdown({
+    required String? value,
+    required ValueChanged<String?>? onChanged,
+  }) {
+    final options = [...atlasMediaTypes];
+    if (value != null && value.isNotEmpty && !options.contains(value)) {
+      options.insert(0, value);
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: DropdownButtonFormField<String>(
+        value: value == null || value.isEmpty ? null : value,
+        items: options
+            .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+            .toList(),
+        decoration: const InputDecoration(labelText: 'Type of media'),
+        validator: (v) =>
+            v == null || v.trim().isEmpty ? 'Required' : null,
+        onChanged: onChanged,
+      ),
+    );
+  }
 }
 
 class _ImagePickerSection extends ConsumerWidget {
@@ -678,6 +967,94 @@ class _ImagePickerSection extends ConsumerWidget {
                   height: 80,
                   width: 80,
                   fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _VideoPickerSection extends ConsumerWidget {
+  const _VideoPickerSection({
+    required this.existingPaths,
+    required this.newVideos,
+    required this.onChanged,
+    required this.enabled,
+  });
+
+  final List<String> existingPaths;
+  final List<File> newVideos;
+  final VoidCallback onChanged;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final signedCache = ref.watch(signedUrlCacheProvider.notifier);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('Videos', style: TextStyle(fontWeight: FontWeight.bold)),
+            TextButton.icon(
+              onPressed: !enabled
+                  ? null
+                  : () async {
+                      final picker = ImagePicker();
+                      final picked = await picker.pickVideo(
+                        source: ImageSource.gallery,
+                      );
+                      if (picked != null) {
+                        newVideos.add(File(picked.path));
+                        onChanged();
+                      }
+                    },
+              icon: const Icon(Icons.add),
+              label: const Text('Add'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Column(
+          children: [
+            ...existingPaths.map(
+              (path) => FutureBuilder(
+                future: signedCache.getUrl(path),
+                builder: (context, snapshot) {
+                  final fileName = path.split('/').last;
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.videocam_outlined),
+                    title: Text(fileName),
+                    trailing: TextButton(
+                      onPressed: snapshot.hasData
+                          ? () => launchUrl(Uri.parse(snapshot.data!))
+                          : null,
+                      child: const Text('Open'),
+                    ),
+                  );
+                },
+              ),
+            ),
+            ...newVideos.map(
+              (file) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.videocam_outlined),
+                title: Text(file.path.split('/').last),
+                trailing: IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: !enabled
+                      ? null
+                      : () {
+                          newVideos.remove(file);
+                          onChanged();
+                        },
                 ),
               ),
             ),

@@ -614,6 +614,7 @@ class _PayloadView extends ConsumerWidget {
     }
 
     final videoLink = payload['surgicalVideoLink'] as String?;
+    final videoPaths = List<String>.from(payload['videoPaths'] ?? []);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -669,6 +670,37 @@ class _PayloadView extends ConsumerWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
+              ),
+            ),
+          ],
+          if (videoPaths.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Videos',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1E293B),
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...videoPaths.map(
+              (path) => FutureBuilder(
+                future: signedCache.getUrl(path),
+                builder: (context, snapshot) {
+                  final fileName = path.split('/').last;
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.videocam_outlined),
+                    title: Text(fileName),
+                    trailing: TextButton(
+                      onPressed: snapshot.hasData
+                          ? () => launchUrl(Uri.parse(snapshot.data!))
+                          : null,
+                      child: const Text('Open'),
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -745,12 +777,18 @@ class _PayloadView extends ConsumerWidget {
             _FieldRow('Follow up', payload['followUpVisitDescription']),
         ];
       case moduleImages:
+        final diagnosis =
+            payload['diagnosis'] ?? payload['keyDescriptionOrPathology'] ?? '';
+        final brief =
+            payload['briefDescription'] ?? payload['additionalInformation'] ?? '';
+        final mediaType = payload['mediaType'] ?? '';
         return [
-          _FieldRow(
-            'Key description / pathology',
-            payload['keyDescriptionOrPathology'] ?? '',
-          ),
-          if ((payload['additionalInformation'] ?? '').toString().isNotEmpty)
+          if (mediaType.toString().isNotEmpty)
+            _FieldRow('Type of media', mediaType.toString()),
+          _FieldRow('Diagnosis', diagnosis.toString()),
+          _FieldRow('Brief description', brief.toString()),
+          if ((payload['additionalInformation'] ?? '').toString().isNotEmpty &&
+              payload['additionalInformation'] != payload['briefDescription'])
             _FieldRow('Additional info', payload['additionalInformation']),
         ];
       case moduleLearning:
@@ -764,20 +802,25 @@ class _PayloadView extends ConsumerWidget {
           _FieldRow('Surgeon', payload['surgeon'] ?? ''),
         ];
       case moduleRecords:
+        final patientName = payload['patientName'] ?? '';
+        final age = payload['age']?.toString() ?? '';
+        final sex = payload['sex'] ?? '';
+        final diagnosis =
+            payload['diagnosis'] ?? payload['preOpDiagnosisOrPathology'] ?? '';
+        final surgery =
+            payload['surgery'] ?? payload['learningPointOrComplication'] ?? '';
+        final assistedBy =
+            payload['assistedBy'] ?? payload['surgeonOrAssistant'] ?? '';
+        final duration = payload['duration'] ?? '';
         return [
-          _FieldRow(
-            'Pre-op diagnosis / pathology',
-            payload['preOpDiagnosisOrPathology'] ?? '',
-          ),
-          _FieldRow('Surgical video link', payload['surgicalVideoLink'] ?? ''),
-          _FieldRow(
-            'Learning point / complication',
-            payload['learningPointOrComplication'] ?? '',
-          ),
-          _FieldRow(
-            'Surgeon or assistant',
-            payload['surgeonOrAssistant'] ?? '',
-          ),
+          if (patientName.toString().isNotEmpty)
+            _FieldRow('Patient name', patientName.toString()),
+          if (age.toString().isNotEmpty) _FieldRow('Age', age.toString()),
+          if (sex.toString().isNotEmpty) _FieldRow('Sex', sex.toString()),
+          _FieldRow('Diagnosis', diagnosis.toString()),
+          _FieldRow('Surgery', surgery.toString()),
+          _FieldRow('Assisted by', assistedBy.toString()),
+          _FieldRow('Duration', duration.toString()),
         ];
       default:
         return [];

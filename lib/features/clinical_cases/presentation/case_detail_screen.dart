@@ -8,8 +8,10 @@ import '../application/assessment_controller.dart';
 import '../domain/constants/anterior_segment_options.dart';
 import '../domain/constants/fundus_options.dart';
 import '../data/clinical_cases_repository.dart';
+import '../data/assessment_repository.dart';
 import '../../profile/application/profile_controller.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../reviewer/data/reviewer_repository.dart';
 
 class ClinicalCaseDetailScreen extends ConsumerWidget {
   const ClinicalCaseDetailScreen({super.key, required this.caseId});
@@ -19,9 +21,8 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final caseAsync = ref.watch(clinicalCaseDetailProvider(caseId));
-    final assessmentAsync = ref.watch(caseAssessmentProvider(caseId));
-    final profileState = ref.watch(profileControllerProvider);
-    final isConsultant = profileState.profile?.designation == 'Consultant';
+    final recipientsAsync =
+        ref.watch(caseAssessmentRecipientsProvider(caseId));
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
@@ -74,11 +75,15 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
                       _SummaryTab(c: c),
                       _FollowupsTab(caseId: caseId),
                       _MediaTab(caseId: caseId),
-                      assessmentAsync.when(
-                        data: (a) => _AssessmentTab(
+                      recipientsAsync.when(
+                        data: (recipients) => _AssessmentTab(
                           caseId: caseId,
-                          assessment: a,
-                          isConsultant: isConsultant,
+                          recipients: recipients,
+                          caseOwnerId: c.createdBy,
+                          patientName: c.patientName,
+                          uidNumber: c.uidNumber,
+                          mrNumber: c.mrNumber,
+                          caseStatus: c.status,
                         ),
                         loading: () => const Center(
                           child: CircularProgressIndicator(
@@ -792,220 +797,219 @@ class _EmptyState extends StatelessWidget {
 class _AssessmentTab extends ConsumerStatefulWidget {
   const _AssessmentTab({
     required this.caseId,
-    required this.assessment,
-    required this.isConsultant,
+    required this.recipients,
+    required this.caseOwnerId,
+    required this.patientName,
+    required this.uidNumber,
+    required this.mrNumber,
+    required this.caseStatus,
   });
   final String caseId;
-  final dynamic assessment;
-  final bool isConsultant;
+  final List<AssessmentRecipient> recipients;
+  final String caseOwnerId;
+  final String patientName;
+  final String uidNumber;
+  final String mrNumber;
+  final String caseStatus;
 
   @override
   ConsumerState<_AssessmentTab> createState() => _AssessmentTabState();
 }
 
 class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
-  final _comments = TextEditingController();
-  String? _selectedConsultant;
+  final TextEditingController _searchController = TextEditingController();
+  final Set<String> _selectedRecipients = {};
+  bool _seededSelection = false;
 
   @override
   Widget build(BuildContext context) {
     final mutation = ref.watch(assessmentMutationProvider);
+    final authState = ref.watch(authControllerProvider);
     final profileState = ref.watch(profileControllerProvider);
-    final centre = profileState.profile?.aravindCentre ??
-        profileState.profile?.centre ??
-        '';
-    final monthKey = _monthKey(DateTime.now());
-    final rosterAsync = centre.isEmpty
-        ? null
-        : ref.watch(
-            assessmentRosterProvider((centre: centre, monthKey: monthKey)),
-          );
-    final assessment = widget.assessment;
+    final doctorsAsync = ref.watch(assessmentDoctorsProvider);
+    final authId = authState.session?.user.id;
+    final isOwner = authId != null && authId == widget.caseOwnerId;
+    final isReviewer = profileState.profile?.designation == 'Reviewer';
 
-    if (assessment == null) {
-      return Container(
-        color: const Color(0xFFF7F9FC),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView(
-                children: [
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Submit for Assessment',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          if (centre.isEmpty)
-                            const Text('Complete your profile centre first.')
-                          else if (rosterAsync == null)
-                            const SizedBox.shrink()
-                          else
-                            rosterAsync.when(
-                              data: (list) {
-                                if (list.isEmpty) {
-                                  return const Text(
-                                    'No consultants available for this month.',
-                                  );
-                                }
-                                return DropdownButtonFormField<String>(
-                                  value: _selectedConsultant,
-                                  items: list
-                                      .map(
-                                        (c) => DropdownMenuItem(
-                                          value: c.id,
-                                          child: Text(
-                                            '${c.name} - ${c.designation}',
-                                          ),
-                                        ),
-                                      )
-                                      .toList(),
-                                  onChanged: (v) =>
-                                      setState(() => _selectedConsultant = v),
-                                  decoration: const InputDecoration(
-                                    labelText: 'Select Consultant',
-                                  ),
-                                );
-                              },
-                              loading: () =>
-                                  const CircularProgressIndicator(strokeWidth: 2),
-                              error: (e, _) => Text('Error: $e'),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _selectedConsultant == null
-                    ? null
-                    : () async {
-                        await ref
-                            .read(assessmentMutationProvider.notifier)
-                            .submit(widget.caseId, _selectedConsultant!);
-                      },
-                icon: const Icon(Icons.send, color: Colors.white),
-                label: const Text('Submit for Assessment'),
-              ),
-            ),
-          ],
-        ),
-      );
+    if (!_seededSelection && widget.recipients.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _selectedRecipients
+            ..clear()
+            ..addAll(widget.recipients.map((r) => r.recipientId));
+          _seededSelection = true;
+        });
+      });
     }
 
-    final authState = ref.watch(authControllerProvider);
-    final isAssignee =
-        authState.session?.user.id == assessment.assignedConsultantId;
-    final consultantProfileAsync =
-        ref.watch(profileByIdProvider(assessment.assignedConsultantId));
+    final isAssignedReviewer = widget.recipients.any(
+      (r) => r.recipientId == authId && r.canReview,
+    );
 
     return Container(
       color: const Color(0xFFF7F9FC),
       padding: const EdgeInsets.all(16),
-      child: Column(
+      child: ListView(
         children: [
-          Expanded(
-            child: ListView(
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      _StatusPill(status: widget.caseStatus),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Assessment',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (widget.recipients.isEmpty)
+                    const Text(
+                      'No assessment submitted yet.',
+                      style: TextStyle(color: Color(0xFF64748B)),
+                    )
+                  else
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            _StatusPill(status: assessment.status),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        consultantProfileAsync.when(
-                          data: (profile) {
-                            if (profile == null) return const SizedBox.shrink();
-                            return Text(
-                              'Consultant: ${profile.name} - ${profile.designation} (${profile.aravindCentre ?? profile.centre})',
-                              style: const TextStyle(fontSize: 13),
-                            );
-                          },
-                          loading: () => const SizedBox.shrink(),
-                          error: (_, __) => const SizedBox.shrink(),
-                        ),
-                        if (assessment.consultantComments != null &&
-                            assessment.consultantComments.toString().isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: Text(
-                              assessment.consultantComments,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF475569),
-                              ),
-                            ),
+                        const Text(
+                          'Submitted to',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
                           ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: widget.recipients
+                              .map(
+                                (r) => Chip(
+                                  label: Text('${r.name} (${r.designation})'),
+                                  avatar: r.canReview
+                                      ? const Icon(
+                                          Icons.verified,
+                                          size: 16,
+                                          color: Color(0xFF0B5FFF),
+                                        )
+                                      : null,
+                                ),
+                              )
+                              .toList(),
+                        ),
                       ],
                     ),
-                  ),
-                ),
-                if (widget.isConsultant &&
-                    isAssignee &&
-                    assessment.status != 'completed') ...[
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Add Comments',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: _comments,
-                            maxLines: 4,
-                            decoration: const InputDecoration(
-                              hintText: 'Enter your assessment comments...',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 ],
-              ],
+              ),
             ),
           ),
-          if (widget.isConsultant &&
-              isAssignee &&
-              assessment.status != 'completed') ...[
-            const SizedBox(height: 16),
+          if (isOwner) ...[
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Select doctors for assessment',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _searchController,
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.search),
+                        hintText: 'Search doctors by name or designation',
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 12),
+                    doctorsAsync.when(
+                      data: (list) {
+                        final query = _searchController.text.trim().toLowerCase();
+                        final filtered = query.isEmpty
+                            ? list
+                            : list.where((p) {
+                                final centre = p.aravindCentre ?? p.centre;
+                                return p.name.toLowerCase().contains(query) ||
+                                    p.designation.toLowerCase().contains(query) ||
+                                    centre.toLowerCase().contains(query);
+                              }).toList();
+                        if (filtered.isEmpty) {
+                          return const Text('No doctors found.');
+                        }
+                        return ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: filtered.length,
+                          separatorBuilder: (_, __) =>
+                              const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final doctor = filtered[index];
+                            final isSelected =
+                                _selectedRecipients.contains(doctor.id);
+                            return CheckboxListTile(
+                              value: isSelected,
+                              title: Text(doctor.name),
+                              subtitle: Text(
+                                '${doctor.designation} · ${doctor.aravindCentre ?? doctor.centre}',
+                              ),
+                              onChanged: (value) {
+                                setState(() {
+                                  if (value == true) {
+                                    _selectedRecipients.add(doctor.id);
+                                  } else {
+                                    _selectedRecipients.remove(doctor.id);
+                                  }
+                                });
+                              },
+                            );
+                          },
+                        );
+                      },
+                      loading: () => const Padding(
+                        padding: EdgeInsets.only(top: 12),
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      error: (e, _) => Text('Error: $e'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: mutation.isLoading
+                onPressed: _selectedRecipients.isEmpty || mutation.isLoading
                     ? null
                     : () async {
                         await ref
                             .read(assessmentMutationProvider.notifier)
-                            .complete(assessment.id, _comments.text);
+                            .submitRecipients(
+                              widget.caseId,
+                              _selectedRecipients.toList(),
+                            );
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Assessment submitted'),
+                            ),
+                          );
+                        }
+                        ref.invalidate(
+                          caseAssessmentRecipientsProvider(widget.caseId),
+                        );
                       },
                 icon: mutation.isLoading
                     ? const SizedBox(
@@ -1016,21 +1020,64 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
                           color: Colors.white,
                         ),
                       )
-                    : const Icon(Icons.check_circle, color: Colors.white),
+                    : const Icon(Icons.send, color: Colors.white),
                 label: Text(
-                  mutation.isLoading ? 'Processing...' : 'Mark Complete',
+                  mutation.isLoading ? 'Submitting...' : 'Submit Assessment',
                 ),
+              ),
+            ),
+          ],
+          if (!isOwner && widget.recipients.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.visibility, color: Color(0xFF64748B)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'You have view access to this case. Only reviewers can submit scores.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFF64748B),
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          if (isReviewer && isAssignedReviewer) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  final item = ReviewItem(
+                    entityType: 'clinical_case',
+                    entityId: widget.caseId,
+                    traineeId: widget.caseOwnerId,
+                    title: widget.patientName,
+                    subtitle:
+                        'UID ${widget.uidNumber} | MR ${widget.mrNumber}',
+                    updatedAt: DateTime.now(),
+                  );
+                  context.push(
+                    '/reviewer/pending/assess/clinical_case/${widget.caseId}',
+                    extra: item,
+                  );
+                },
+                icon: const Icon(Icons.rate_review, color: Colors.white),
+                label: const Text('Open Review'),
               ),
             ),
           ],
         ],
       ),
     );
-  }
-
-  String _monthKey(DateTime date) {
-    final m = date.month.toString().padLeft(2, '0');
-    return '${date.year}-$m';
   }
 }
 
