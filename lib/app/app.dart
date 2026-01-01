@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme.dart';
 import '../features/auth/application/auth_controller.dart';
+import '../splash/splash_screen.dart';
 import 'router.dart';
 
 class App extends ConsumerWidget {
@@ -10,31 +11,11 @@ class App extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authControllerProvider);
-
-    if (!authState.initialized) {
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        home: const _SplashScreen(),
-      );
-    }
-
     final router = ref.watch(routerProvider);
-
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       routerConfig: router,
     );
-  }
-}
-
-class _SplashScreen extends StatelessWidget {
-  const _SplashScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }

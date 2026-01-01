@@ -34,179 +34,182 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     final state = ref.watch(authControllerProvider);
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFEAF2FF), Color(0xFFF7F9FC)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      top: -30,
-                      right: -50,
-                      child: Container(
-                        width: 140,
-                        height: 140,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.blue.withOpacity(0.08),
-                        ),
+      backgroundColor: const Color(0xFFF7F9FC),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Logo
+                Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEAF2FF),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.book, size: 48, color: Color(0xFF0B5FFF)),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                // App Name
+                const Text(
+                  'Aravind E-Logbook',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0B5FFF),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Tagline
+                const Text(
+                  'Sign in securely with your Aravind account',
+                  style: TextStyle(fontSize: 16, color: Color(0xFF475569)),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                // Illustration (placeholder)
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(60),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 12,
+                        offset: Offset(0, 4),
                       ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.emoji_people,
+                    size: 64,
+                    color: Color(0xFFB0B8C1),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                // Card with form
+                Card(
+                  elevation: 8,
+                  shadowColor: Colors.black12,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 28,
                     ),
-                    Card(
-                      elevation: 10,
-                      shadowColor: Colors.black12,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 28,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (state.errorMessage != null) ...[
+                          _ErrorBanner(message: state.errorMessage!),
+                          const SizedBox(height: 12),
+                        ],
+                        _EmailPasswordFields(
+                          emailController: emailController,
+                          passwordController: passwordController,
+                          isLoading: state.isLoading,
+                          primaryLabel: isCreatingAccount
+                              ? 'Create Account'
+                              : 'Sign In',
+                          onSubmit: () async {
+                            final email = emailController.text.trim();
+                            final password = passwordController.text;
+                            if (email.isEmpty || password.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Please enter both email and password.',
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+                            final notifier = ref.read(
+                              authControllerProvider.notifier,
+                            );
+                            if (isCreatingAccount) {
+                              await notifier.signUpWithEmailPassword(
+                                email: email,
+                                password: password,
+                              );
+                              final authState = ref.read(
+                                authControllerProvider,
+                              );
+                              if (authState.session == null &&
+                                  authState.errorMessage != null &&
+                                  authState.errorMessage!.contains('created')) {
+                                if (mounted) {
+                                  setState(() {
+                                    isCreatingAccount = false;
+                                  });
+                                }
+                              }
+                            } else {
+                              notifier.signInWithEmailPassword(
+                                email: email,
+                                password: password,
+                              );
+                            }
+                          },
                         ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
-                              children: const [
-                                CircleAvatar(
-                                  radius: 22,
-                                  backgroundColor: Color(0xFF0B5FFF),
-                                  child: Icon(Icons.book, color: Colors.white),
-                                ),
-                                SizedBox(width: 12),
-                                Text(
-                                  'Aravind E-Logbook',
-                                  style: TextStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
+                            Text(
+                              isCreatingAccount
+                                  ? 'Have an account?'
+                                  : 'Need an account?',
+                              style: const TextStyle(color: Color(0xFF475569)),
                             ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: const [
-                                Icon(
-                                  Icons.verified_user,
-                                  color: Color(0xFF0B5FFF),
-                                ),
-                                SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    'Sign in securely with your Aravind account',
-                                    style: TextStyle(color: Color(0xFF475569)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 18),
-                            if (state.errorMessage != null) ...[
-                              _ErrorBanner(message: state.errorMessage!),
-                              const SizedBox(height: 12),
-                            ],
-                            _EmailPasswordFields(
-                              emailController: emailController,
-                              passwordController: passwordController,
-                              isLoading: state.isLoading,
-                              primaryLabel: isCreatingAccount
-                                  ? 'Create account'
-                                  : 'Continue with email',
-                              onSubmit: () async {
-                                final email = emailController.text.trim();
-                                final password = passwordController.text;
-                                if (email.isEmpty || password.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Please enter both email and password.',
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                final notifier = ref.read(
-                                  authControllerProvider.notifier,
-                                );
-                                if (isCreatingAccount) {
-                                  await notifier.signUpWithEmailPassword(
-                                    email: email,
-                                    password: password,
-                                  );
-                                  // After sign-up, check if we need to switch to sign-in mode
-                                  final authState = ref.read(
-                                    authControllerProvider,
-                                  );
-                                  if (authState.session == null &&
-                                      authState.errorMessage != null &&
-                                      authState.errorMessage!.contains(
-                                        'created',
-                                      )) {
-                                    // Switch back to sign-in mode for email confirmation flow
-                                    if (mounted) {
+                            TextButton(
+                              onPressed: state.isLoading
+                                  ? null
+                                  : () {
                                       setState(() {
-                                        isCreatingAccount = false;
+                                        isCreatingAccount = !isCreatingAccount;
                                       });
-                                    }
-                                  }
-                                } else {
-                                  notifier.signInWithEmailPassword(
-                                    email: email,
-                                    password: password,
-                                  );
-                                }
-                              },
+                                    },
+                              child: Text(
+                                isCreatingAccount
+                                    ? 'Sign In'
+                                    : 'Create Account',
+                              ),
                             ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  isCreatingAccount
-                                      ? 'Have an account?'
-                                      : 'Need an account?',
-                                  style: const TextStyle(
-                                    color: Color(0xFF475569),
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: state.isLoading
-                                      ? null
-                                      : () {
-                                          setState(() {
-                                            isCreatingAccount =
-                                                !isCreatingAccount;
-                                          });
-                                        },
-                                  child: Text(
-                                    isCreatingAccount
-                                        ? 'Sign in'
-                                        : 'Create one',
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            const Divider(),
-                            const SizedBox(height: 12),
-                            _GoogleButton(isLoading: state.isLoading),
                           ],
                         ),
-                      ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: const [
+                            Expanded(child: Divider()),
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 8),
+                              child: Text(
+                                'or continue with',
+                                style: TextStyle(color: Color(0xFF475569)),
+                              ),
+                            ),
+                            Expanded(child: Divider()),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        _GoogleButton(isLoading: state.isLoading),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
