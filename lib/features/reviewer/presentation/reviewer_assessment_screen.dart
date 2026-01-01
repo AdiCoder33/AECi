@@ -7,6 +7,7 @@ import '../../logbook/data/entries_repository.dart';
 import '../application/reviewer_controller.dart';
 import '../data/reviewer_repository.dart';
 import '../domain/oscar_rubric.dart';
+import 'widgets/reviewer_app_bar_actions.dart';
 
 class ReviewerAssessmentScreen extends ConsumerStatefulWidget {
   const ReviewerAssessmentScreen({super.key, required this.item});
@@ -45,6 +46,7 @@ class _ReviewerAssessmentScreenState
     return Scaffold(
       appBar: AppBar(
         title: Text(isCase ? 'Case Review' : 'Surgical Video Review'),
+        actions: const [ReviewerAppBarActions()],
       ),
       body: isCase ? _buildClinicalCase(context) : _buildVideo(context),
       bottomNavigationBar: Padding(
