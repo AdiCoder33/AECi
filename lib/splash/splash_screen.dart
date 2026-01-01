@@ -171,7 +171,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           children: [
             // Debug text to confirm splash is showing
             const Text(
-              'AECi E-Logbook',
+              'Pocket Book',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
