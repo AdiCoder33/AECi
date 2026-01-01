@@ -44,74 +44,21 @@ class HomeScreen extends ConsumerWidget {
                 centre: profile?.aravindCentre ?? profile?.centre,
                 onTap: () => context.go('/profile'),
               ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: TextField(
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.search),
-                    hintText: 'Search cases, logbook, teaching...',
-                  ),
-                  onSubmitted: (value) {
-                    final query = value.trim();
-                    if (query.isEmpty) return;
-                    context.go('/search', extra: query);
-                  },
-                ),
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Logbook Overview',
+                      'Quick Access',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w700,
+                            color: const Color(0xFF0B5FFF),
                           ),
                     ),
-                    const SizedBox(height: 12),
-                    fellowStats.when(
-                      data: (stats) => _StatsGrid(
-                        stats: [
-                          _StatData('Drafts', stats.drafts, Icons.edit_note, const Color(0xFFF59E0B)),
-                          _StatData('Submitted', stats.submitted, Icons.upload_file, const Color(0xFF0B5FFF)),
-                          _StatData('Approved', stats.approved, Icons.check_circle_outline, const Color(0xFF10B981)),
-                        ],
-                      ),
-                      loading: () => const Center(child: CircularProgressIndicator()),
-                      error: (e, _) => Text('Stats error: $e', style: const TextStyle(color: Colors.red)),
-                    ),
-                    if (isConsultant) ...[
-                      const SizedBox(height: 20),
-                      Text(
-                        'Consultant Dashboard',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                      const SizedBox(height: 12),
-                      consultantStats.when(
-                        data: (stats) => _StatsGrid(
-                          stats: [
-                            _StatData('Pending', stats.pending, Icons.pending_actions, const Color(0xFFF59E0B)),
-                            _StatData('Approved', stats.approvalsThisMonth, Icons.verified_outlined, const Color(0xFF10B981)),
-                          ],
-                        ),
-                        loading: () => const Center(child: CircularProgressIndicator()),
-                        error: (e, _) => Text('Error: $e', style: const TextStyle(color: Colors.red)),
-                      ),
-                    ],
-                    const SizedBox(height: 20),
-                    Text(
-                      'Quick Actions',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    const SizedBox(height: 12),
-                    _ActionGrid(isConsultant: isConsultant),
+                    const SizedBox(height: 16),
+                    const _ActionGrid(),
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -125,30 +72,31 @@ class HomeScreen extends ConsumerWidget {
 }
 
 class _ActionGrid extends StatelessWidget {
-  const _ActionGrid({required this.isConsultant});
-
-  final bool isConsultant;
+  const _ActionGrid();
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     final tiles = <_ActionTile>[
-      _ActionTile('Teaching', Icons.school, '/teaching', const Color(0xFFF59E0B)),
-      _ActionTile('Analytics', Icons.insights, '/analytics', const Color(0xFF8B5CF6)),
-      _ActionTile('Research', Icons.science, '/research', const Color(0xFFEC4899)),
-      _ActionTile('Publications', Icons.slideshow, '/publications', const Color(0xFF06B6D4)),
-      if (isConsultant) _ActionTile('Reviews', Icons.rate_review, '/review-queue', const Color(0xFFEF4444)),
-      if (isConsultant)
-        _ActionTile('Case Assessments', Icons.fact_check, '/cases/assessment-queue', const Color(0xFF0B5FFF)),
-      if (isConsultant) _ActionTile('Proposals', Icons.inbox, '/teaching/proposals', const Color(0xFF6366F1)),
+      _ActionTile('OPD Cases', Icons.medical_services_outlined, '/logbook', const Color(0xFF0B5FFF)),
+      _ActionTile('Atlas', Icons.photo_library_outlined, '/atlas', const Color(0xFF10B981)),
+      _ActionTile('Analysis Record', Icons.analytics_outlined, '/analytics', const Color(0xFF8B5CF6)),
+      _ActionTile('Learning', Icons.school_outlined, '/teaching', const Color(0xFFF59E0B)),
+      _ActionTile('Retinoblastoma', Icons.remove_red_eye_outlined, '/retinoblastoma', const Color(0xFFEC4899)),
+      _ActionTile('ROP', Icons.child_care_outlined, '/rop', const Color(0xFF06B6D4)),
+      _ActionTile('Reviews', Icons.rate_review_outlined, '/review-queue', const Color(0xFFEF4444)),
+      _ActionTile('Publication', Icons.article_outlined, '/publications', const Color(0xFF6366F1)),
     ];
 
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.4,
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      childAspectRatio: 1.3,
       children: tiles,
     );
   }
@@ -164,44 +112,66 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return InkWell(
       onTap: () => context.go(route),
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE5EAF2)),
-          boxShadow: const [
+          gradient: LinearGradient(
+            colors: [
+              color.withOpacity(0.1),
+              color.withOpacity(0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: color.withOpacity(0.3),
+            width: 1.5,
+          ),
+          boxShadow: [
             BoxShadow(
-              color: Colors.black12,
-              blurRadius: 8,
-              offset: Offset(0, 2),
+              color: color.withOpacity(0.2),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(icon, color: color, size: 32),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 12),
             Text(
               label,
               textAlign: TextAlign.center,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+                color: isDark ? Colors.white : const Color(0xFF1E293B),
+                height: 1.2,
               ),
             ),
           ],
