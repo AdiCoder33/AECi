@@ -42,7 +42,7 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
                 icon: const Icon(Icons.edit_outlined),
                 onPressed: () => context.push(
                   isRetinoblastoma
-                      ? '/cases/${c.id}/edit? type=retinoblastoma'
+                      ? '/cases/${c.id}/edit?type=retinoblastoma'
                       : isRop
                       ? '/cases/${c.id}/edit?type=rop'
                       : '/cases/${c.id}/edit',
@@ -125,9 +125,9 @@ class _SummaryTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final examDate = c.dateOfExamination.toIso8601String().split('T').first;
     return ListView(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       children: [
-        _StyledSection(
+        _Section(
           title: 'Patient Information',
           icon: Icons.person_outline,
           children: [
@@ -141,33 +141,44 @@ class _SummaryTab extends StatelessWidget {
             ..._ropMetaInfoRows(c.fundus),
           ],
         ),
-        const SizedBox(height: 10),
-        _StyledSection(
+        const SizedBox(height: 12),
+        _Section(
           title: 'Complaints',
-          icon: Icons.medical_information_outlined,
-          children: [
-            _StyledInfoRow(label: 'Chief Complaint', value: c.chiefComplaint),
-            _StyledInfoRow(
-              label: 'Duration',
-              value: '${c.complaintDurationValue} ${c.complaintDurationUnit}',
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        _StyledSection(
-          title: 'Systemic History',
-          icon: Icons.history_outlined,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _InfoRow(label: 'Chief Complaint', value: c.chiefComplaint),
+              _InfoRow(
+                label: 'Duration',
+                value: '${c.complaintDurationValue} ${c.complaintDurationUnit}',
               ),
-              child: Text(
-                _formatSystemic(c.systemicHistory),
-                style: const TextStyle(fontSize: 12, color: Color(0xFF475569)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _Section(
+          title: 'Systemic History',
+          child: Text(
+            _formatSystemic(c.systemicHistory),
+            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _Section(
+          title: 'Vision (BCVA) & IOP',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _EyePairRow(
+                label: 'BCVA',
+                right: c.bcvaRe ?? '-',
+                left: c.bcvaLe ?? '-',
+              ),
+              const SizedBox(height: 8),
+              _EyePairRow(
+                label: 'IOP',
+                right: c.iopRe?.toString() ?? '-',
+                left: c.iopLe?.toString() ?? '-',
               ),
             ),
           ],
@@ -178,29 +189,35 @@ class _SummaryTab extends StatelessWidget {
           bcvaLe: c.bcvaLe ?? '-',
           iopRe: c.iopRe?.toString() ?? '-',
           iopLe: c.iopLe?.toString() ?? '-',
+            ],
+          ),
         ),
-        const SizedBox(height: 10),
-        _EyeSeparatedSection(
+        const SizedBox(height: 12),
+        _Section(
           title: 'Anterior Segment',
-          data: c.anteriorSegment,
-          isFundus: false,
+          child: Text(
+            _formatAnterior(c.anteriorSegment),
+            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+          ),
         ),
-        const SizedBox(height: 10),
-        _EyeSeparatedSection(
+        const SizedBox(height: 12),
+        _Section(
           title: 'Fundus Examination',
           data: c.fundus,
           isFundus: true,
         ),
         if (_hasRopMeta(c.fundus)) ...[
-          const SizedBox(height: 10),
-          _StyledSection(
+          const SizedBox(height: 12),
+          _Section(
             title: 'ROP Assessment',
-            icon: Icons.assessment_outlined,
-            children: _buildRopMetaRows(c.fundus),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: _buildRopMetaRows(c.fundus),
+            ),
           ),
         ],
-        const SizedBox(height: 10),
-        _StyledSection(
+        const SizedBox(height: 12),
+        _Section(
           title: 'Diagnosis',
           icon: Icons.local_hospital_outlined,
           children: [
@@ -221,8 +238,8 @@ class _SummaryTab extends StatelessWidget {
           ],
         ),
         if (c.management != null && c.management!.isNotEmpty) ...[
-          const SizedBox(height: 10),
-          _StyledSection(
+          const SizedBox(height: 12),
+          _Section(
             title: 'Management',
             icon: Icons.medication_outlined,
             children: [
@@ -245,8 +262,8 @@ class _SummaryTab extends StatelessWidget {
           ),
         ],
         if (c.learningPoint != null && c.learningPoint!.isNotEmpty) ...[
-          const SizedBox(height: 10),
-          _StyledSection(
+          const SizedBox(height: 12),
+          _Section(
             title: 'Learning Point',
             icon: Icons.lightbulb_outline,
             children: [
@@ -308,10 +325,10 @@ class _SummaryTab extends StatelessWidget {
                           ),
                         ),
                       ),
-                    )
-                    .toList(),
-              ),
-            ],
+                    ),
+                  )
+                  .toList(),
+            ),
           ),
         ],
       ],
@@ -323,12 +340,71 @@ class _SummaryTab extends StatelessWidget {
     return items.map((e) => e.toString()).join(', ');
   }
 
+  String _formatAnterior(Map<String, dynamic>? anterior) {
+    if (anterior == null || anterior.isEmpty) return '-';
+    final lines = <String>[];
+    final topRemarks = (anterior['remarks'] as String?) ?? '';
+    for (final eyeKey in ['RE', 'LE']) {
+      final eye = Map<String, dynamic>.from(anterior[eyeKey] as Map? ?? {});
+      for (final section in anteriorSegmentSections) {
+        final sectionData = _coerceSection(eye[section.key]);
+        final summary = _formatSection(sectionData);
+        if (summary.isNotEmpty) {
+          lines.add('$eyeKey ${section.label}: $summary');
+        }
+      }
+      final remarks = (eye['remarks'] as String?) ?? '';
+      if (remarks.trim().isNotEmpty) {
+        lines.add('$eyeKey Remarks: $remarks');
+      }
+    }
+    if (topRemarks.trim().isNotEmpty) {
+      lines.add('Remarks: $topRemarks');
+    }
+    return lines.join('\n');
+  }
+
+  String _formatFundus(Map<String, dynamic>? fundus) {
+    if (fundus == null || fundus.isEmpty) return '-';
+    if (fundus.containsKey('RE') || fundus.containsKey('LE')) {
+      final lines = <String>[];
+      for (final eyeKey in ['RE', 'LE']) {
+        final eye = Map<String, dynamic>.from(fundus[eyeKey] as Map? ?? {});
+        for (final section in fundusSections) {
+          final sectionData = _coerceSection(eye[section.key]);
+          final summary = _formatSection(sectionData);
+          if (summary.isNotEmpty) {
+            lines.add('$eyeKey ${section.label}: $summary');
+          }
+        }
+        final remarks = (eye['remarks'] as String?) ?? '';
+        if (remarks.trim().isNotEmpty) {
+          lines.add('$eyeKey Remarks: $remarks');
+        }
+      }
+      return lines.join('\n');
+    }
+    final lines = <String>[];
+    for (final section in fundusSections) {
+      final sectionData = _coerceSection(fundus[section.key]);
+      final summary = _formatSection(sectionData);
+      if (summary.isNotEmpty) {
+        lines.add('${section.label}: $summary');
+      }
+    }
+    final remarks = (fundus['remarks'] as String?) ?? '';
+    if (remarks.trim().isNotEmpty) {
+      lines.add('Remarks: $remarks');
+    }
+    return lines.join('\n');
+  }
+
   bool _hasRopMeta(Map<String, dynamic>? fundus) {
     if (fundus == null || fundus.isEmpty) return false;
     return fundus['rop_meta'] is Map;
   }
 
-  List<Widget> _ropMetaInfoRows(Map<String, dynamic>? fundus) {
+  List<Widget> _ropMetaRows(Map<String, dynamic>? fundus) {
     final rows = <Widget>[];
     if (fundus == null || fundus.isEmpty) return rows;
     final meta = Map<String, dynamic>.from(fundus['rop_meta'] as Map? ?? {});
@@ -342,7 +418,7 @@ class _SummaryTab extends StatelessWidget {
     }
     if ((postConception ?? '').isNotEmpty) {
       rows.add(
-        _StyledInfoRow(
+        _InfoRow(
           label: 'Post conceptional age',
           value: '$postConception weeks',
         ),
@@ -361,7 +437,8 @@ class _SummaryTab extends StatelessWidget {
       if (values == null) return;
       final right = values['RE']?.toString() ?? '-';
       final left = values['LE']?.toString() ?? '-';
-      rows.add(_RopEyePairRow(label: label, right: right, left: left));
+      rows.add(_EyePairRow(label: label, right: right, left: left));
+      rows.add(const SizedBox(height: 8));
     }
 
     addEyePair('Zone', meta['zone'] as Map?);
@@ -543,8 +620,7 @@ class _StyledSection extends StatelessWidget {
   });
 
   final String title;
-  final IconData icon;
-  final List<Widget> children;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
@@ -598,6 +674,8 @@ class _StyledSection extends StatelessWidget {
               ],
             ],
           ),
+          const SizedBox(height: 10),
+          child,
         ],
       ),
     );
@@ -612,24 +690,19 @@ class _StyledInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
+            width: 130,
             child: Text(
-              label,
+              '$label:',
               style: const TextStyle(
-                fontSize: 11,
+                fontSize: 12,
+                color: Color(0xFF64748B),
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF0B5FFF),
               ),
             ),
           ),
@@ -639,7 +712,6 @@ class _StyledInfoRow extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 12,
                 color: Color(0xFF1E293B),
-                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -1079,28 +1151,9 @@ class _EyeColumn extends StatelessWidget {
                   letterSpacing: 0.5,
                 ),
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        if (findings.isEmpty)
-          const Text(
-            'No findings recorded',
-            style: TextStyle(
-              fontSize: 13,
-              color: Color(0xFF94A3B8),
-              fontStyle: FontStyle.italic,
             ),
-          )
-        else
-          Column(
-            children: [
-              for (int i = 0; i < findings.length; i++) ...[
-                findings[i],
-                if (i < findings.length - 1) const SizedBox(height: 6),
-              ],
-            ],
-          ),
+          ],
+        ),
       ],
     );
   }
@@ -1668,7 +1721,7 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
                         padding: EdgeInsets.only(top: 12),
                         child: CircularProgressIndicator(strokeWidth: 2),
                       ),
-                      error: (e, _) => Text('Error:  $e'),
+                      error: (e, _) => Text('Error: $e'),
                     ),
                   ],
                 ),

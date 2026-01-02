@@ -36,8 +36,8 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
                 : ref.watch(clinicalCaseListProvider))
         : null;
     final publications =
-        isPublications ? ref. watch(publicationListProvider) : null;
-    final reviews = isReviews ?  ref.watch(reviewControllerProvider) : null;
+        isPublications ? ref.watch(publicationListProvider) : null;
+    final reviews = isReviews ? ref.watch(reviewControllerProvider) : null;
     final showMine = ref.watch(showMineProvider);
     final showDrafts = ref.watch(showDraftsProvider);
 
@@ -57,41 +57,33 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
       backgroundColor: const Color(0xFFF7F9FC),
       appBar: AppBar(
         elevation: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF1E5F8C), Color(0xFF2878A8)],
-              begin:  Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
+        backgroundColor: Colors.white,
         title: const Text(
-          'OPD Cases',
+          'Logbook',
           style: TextStyle(
-            color: Colors.white,
+            color: Color(0xFF1E293B),
             fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
+            icon: const Icon(Icons.search, color: Color(0xFF64748B)),
             onPressed: () => context.push('/search'),
           ),
           const SizedBox(width: 4),
         ],
       ),
-      floatingActionButton: FloatingActionButton. extended(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           switch (section) {
             case logbookSectionOpdCases:
-              context. push('/cases/new');
+              context.push('/cases/new');
               return;
             case logbookSectionRop:
-              context.push('/cases/new? type=rop');
+              context.push('/cases/new?type=rop');
               return;
-            case logbookSectionRetinoblastoma: 
+            case logbookSectionRetinoblastoma:
               context.push('/cases/new?type=retinoblastoma');
               return;
             case logbookSectionAtlas:
@@ -99,7 +91,7 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
             case logbookSectionLearning:
               context.pushNamed('logbookNew', extra: module);
               return;
-            case logbookSectionPublications: 
+            case logbookSectionPublications:
               context.pushNamed('pubNew');
               return;
             case logbookSectionReviews:
@@ -113,7 +105,7 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
         label: const Text(
           'New Entry',
           style: TextStyle(
-            color: Colors. white,
+            color: Colors.white,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -140,8 +132,8 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
-                    runSpacing:  8,
-                    children:  [
+                    runSpacing: 8,
+                    children: [
                       _FilterChip(
                         label: 'My Entries',
                         selected: showMine,
@@ -159,7 +151,7 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
                         selected: !showMine && !showDrafts,
                         onSelected: (v) {
                           if (v) {
-                            ref.read(showMineProvider. notifier).state = false;
+                            ref.read(showMineProvider.notifier).state = false;
                             ref.read(showDraftsProvider.notifier).state = false;
                           }
                         },
@@ -174,7 +166,7 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
           Expanded(
             child: _SectionBody(
               isEntrySection: isEntrySection,
-              isCaseSection:  isCaseSection,
+              isCaseSection: isCaseSection,
               isPublications: isPublications,
               isReviews: isReviews,
               entries: entries,
@@ -238,33 +230,19 @@ class _ModuleChip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          gradient: selected
-              ? const LinearGradient(
-                  colors:  [Color(0xFF1E5F8C), Color(0xFF2878A8)],
-                )
-              : null,
-          color: selected ?  null : Colors.grey[100],
+          color: selected ? const Color(0xFF0B5FFF) : Colors.grey[100],
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected ? const Color(0xFF1E5F8C) : Colors.grey[300]!,
             width: 1.5,
           ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF1E5F8C).withOpacity(0.3),
-                    blurRadius:  8,
-                    offset:  const Offset(0, 2),
-                  ),
-                ]
-              : null,
         ),
         child: Text(
           label,
           style: TextStyle(
             color: selected ? Colors.white : const Color(0xFF64748B),
             fontSize: 13,
-            fontWeight: selected ? FontWeight.w600 :  FontWeight.w500,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
       ),
@@ -290,15 +268,15 @@ class _FilterChip extends StatelessWidget {
       selected: selected,
       onSelected: onSelected,
       backgroundColor: Colors.grey[100],
-      selectedColor: const Color(0xFF1E5F8C).withOpacity(0.15),
-      checkmarkColor: const Color(0xFF1E5F8C),
+      selectedColor: const Color(0xFF0B5FFF).withOpacity(0.1),
+      checkmarkColor: const Color(0xFF0B5FFF),
       labelStyle: TextStyle(
-        color: selected ? const Color(0xFF1E5F8C) : const Color(0xFF64748B),
+        color: selected ? const Color(0xFF0B5FFF) : const Color(0xFF64748B),
         fontSize: 13,
-        fontWeight: selected ? FontWeight. w600 : FontWeight.w500,
+        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
       ),
       side: BorderSide(
-        color: selected ? const Color(0xFF1E5F8C) : Colors.grey[300]!,
+        color: selected ? const Color(0xFF0B5FFF) : Colors.grey[300]!,
         width: 1.5,
       ),
       shape: RoundedRectangleBorder(
@@ -420,239 +398,24 @@ class _SectionBody extends StatelessWidget {
               subtitle: 'Tap "New Entry" to create your first case',
             );
           }
-
-          // Sort cases by diagnosis
-          final sortedList = [... filtered];
-          sortedList.sort((a, b) => a.diagnosis.compareTo(b.diagnosis));
-
-          // Group by diagnosis
-          final Map<String, List<ClinicalCase>> groupedCases = {};
-          for (final c in sortedList) {
-            final diagnosis = c.diagnosis;
-            if (!groupedCases. containsKey(diagnosis)) {
-              groupedCases[diagnosis] = [];
-            }
-            groupedCases[diagnosis]!. add(c);
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(10),
-            itemCount: groupedCases.keys.length,
-            itemBuilder: (context, groupIndex) {
-              final diagnosis = groupedCases.keys.elementAt(groupIndex);
-              final diagnosisCases = groupedCases[diagnosis]!;
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (groupIndex > 0) const SizedBox(height: 12),
-                  // Small compact diagnosis header
-                  Container(
-                    margin: const EdgeInsets.only(left: 4, bottom: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF0B5FFF).withOpacity(0.08),
-                          const Color(0xFF0EA5E9).withOpacity(0.03),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: const Color(0xFF0B5FFF).withOpacity(0.15),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 3,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF0B5FFF), Color(0xFF0EA5E9)],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            diagnosis,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF0B5FFF),
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF0B5FFF), Color(0xFF0EA5E9)],
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF0B5FFF).withOpacity(0.3),
-                                blurRadius:  4,
-                                offset:  const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                            '${diagnosisCases.length}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  ... diagnosisCases.map((c) {
-                    final updated = c.updatedAt?. toIso8601String().split('T').first ?? '-';
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.03),
-                            blurRadius:  4,
-                            offset:  const Offset(0, 1),
-                          ),
-                        ],
-                      ),
-                      child: Material(
-                        color: Colors. transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(10),
-                          onTap:  () => context.push('/cases/${c.id}'),
-                          child: Padding(
-                            padding: const EdgeInsets. all(10),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        const Color(0xFF0B5FFF).withOpacity(0.1),
-                                        const Color(0xFF0EA5E9).withOpacity(0.05),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: const Color(0xFF0B5FFF).withOpacity(0.2),
-                                    ),
-                                  ),
-                                  child: const Icon(
-                                    Icons. person,
-                                    color: Color(0xFF0B5FFF),
-                                    size: 20,
-                                  ),
-                                ),
-                                const SizedBox(width:  10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child:  Text(
-                                              c. patientName,
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                fontWeight:  FontWeight.w700,
-                                                color: Color(0xFF1E293B),
-                                              ),
-                                            ),
-                                          ),
-                                          _CaseStatusBadge(status: c.status),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 3),
-                                      Row(
-                                        children: [
-                                          Text(
-                                            'UID: ${c. uidNumber}',
-                                            style: const TextStyle(
-                                              fontSize: 10,
-                                              color: Color(0xFF64748B),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'MR: ${c.mrNumber}',
-                                            style:  const TextStyle(
-                                              fontSize: 10,
-                                              color: Color(0xFF64748B),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.calendar_today,
-                                            size: 9,
-                                            color: Colors.grey[400],
-                                          ),
-                                          const SizedBox(width: 3),
-                                          Text(
-                                            c.dateOfExamination.toIso8601String().split('T').first,
-                                            style: TextStyle(
-                                              fontSize: 9,
-                                              color: Colors.grey[500],
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Icon(
-                                            Icons.update,
-                                            size: 9,
-                                            color:  Colors.grey[400],
-                                          ),
-                                          const SizedBox(width: 3),
-                                          Text(
-                                            updated,
-                                            style: TextStyle(
-                                              fontSize: 9,
-                                              color: Colors.grey[500],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.chevron_right,
-                                  color: Color(0xFF0B5FFF),
-                                  size: 18,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ],
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: filtered.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final c = filtered[index];
+              return Card(
+                child: ListTile(
+                  title: Text(c.patientName),
+                  subtitle: Text('UID ${c.uidNumber} | MR ${c.mrNumber}'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/cases/${c.id}'),
+                ),
               );
             },
           );
         },
-        loading:  () => const Center(
+        loading: () => const Center(
           child: CircularProgressIndicator(
             color: Color(0xFF0B5FFF),
           ),
@@ -664,7 +427,7 @@ class _SectionBody extends StatelessWidget {
     if (isPublications && publications != null) {
       return publications!.when(
         data: (items) {
-          if (items. isEmpty) {
+          if (items.isEmpty) {
             return _EmptyState(
               icon: Icons.article_outlined,
               title: 'No publications yet',
@@ -679,10 +442,10 @@ class _SectionBody extends StatelessWidget {
               final item = items[index] as dynamic;
               return Card(
                 child: ListTile(
-                  title:  Text(item. title),
-                  subtitle: Text(item.type ??  'publication'),
+                  title: Text(item.title),
+                  subtitle: Text(item.type ?? 'publication'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap:  () => context.pushNamed(
+                  onTap: () => context.pushNamed(
                     'pubDetail',
                     pathParameters: {'id': item.id},
                   ),
@@ -692,7 +455,7 @@ class _SectionBody extends StatelessWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => _ErrorState(message:  e.toString()),
+        error: (e, _) => _ErrorState(message: e.toString()),
       );
     }
 
@@ -700,12 +463,12 @@ class _SectionBody extends StatelessWidget {
       if (reviews!.isLoading) {
         return const Center(child: CircularProgressIndicator());
       }
-      if (reviews! .error != null) {
-        return _ErrorState(message: reviews!. error!);
+      if (reviews!.error != null) {
+        return _ErrorState(message: reviews!.error!);
       }
       if (reviews!.entries.isEmpty) {
         return _EmptyState(
-          icon:  Icons.rate_review_outlined,
+          icon: Icons.rate_review_outlined,
           title: 'No reviews pending',
           subtitle: 'You have no submissions to review right now.',
         );
@@ -713,8 +476,8 @@ class _SectionBody extends StatelessWidget {
       return ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: reviews!.entries.length,
-        separatorBuilder: (_, __) => const SizedBox(height:  12),
-        itemBuilder:  (context, index) {
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
           final entry = reviews!.entries[index];
           return Card(
             child: ListTile(
@@ -731,7 +494,7 @@ class _SectionBody extends StatelessWidget {
       );
     }
 
-    return const SizedBox. shrink();
+    return const SizedBox.shrink();
   }
 
   List<ClinicalCase> _filterCasesForSection(List<ClinicalCase> list) {
@@ -741,12 +504,12 @@ class _SectionBody extends StatelessWidget {
             .where((c) => _hasKeyword(c, 'retinoblastoma'))
             .toList();
       case logbookSectionRop:
-        return list. where((c) => _hasKeyword(c, 'rop')).toList();
+        return list.where((c) => _hasKeyword(c, 'rop')).toList();
       case logbookSectionOpdCases:
         return list
             .where(
               (c) =>
-                  ! _hasKeyword(c, 'retinoblastoma') &&
+                  !_hasKeyword(c, 'retinoblastoma') &&
                   !_hasKeyword(c, 'rop'),
             )
             .toList();
@@ -777,7 +540,7 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size:  80, color: Colors.grey[300]),
+          Icon(icon, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
           Text(
             title,
@@ -811,7 +574,7 @@ class _ErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment. center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.error_outline,
@@ -827,7 +590,7 @@ class _ErrorState extends StatelessWidget {
               color: Colors.red[700],
             ),
           ),
-          const SizedBox(height:  8),
+          const SizedBox(height: 8),
           Text(
             message,
             style: const TextStyle(
@@ -835,62 +598,6 @@ class _ErrorState extends StatelessWidget {
               color: Color(0xFF64748B),
             ),
             textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CaseStatusBadge extends StatelessWidget {
-  const _CaseStatusBadge({required this.status});
-
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    final normalized = status.toLowerCase();
-    Color color;
-    IconData icon;
-
-    switch (normalized) {
-      case 'submitted':
-        color = const Color(0xFF10B981);
-        icon = Icons.check_circle;
-        break;
-      case 'draft':
-        color = const Color(0xFFF59E0B);
-        icon = Icons.edit;
-        break;
-      default:
-        color = const Color(0xFF64748B);
-        icon = Icons.circle;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: color. withOpacity(0.1),
-        borderRadius: BorderRadius. circular(6),
-        border: Border.all(color: color. withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 10,
-            color: color,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            normalized. toUpperCase(),
-            style:  TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-              color: color,
-              letterSpacing: 0.3,
-            ),
           ),
         ],
       ),

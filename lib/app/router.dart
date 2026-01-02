@@ -28,8 +28,6 @@ import '../features/teaching/presentation/teaching_list_screen.dart';
 import '../features/analytics/presentation/analytics_screen.dart';
 import '../features/teaching/data/teaching_repository.dart';
 import '../features/teaching/proposal_screens.dart';
-import '../features/community/presentation/community_screen.dart';
-import '../features/community/presentation/community_profile_screen.dart';
 import '../features/taxonomy/presentation/keyword_suggestions_screen.dart';
 import '../features/clinical_cases/presentation/case_list_screen.dart';
 import '../features/clinical_cases/presentation/case_detail_screen.dart';

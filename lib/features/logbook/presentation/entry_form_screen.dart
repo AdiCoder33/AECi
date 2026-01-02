@@ -42,6 +42,8 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   final _recordDiagnosisController = TextEditingController();
   final _recordAssistedByController = TextEditingController();
   final _recordDurationController = TextEditingController();
+  final _recordSurgicalNotesController = TextEditingController();
+  final _recordComplicationsController = TextEditingController();
 
   final _preOpController = TextEditingController();
   final _surgicalVideoController = TextEditingController();
@@ -54,12 +56,18 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   String _currentStatus = statusDraft;
   List<String> _existingImagePaths = [];
   List<String> _existingVideoPaths = [];
+  List<String> _existingRecordPreOpImagePaths = [];
+  List<String> _existingRecordPostOpImagePaths = [];
   final List<File> _newImages = [];
   final List<File> _newVideos = [];
+  final List<File> _newRecordPreOpImages = [];
+  final List<File> _newRecordPostOpImages = [];
   String? _mediaType;
   String? _recordSex;
   String? _recordSurgery;
   String? _learningSurgery;
+  String? _recordRightEye;
+  String? _recordLeftEye;
 
   @override
   void initState() {
@@ -132,8 +140,18 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
           _recordAssistedByController.text =
               payload['assistedBy'] ?? payload['surgeonOrAssistant'] ?? '';
           _recordDurationController.text = payload['duration'] ?? '';
+          _recordRightEye = payload['rightEye'] as String?;
+          _recordLeftEye = payload['leftEye'] as String?;
+          _recordSurgicalNotesController.text =
+              payload['surgicalNotes'] ?? '';
+          _recordComplicationsController.text =
+              payload['complications'] ?? '';
           _existingVideoPaths =
               List<String>.from(payload['videoPaths'] ?? []);
+          _existingRecordPreOpImagePaths =
+              List<String>.from(payload['preOpImagePaths'] ?? []);
+          _existingRecordPostOpImagePaths =
+              List<String>.from(payload['postOpImagePaths'] ?? []);
           break;
       }
     });
@@ -155,6 +173,8 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     _recordDiagnosisController.dispose();
     _recordAssistedByController.dispose();
     _recordDurationController.dispose();
+    _recordSurgicalNotesController.dispose();
+    _recordComplicationsController.dispose();
     _preOpController.dispose();
     _surgicalVideoController.dispose();
     _teachingPointController.dispose();
@@ -240,6 +260,31 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                   controller: _recordDurationController,
                   label: 'Duration',
                   validator: _required,
+                  enabled: _canEditStatus,
+                ),
+                _buildEyeDropdownRow(),
+                _buildText(
+                  controller: _recordSurgicalNotesController,
+                  label: 'Surgical notes',
+                  enabled: _canEditStatus,
+                ),
+                _buildText(
+                  controller: _recordComplicationsController,
+                  label: 'Complications',
+                  enabled: _canEditStatus,
+                ),
+                _ImagePickerSection(
+                  title: 'Pre-op images',
+                  existingPaths: _existingRecordPreOpImagePaths,
+                  newImages: _newRecordPreOpImages,
+                  onChanged: () => setState(() {}),
+                  enabled: _canEditStatus,
+                ),
+                _ImagePickerSection(
+                  title: 'Post-op images',
+                  existingPaths: _existingRecordPostOpImagePaths,
+                  newImages: _newRecordPostOpImages,
+                  onChanged: () => setState(() {}),
                   enabled: _canEditStatus,
                 ),
               ] else if (isLearning) ...[
@@ -437,6 +482,52 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     );
   }
 
+  Widget _buildEyeDropdownRow() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildEyeDropdown(
+              label: 'Right eye',
+              value: _recordRightEye,
+              onChanged: _canEditStatus
+                  ? (value) => setState(() => _recordRightEye = value)
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildEyeDropdown(
+              label: 'Left eye',
+              value: _recordLeftEye,
+              onChanged: _canEditStatus
+                  ? (value) => setState(() => _recordLeftEye = value)
+                  : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEyeDropdown({
+    required String label,
+    required String? value,
+    required ValueChanged<String?>? onChanged,
+  }) {
+    const options = ['Operated', 'Not operated'];
+    return DropdownButtonFormField<String>(
+      value: value,
+      decoration: InputDecoration(labelText: label),
+      items: options
+          .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+          .toList(),
+      validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+      onChanged: onChanged,
+    );
+  }
+
   Widget _buildLearningSurgeryDropdown() {
     final options = List<String>.from(_surgeryOptions);
     final current = _learningSurgery;
@@ -536,12 +627,34 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
         final entryId =
             await ref.read(entryMutationProvider.notifier).create(create);
 
-        final newPaths = await _uploadNewImages(mediaRepo, entryId);
+        final newPaths = await _uploadNewImages(
+          mediaRepo,
+          entryId,
+          _newImages,
+        );
         if (newPaths.isNotEmpty) {
           payload = _withNewPaths(module, payload, newPaths);
           await ref
               .read(entryMutationProvider.notifier)
               .update(entryId, ElogEntryUpdate(payload: payload));
+        }
+        if (module == moduleRecords) {
+          final prePaths = await _uploadNewImages(
+            mediaRepo,
+            entryId,
+            _newRecordPreOpImages,
+          );
+          final postPaths = await _uploadNewImages(
+            mediaRepo,
+            entryId,
+            _newRecordPostOpImages,
+          );
+          if (prePaths.isNotEmpty || postPaths.isNotEmpty) {
+            payload = _withRecordImagePaths(payload, prePaths, postPaths);
+            await ref
+                .read(entryMutationProvider.notifier)
+                .update(entryId, ElogEntryUpdate(payload: payload));
+          }
         }
         if (module == moduleRecords || module == moduleLearning) {
           final videoPaths = await _uploadNewVideos(mediaRepo, entryId);
@@ -564,9 +677,28 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
         }
       } else {
         final entryId = widget.entryId!;
-        final newPaths = await _uploadNewImages(mediaRepo, entryId);
+        final newPaths = await _uploadNewImages(
+          mediaRepo,
+          entryId,
+          _newImages,
+        );
         if (newPaths.isNotEmpty) {
           payload = _withNewPaths(module, payload, newPaths);
+        }
+        if (module == moduleRecords) {
+          final prePaths = await _uploadNewImages(
+            mediaRepo,
+            entryId,
+            _newRecordPreOpImages,
+          );
+          final postPaths = await _uploadNewImages(
+            mediaRepo,
+            entryId,
+            _newRecordPostOpImages,
+          );
+          if (prePaths.isNotEmpty || postPaths.isNotEmpty) {
+            payload = _withRecordImagePaths(payload, prePaths, postPaths);
+          }
         }
         if (module == moduleRecords || module == moduleLearning) {
           final videoPaths = await _uploadNewVideos(mediaRepo, entryId);
@@ -612,9 +744,10 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   Future<List<String>> _uploadNewImages(
     MediaRepository mediaRepo,
     String entryId,
+    List<File> images,
   ) async {
     final newPaths = <String>[];
-    for (final file in _newImages) {
+    for (final file in images) {
       final path = await mediaRepo.uploadImage(entryId: entryId, file: file);
       newPaths.add(path);
     }
@@ -681,6 +814,12 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
           'surgery': surgery,
           'assistedBy': assistedBy,
           'duration': _recordDurationController.text.trim(),
+          'rightEye': _recordRightEye,
+          'leftEye': _recordLeftEye,
+          'surgicalNotes': _recordSurgicalNotesController.text.trim(),
+          'complications': _recordComplicationsController.text.trim(),
+          'preOpImagePaths': _existingRecordPreOpImagePaths,
+          'postOpImagePaths': _existingRecordPostOpImagePaths,
           'videoPaths': _existingVideoPaths,
           'preOpDiagnosisOrPathology': diagnosis,
           'learningPointOrComplication': surgery,
@@ -719,6 +858,19 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     final updated = Map<String, dynamic>.from(payload);
     final existing = List<String>.from(updated['videoPaths'] ?? []);
     updated['videoPaths'] = [...existing, ...newPaths];
+    return updated;
+  }
+
+  Map<String, dynamic> _withRecordImagePaths(
+    Map<String, dynamic> payload,
+    List<String> preOpPaths,
+    List<String> postOpPaths,
+  ) {
+    final updated = Map<String, dynamic>.from(payload);
+    final existingPre = List<String>.from(updated['preOpImagePaths'] ?? []);
+    final existingPost = List<String>.from(updated['postOpImagePaths'] ?? []);
+    updated['preOpImagePaths'] = [...existingPre, ...preOpPaths];
+    updated['postOpImagePaths'] = [...existingPost, ...postOpPaths];
     return updated;
   }
 
@@ -980,12 +1132,14 @@ class _ModuleFields extends StatelessWidget {
 
 class _ImagePickerSection extends ConsumerWidget {
   const _ImagePickerSection({
+    this.title = 'Images',
     required this.existingPaths,
     required this.newImages,
     required this.onChanged,
     required this.enabled,
   });
 
+  final String title;
   final List<String> existingPaths;
   final List<File> newImages;
   final VoidCallback onChanged;
@@ -1002,7 +1156,7 @@ class _ImagePickerSection extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Images', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
             TextButton.icon(
               onPressed: !enabled
                   ? null
