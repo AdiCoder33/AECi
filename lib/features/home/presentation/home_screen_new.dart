@@ -35,22 +35,20 @@ class HomeScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _ProfileHeader(
-                name: displayName,
-                designation: profile?.designation,
-                centre: profile?.centre,
-                onTap: () => context.go('/profile'),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                _ProfileCard(
+                  name: displayName,
+                  designation: profile?.designation,
+                  centre: profile?.centre,
+                  onTap: () => context.go('/profile'),
+                ),
+                const SizedBox(height: 20),
+                Text(
                       'Logbook Overview',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w700,
@@ -194,8 +192,8 @@ class _ActionTile extends StatelessWidget {
   }
 }
 
-class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({
+class _ProfileCard extends StatelessWidget {
+  const _ProfileCard({
     required this.name,
     required this.designation,
     required this.centre,
@@ -209,61 +207,215 @@ class _ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get greeting based on time of day
+    final hour = DateTime.now().hour;
+    String greeting;
+    IconData greetingIcon;
+    Color iconColor;
+    if (hour < 12) {
+      greeting = 'Good Morning';
+      greetingIcon = Icons.wb_sunny;
+      iconColor = Colors.amber;
+    } else if (hour < 17) {
+      greeting = 'Good Afternoon';
+      greetingIcon = Icons.wb_sunny_outlined;
+      iconColor = Colors.orange;
+    } else {
+      greeting = 'Good Evening';
+      greetingIcon = Icons.nightlight_round;
+      iconColor = const Color(0xFF6366F1);
+    }
+    
+    // Get role-specific greeting
+    String roleGreeting = '';
+    if (designation != null) {
+      switch (designation!.toLowerCase()) {
+        case 'fellow':
+          roleGreeting = 'Fellow';
+          break;
+        case 'consultant':
+          roleGreeting = 'Consultant';
+          break;
+        case 'reviewer':
+          roleGreeting = 'Reviewer';
+          break;
+        case 'resident':
+          roleGreeting = 'Resident';
+          break;
+        default:
+          roleGreeting = 'Professional';
+      }
+    }
+    
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF0B5FFF), Color(0xFF0A2E73)],
+            colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF0B5FFF).withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: const Color(0xFF667EEA).withOpacity(0.35),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+              spreadRadius: 2,
             ),
           ],
         ),
         child: Row(
           children: [
             Container(
-              width: 72,
-              height: 72,
+              width: 60,
+              height: 60,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.2),
-                border: Border.all(color: Colors.white, width: 2),
+                color: Colors.white.withOpacity(0.25),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.5),
+                  width: 3,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
-              child: const Icon(Icons.visibility, color: Colors.white, size: 32),
+              child: const Icon(
+                Icons.visibility_rounded,
+                color: Colors.white,
+                size: 28,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
+                  Row(
+                    children: [
+                      Icon(
+                        greetingIcon,
+                        color: iconColor,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        greeting,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.95),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
                   Text(
                     name ?? 'Aravind Trainee',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                      height: 1.2,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    [designation, centre].where((e) => (e ?? '').isNotEmpty).join(' • '),
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14,
-                    ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      if (roleGreeting.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.25),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.4),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.workspace_premium_rounded,
+                                size: 11,
+                                color: Colors.amber[300],
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                roleGreeting,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      if (centre != null && centre!.isNotEmpty)
+                        Flexible(
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.location_on_rounded,
+                                size: 11,
+                                color: Colors.white.withOpacity(0.85),
+                              ),
+                              const SizedBox(width: 3),
+                              Flexible(
+                                child: Text(
+                                  centre!,
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.white),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.3),
+                  width: 2,
+                ),
+              ),
+              child: const Icon(
+                Icons.arrow_forward_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
+            ),
           ],
         ),
       ),

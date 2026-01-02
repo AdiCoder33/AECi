@@ -113,93 +113,94 @@ class _SummaryTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final examDate = c.dateOfExamination.toIso8601String().split('T').first;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       children: [
-        _Section(
+        _StyledSection(
           title: 'Patient Information',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _InfoRow(label: 'Patient', value: c.patientName),
-              _InfoRow(label: 'UID', value: c.uidNumber),
-              _InfoRow(label: 'MR Number', value: c.mrNumber),
-              _InfoRow(label: 'Gender', value: c.patientGender),
-              _InfoRow(label: 'Age', value: c.patientAge.toString()),
-              _InfoRow(label: 'Exam Date', value: examDate),
-              _InfoRow(label: 'Status', value: c.status),
-            ],
-          ),
+          icon: Icons.person_outline,
+          children: [
+            _StyledInfoRow(label: 'Patient', value: c.patientName),
+            _StyledInfoRow(label: 'UID', value: c.uidNumber),
+            _StyledInfoRow(label: 'MR Number', value: c.mrNumber),
+            _StyledInfoRow(label: 'Gender', value: c.patientGender),
+            _StyledInfoRow(label: 'Age', value: c.patientAge.toString()),
+            _StyledInfoRow(label: 'Exam Date', value: examDate),
+            _StyledInfoRow(label: 'Status', value: c.status),
+          ],
         ),
-        const SizedBox(height: 12),
-        _Section(
+        const SizedBox(height: 10),
+        _StyledSection(
           title: 'Complaints',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _InfoRow(label: 'Chief Complaint', value: c.chiefComplaint),
-              _InfoRow(
-                label: 'Duration',
-                value: '${c.complaintDurationValue} ${c.complaintDurationUnit}',
-              ),
-            ],
-          ),
+          icon: Icons.medical_information_outlined,
+          children: [
+            _StyledInfoRow(label: 'Chief Complaint', value: c.chiefComplaint),
+            _StyledInfoRow(
+              label: 'Duration',
+              value: '${c.complaintDurationValue} ${c.complaintDurationUnit}',
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
-        _Section(
+        const SizedBox(height: 10),
+        _StyledSection(
           title: 'Systemic History',
-          child: Text(
-            _formatSystemic(c.systemicHistory),
-            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Vision (BCVA) & IOP',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _EyePairRow(
-                label: 'BCVA',
-                right: c.bcvaRe ?? '-',
-                left: c.bcvaLe ?? '-',
+          icon: Icons.history_outlined,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
-              const SizedBox(height: 8),
-              _EyePairRow(
-                label: 'IOP',
-                right: c.iopRe?.toString() ?? '-',
-                left: c.iopLe?.toString() ?? '-',
+              child: Text(
+                _formatSystemic(c.systemicHistory),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF475569)),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
-        _Section(
+        const SizedBox(height: 10),
+        _VisionIopSection(
+          bcvaRe: c.bcvaRe ?? '-',
+          bcvaLe: c.bcvaLe ?? '-',
+          iopRe: c.iopRe?.toString() ?? '-',
+          iopLe: c.iopLe?.toString() ?? '-',
+        ),
+        const SizedBox(height: 10),
+        _EyeSeparatedSection(
           title: 'Anterior Segment',
-          child: Text(
-            _formatAnterior(c.anteriorSegment),
-            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
+          data: c.anteriorSegment,
+          isFundus: false,
         ),
-        const SizedBox(height: 12),
-        _Section(
+        const SizedBox(height: 10),
+        _EyeSeparatedSection(
           title: 'Fundus Examination',
-          child: Text(
-            _formatFundus(c.fundus),
-            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
+          data: c.fundus,
+          isFundus: true,
         ),
-        const SizedBox(height: 12),
-        _Section(
+        const SizedBox(height: 10),
+        _StyledSection(
           title: 'Diagnosis',
-          child: Text(
-            c.diagnosisOther == null || c.diagnosisOther!.isEmpty
-                ? c.diagnosis
-                : '${c.diagnosis} (${c.diagnosisOther})',
-            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
+          icon: Icons.local_hospital_outlined,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Text(
+                c.diagnosisOther == null || c.diagnosisOther!.isEmpty
+                    ? c.diagnosis
+                    : '${c.diagnosis} (${c.diagnosisOther})',
+                style: const TextStyle(fontSize: 12, color: Color(0xFF475569)),
+              ),
+            ),
+          ],
         ),
         if (c.management != null && c.management!.isNotEmpty) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           _Section(
             title: 'Management',
             child: Text(
@@ -209,7 +210,7 @@ class _SummaryTab extends StatelessWidget {
           ),
         ],
         if (c.learningPoint != null && c.learningPoint!.isNotEmpty) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           _Section(
             title: 'Learning Point',
             child: Text(
@@ -219,36 +220,49 @@ class _SummaryTab extends StatelessWidget {
           ),
         ],
         if (c.keywords.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _Section(
+          const SizedBox(height: 10),
+          _StyledSection(
             title: 'Keywords',
-            child: Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: c.keywords
-                  .map(
-                    (k) => Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: Text(
-                        k,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF475569),
-                          fontWeight: FontWeight.w500,
+            icon: Icons.label_outline,
+            children: [
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: c.keywords
+                    .map(
+                      (k) => Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF0B5FFF), Color(0xFF0EA5E9)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(6),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF0B5FFF).withOpacity(0.2),
+                              blurRadius: 3,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          k,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
-                  )
-                  .toList(),
-            ),
+                    )
+                    .toList(),
+              ),
+            ],
           ),
         ],
       ],
@@ -372,6 +386,613 @@ class _SummaryTab extends StatelessWidget {
       };
     }
     return {};
+  }
+}
+
+class _StyledSection extends StatelessWidget {
+  const _StyledSection({
+    required this.title,
+    required this.icon,
+    required this.children,
+  });
+
+  final String title;
+  final IconData icon;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0B5FFF), Color(0xFF0EA5E9)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Column(
+            children: [
+              for (int i = 0; i < children.length; i++) ...[
+                children[i],
+                if (i < children.length - 1) const SizedBox(height: 6),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StyledInfoRow extends StatelessWidget {
+  const _StyledInfoRow({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF0B5FFF),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF1E293B),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VisionIopSection extends StatelessWidget {
+  const _VisionIopSection({
+    required this.bcvaRe,
+    required this.bcvaLe,
+    required this.iopRe,
+    required this.iopLe,
+  });
+
+  final String bcvaRe;
+  final String bcvaLe;
+  final String iopRe;
+  final String iopLe;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Vision (BCVA) & IOP',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1E293B),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _VisionIopEyeCard(
+                  eyeLabel: 'RE',
+                  bcva: bcvaRe,
+                  iop: iopRe,
+                  isRight: true,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _VisionIopEyeCard(
+                  eyeLabel: 'LE',
+                  bcva: bcvaLe,
+                  iop: iopLe,
+                  isRight: false,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VisionIopEyeCard extends StatelessWidget {
+  const _VisionIopEyeCard({
+    required this.eyeLabel,
+    required this.bcva,
+    required this.iop,
+    required this.isRight,
+  });
+
+  final String eyeLabel;
+  final String bcva;
+  final String iop;
+  final bool isRight;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isRight
+              ? [const Color(0xFF0B5FFF).withOpacity(0.08), const Color(0xFF0EA5E9).withOpacity(0.05)]
+              : [const Color(0xFF10B981).withOpacity(0.08), const Color(0xFF059669).withOpacity(0.05)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isRight
+              ? const Color(0xFF0B5FFF).withOpacity(0.2)
+              : const Color(0xFF10B981).withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isRight ? Icons.remove_red_eye : Icons.remove_red_eye_outlined,
+                color: isRight ? const Color(0xFF0B5FFF) : const Color(0xFF10B981),
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                eyeLabel,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: isRight ? const Color(0xFF0B5FFF) : const Color(0xFF10B981),
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _VisionIopRow(label: 'BCVA', value: bcva),
+          const SizedBox(height: 6),
+          _VisionIopRow(label: 'IOP', value: iop),
+        ],
+      ),
+    );
+  }
+}
+
+class _VisionIopRow extends StatelessWidget {
+  const _VisionIopRow({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF64748B),
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1E293B),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EyeSeparatedSection extends StatelessWidget {
+  const _EyeSeparatedSection({
+    required this.title,
+    required this.data,
+    required this.isFundus,
+  });
+
+  final String title;
+  final Map<String, dynamic>? data;
+  final bool isFundus;
+
+  @override
+  Widget build(BuildContext context) {
+    if (data == null || data!.isEmpty) {
+      return _Section(
+        title: title,
+        child: const Text(
+          '-',
+          style: TextStyle(fontSize: 14, color: Color(0xFF475569)),
+        ),
+      );
+    }
+
+    final reData = Map<String, dynamic>.from(data!['RE'] as Map? ?? {});
+    final leData = Map<String, dynamic>.from(data!['LE'] as Map? ?? {});
+    final sections = isFundus ? fundusSections : anteriorSegmentSections;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1E293B),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _EyeColumn(
+                  eyeLabel: 'RE',
+                  eyeData: reData,
+                  sections: sections,
+                  isRight: true,
+                ),
+              ),
+              Container(
+                width: 2,
+                height: null,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF0B5FFF).withOpacity(0.3),
+                      const Color(0xFF0EA5E9).withOpacity(0.2),
+                      const Color(0xFF0B5FFF).withOpacity(0.3),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: _EyeColumn(
+                  eyeLabel: 'LE',
+                  eyeData: leData,
+                  sections: sections,
+                  isRight: false,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EyeColumn extends StatelessWidget {
+  const _EyeColumn({
+    required this.eyeLabel,
+    required this.eyeData,
+    required this.sections,
+    required this.isRight,
+  });
+
+  final String eyeLabel;
+  final Map<String, dynamic> eyeData;
+  final List<dynamic> sections;
+  final bool isRight;
+
+  @override
+  Widget build(BuildContext context) {
+    final findings = <Widget>[];
+
+    for (final section in sections) {
+      final sectionKey = section.key as String;
+      final sectionLabel = section.label as String;
+      final sectionData = _coerceSection(eyeData[sectionKey]);
+      final summary = _formatSectionData(sectionData);
+
+      if (summary.isNotEmpty) {
+        findings.add(
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+            decoration: BoxDecoration(
+              color: isRight 
+                  ? const Color(0xFF0B5FFF).withOpacity(0.03)
+                  : const Color(0xFF10B981).withOpacity(0.03),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: isRight
+                    ? const Color(0xFF0B5FFF).withOpacity(0.1)
+                    : const Color(0xFF10B981).withOpacity(0.1),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 70,
+                  child: Text(
+                    sectionLabel,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: isRight ? const Color(0xFF0B5FFF) : const Color(0xFF10B981),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    summary,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    }
+
+    final remarks = (eyeData['remarks'] as String?) ?? '';
+    if (remarks.trim().isNotEmpty) {
+      findings.add(
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+          decoration: BoxDecoration(
+            color: isRight 
+                ? const Color(0xFF0B5FFF).withOpacity(0.03)
+                : const Color(0xFF10B981).withOpacity(0.03),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: isRight
+                  ? const Color(0xFF0B5FFF).withOpacity(0.1)
+                  : const Color(0xFF10B981).withOpacity(0.1),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 70,
+                child: Text(
+                  'Remarks',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: isRight ? const Color(0xFF0B5FFF) : const Color(0xFF10B981),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  remarks,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isRight
+                  ? [const Color(0xFF0B5FFF), const Color(0xFF0EA5E9)]
+                  : [const Color(0xFF10B981), const Color(0xFF059669)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: (isRight ? const Color(0xFF0B5FFF) : const Color(0xFF10B981)).withOpacity(0.3),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isRight ? Icons.remove_red_eye : Icons.remove_red_eye_outlined,
+                color: Colors.white,
+                size: 14,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                eyeLabel,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (findings.isEmpty)
+          const Text(
+            'No findings recorded',
+            style: TextStyle(
+              fontSize: 13,
+              color: Color(0xFF94A3B8),
+              fontStyle: FontStyle.italic,
+            ),
+          )
+        else
+          Column(
+            children: [
+              for (int i = 0; i < findings.length; i++) ...[
+                findings[i],
+                if (i < findings.length - 1) const SizedBox(height: 6),
+              ],
+            ],
+          ),
+      ],
+    );
+  }
+
+  Map<String, dynamic> _coerceSection(dynamic raw) {
+    if (raw is Map) {
+      final m = Map<String, dynamic>.from(raw);
+      return {
+        'selected': (m['selected'] as List?)?.cast<String>() ?? <String>[],
+        'descriptions':
+            Map<String, dynamic>.from(m['descriptions'] as Map? ?? {}),
+        'other': (m['other'] as String?) ?? '',
+      };
+    }
+    return {
+      'selected': <String>[],
+      'descriptions': <String, String>{},
+      'other': '',
+    };
+  }
+
+  String _formatSectionData(Map<String, dynamic> sectionData) {
+    final selected =
+        (sectionData['selected'] as List?)?.cast<String>() ?? <String>[];
+    if (selected.isEmpty) return '';
+    final descriptions =
+        Map<String, dynamic>.from(sectionData['descriptions'] as Map? ?? {});
+    final other = (sectionData['other'] as String?) ?? '';
+    final parts = <String>[];
+    for (final option in selected) {
+      if (option == 'Other') {
+        if (other.trim().isNotEmpty) {
+          parts.add('Other: $other');
+        } else {
+          parts.add('Other');
+        }
+      } else {
+        final desc = descriptions[option] as String?;
+        if (desc != null && desc.trim().isNotEmpty) {
+          parts.add('$option: $desc');
+        } else {
+          parts.add(option);
+        }
+      }
+    }
+    return parts.join(', ');
   }
 }
 
