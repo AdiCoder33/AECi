@@ -288,6 +288,7 @@ class _ModuleChip extends StatelessWidget {
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Card with shadow effect
               AnimatedContainer(
@@ -317,17 +318,17 @@ class _ModuleChip extends StatelessWidget {
                     width: selected ? 2 : 1,
                   ),
                 ),
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 300),
-                  opacity: selected ? 1.0 : 0.4,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: selected ? 16 : 12,
-                      vertical: selected ? 12 : 10,
-                    ),
-                    child: Center(
-                      child: Text(
-                        label,
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 300),
+                    opacity: selected ? 1.0 : 0.4,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: selected ? 14 : 12,
+                        vertical: selected ? 10 : 8,
+                      ),
+                      child: Center(
+                        child: Text(
+                          label,
                         textAlign: TextAlign.center,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -346,7 +347,7 @@ class _ModuleChip extends StatelessWidget {
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   width: 2,
-                  height: 20,
+                  height: 12,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
