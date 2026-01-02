@@ -18,9 +18,10 @@ import 'widgets/wizard_footer.dart';
 import 'widgets/wizard_header.dart';
 
 class ClinicalCaseWizardScreen extends ConsumerStatefulWidget {
-  const ClinicalCaseWizardScreen({super.key, this.caseId});
+  const ClinicalCaseWizardScreen({super.key, this.caseId, this.caseType});
 
   final String? caseId;
+  final String? caseType;
 
   @override
   ConsumerState<ClinicalCaseWizardScreen> createState() =>
@@ -48,6 +49,14 @@ class _ClinicalCaseWizardScreenState
   void initState() {
     super.initState();
     _bindControllers();
+    if (widget.caseType != null) {
+      ref.read(clinicalCaseWizardProvider.notifier).setCaseType(
+            widget.caseType,
+          );
+      if (widget.caseId == null) {
+        _keywordsController.text = widget.caseType!;
+      }
+    }
     if (widget.caseId != null) {
       Future.microtask(() {
         ref.read(clinicalCaseWizardProvider.notifier).loadCase(widget.caseId!);
@@ -258,6 +267,9 @@ class _ClinicalCaseWizardScreenState
         formKey: _formKeys[7],
         diagnosisController: _diagnosisController,
         keywordsController: _keywordsController,
+        diagnoses: _parseDiagnoses(wizard.diagnosis),
+        onDiagnosesChanged: (value) =>
+            notifier.update(diagnosis: value.join(', ')),
         keywords: wizard.keywords,
         onKeywordsChanged: (value) => notifier.update(keywords: value),
       ),
@@ -400,7 +412,7 @@ class _ClinicalCaseWizardScreenState
       case 6:
         return _fundusIssues(state.fundus).isEmpty;
       case 7:
-        return _diagnosisController.text.trim().isNotEmpty &&
+        return _parseDiagnoses(state.diagnosis).isNotEmpty &&
             state.keywords.isNotEmpty &&
             state.keywords.length <= 5;
       default:
@@ -558,5 +570,18 @@ class _ClinicalCaseWizardScreenState
         backgroundColor: Colors.redAccent,
       ),
     );
+  }
+
+  List<String> _parseDiagnoses(String raw) {
+    final parts = raw.split(',');
+    final normalized = <String>[];
+    for (final part in parts) {
+      final cleaned = part.trim();
+      if (cleaned.isEmpty) continue;
+      final exists =
+          normalized.any((e) => e.toLowerCase() == cleaned.toLowerCase());
+      if (!exists) normalized.add(cleaned);
+    }
+    return normalized;
   }
 }

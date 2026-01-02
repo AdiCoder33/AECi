@@ -8,6 +8,13 @@ final clinicalCaseListProvider =
   return repo.listCases();
 });
 
+final clinicalCaseListByKeywordProvider =
+    FutureProvider.family.autoDispose<List<ClinicalCase>, String>(
+        (ref, keyword) async {
+  final repo = ref.watch(clinicalCasesRepositoryProvider);
+  return repo.listCasesByKeyword(keyword);
+});
+
 final clinicalCaseDetailProvider = FutureProvider.family
     .autoDispose<ClinicalCase, String>((ref, id) async {
   final repo = ref.watch(clinicalCasesRepositoryProvider);

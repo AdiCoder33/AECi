@@ -22,7 +22,7 @@ class QualityRepository {
         .from('elog_entries')
         .select('*')
         .eq('module_type', entry.moduleType)
-        .neq('id', entry.id)
+        .filter('id', 'neq', entry.id)
         .limit(50);
     final list = (rows as List)
         .map((e) => ElogEntry.fromMap(Map<String, dynamic>.from(e)))

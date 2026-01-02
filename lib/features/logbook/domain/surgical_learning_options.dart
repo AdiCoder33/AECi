@@ -1,4 +1,5 @@
 const surgicalLearningOptions = [
+  'Subtenon anesthesia',
   'BIOM focusing',
   'Making a port',
   'Suturing',

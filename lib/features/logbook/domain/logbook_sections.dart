@@ -21,6 +21,7 @@ const logbookSectionLearning = 'learning';
 const logbookSectionRetinoblastoma = 'retinoblastoma_screening';
 const logbookSectionRop = 'rop_screening';
 const logbookSectionPublications = 'publications';
+const logbookSectionLaser = 'laser';
 const logbookSectionReviews = 'reviews';
 
 const logbookSections = [
@@ -59,6 +60,11 @@ const logbookSections = [
     label: 'Publications',
   ),
   LogbookSection(
+    key: logbookSectionLaser,
+    label: 'Laser',
+    caseCategory: 'laser',
+  ),
+  LogbookSection(
     key: logbookSectionReviews,
     label: 'Reviews',
   ),
@@ -74,4 +80,5 @@ const logbookCaseSections = {
   logbookSectionOpdCases,
   logbookSectionRetinoblastoma,
   logbookSectionRop,
+  logbookSectionLaser,
 };

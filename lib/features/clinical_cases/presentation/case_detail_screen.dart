@@ -8,8 +8,10 @@ import '../application/assessment_controller.dart';
 import '../domain/constants/anterior_segment_options.dart';
 import '../domain/constants/fundus_options.dart';
 import '../data/clinical_cases_repository.dart';
+import '../data/assessment_repository.dart';
 import '../../profile/application/profile_controller.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../reviewer/data/reviewer_repository.dart';
 
 class ClinicalCaseDetailScreen extends ConsumerWidget {
   const ClinicalCaseDetailScreen({super.key, required this.caseId});
@@ -19,9 +21,8 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final caseAsync = ref.watch(clinicalCaseDetailProvider(caseId));
-    final assessmentAsync = ref.watch(caseAssessmentProvider(caseId));
-    final profileState = ref.watch(profileControllerProvider);
-    final isConsultant = profileState.profile?.designation == 'Consultant';
+    final recipientsAsync =
+        ref.watch(caseAssessmentRecipientsProvider(caseId));
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
@@ -34,9 +35,21 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
             data: (c) {
               final canEdit = c.status == 'draft' || c.status == 'submitted';
               if (!canEdit) return const SizedBox.shrink();
+              final isRetinoblastoma = c.keywords.any(
+                (k) => k.toLowerCase().contains('retinoblastoma'),
+              );
+              final isRop = c.keywords.any(
+                (k) => k.toLowerCase() == 'rop',
+              );
               return IconButton(
                 icon: const Icon(Icons.edit_outlined),
-                onPressed: () => context.push('/cases/${c.id}/edit'),
+                onPressed: () => context.push(
+                  isRetinoblastoma
+                      ? '/cases/${c.id}/edit?type=retinoblastoma'
+                      : isRop
+                          ? '/cases/${c.id}/edit?type=rop'
+                      : '/cases/${c.id}/edit',
+                ),
               );
             },
             orElse: () => const SizedBox.shrink(),
@@ -74,11 +87,15 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
                       _SummaryTab(c: c),
                       _FollowupsTab(caseId: caseId),
                       _MediaTab(caseId: caseId),
-                      assessmentAsync.when(
-                        data: (a) => _AssessmentTab(
+                      recipientsAsync.when(
+                        data: (recipients) => _AssessmentTab(
                           caseId: caseId,
-                          assessment: a,
-                          isConsultant: isConsultant,
+                          recipients: recipients,
+                          caseOwnerId: c.createdBy,
+                          patientName: c.patientName,
+                          uidNumber: c.uidNumber,
+                          mrNumber: c.mrNumber,
+                          caseStatus: c.status,
                         ),
                         loading: () => const Center(
                           child: CircularProgressIndicator(
@@ -115,11 +132,32 @@ class _SummaryTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _Section(
-          title: 'Patient Information',
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Patient Information
+              const Text(
+                'Patient Information',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 12),
               _InfoRow(label: 'Patient', value: c.patientName),
               _InfoRow(label: 'UID', value: c.uidNumber),
               _InfoRow(label: 'MR Number', value: c.mrNumber),
@@ -127,37 +165,55 @@ class _SummaryTab extends StatelessWidget {
               _InfoRow(label: 'Age', value: c.patientAge.toString()),
               _InfoRow(label: 'Exam Date', value: examDate),
               _InfoRow(label: 'Status', value: c.status),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Complaints',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+              ..._ropMetaRows(c.fundus),
+              
+              const Divider(height: 32, color: Color(0xFFE2E8F0)),
+              
+              // Complaints
+              const Text(
+                'Complaints',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 12),
               _InfoRow(label: 'Chief Complaint', value: c.chiefComplaint),
               _InfoRow(
                 label: 'Duration',
                 value: '${c.complaintDurationValue} ${c.complaintDurationUnit}',
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Systemic History',
-          child: Text(
-            _formatSystemic(c.systemicHistory),
-            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Vision (BCVA) & IOP',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+              
+              const Divider(height: 32, color: Color(0xFFE2E8F0)),
+              
+              // Systemic History
+              const Text(
+                'Systemic History',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _formatSystemic(c.systemicHistory),
+                style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+              ),
+              
+              const Divider(height: 32, color: Color(0xFFE2E8F0)),
+              
+              // Vision & IOP
+              const Text(
+                'Vision (BCVA) & IOP',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 12),
               _EyePairRow(
                 label: 'BCVA',
                 right: c.bcvaRe ?? '-',
@@ -169,88 +225,150 @@ class _SummaryTab extends StatelessWidget {
                 right: c.iopRe?.toString() ?? '-',
                 left: c.iopLe?.toString() ?? '-',
               ),
+              
+              const Divider(height: 32, color: Color(0xFFE2E8F0)),
+              
+              // Anterior Segment
+              const Text(
+                'Anterior Segment',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _formatAnterior(c.anteriorSegment),
+                style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+              ),
+              
+              const Divider(height: 32, color: Color(0xFFE2E8F0)),
+              
+              // Fundus Examination
+              const Text(
+                'Fundus Examination',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _formatFundus(c.fundus),
+                style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+              ),
+              
+              if (_hasRopMeta(c.fundus)) ...[
+                const Divider(height: 32, color: Color(0xFFE2E8F0)),
+                const Text(
+                  'ROP Assessment',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ..._buildRopMetaRows(c.fundus),
+              ],
+              
+              const Divider(height: 32, color: Color(0xFFE2E8F0)),
+              
+              // Diagnosis
+              const Text(
+                'Diagnosis',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                c.diagnosisOther == null || c.diagnosisOther!.isEmpty
+                    ? c.diagnosis
+                    : '${c.diagnosis} (${c.diagnosisOther})',
+                style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+              ),
+              
+              if (c.management != null && c.management!.isNotEmpty) ...[
+                const Divider(height: 32, color: Color(0xFFE2E8F0)),
+                const Text(
+                  'Management',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  c.management!,
+                  style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+                ),
+              ],
+              
+              if (c.learningPoint != null && c.learningPoint!.isNotEmpty) ...[
+                const Divider(height: 32, color: Color(0xFFE2E8F0)),
+                const Text(
+                  'Learning Point',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  c.learningPoint!,
+                  style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+                ),
+              ],
+              
+              if (c.keywords.isNotEmpty) ...[
+                const Divider(height: 32, color: Color(0xFFE2E8F0)),
+                const Text(
+                  'Keywords',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: c.keywords
+                      .map(
+                        (k) => Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Text(
+                            k,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF475569),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Anterior Segment',
-          child: Text(
-            _formatAnterior(c.anteriorSegment),
-            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Fundus Examination',
-          child: Text(
-            _formatFundus(c.fundus),
-            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Diagnosis',
-          child: Text(
-            c.diagnosisOther == null || c.diagnosisOther!.isEmpty
-                ? c.diagnosis
-                : '${c.diagnosis} (${c.diagnosisOther})',
-            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
-        ),
-        if (c.management != null && c.management!.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _Section(
-            title: 'Management',
-            child: Text(
-              c.management!,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-            ),
-          ),
-        ],
-        if (c.learningPoint != null && c.learningPoint!.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _Section(
-            title: 'Learning Point',
-            child: Text(
-              c.learningPoint!,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-            ),
-          ),
-        ],
-        if (c.keywords.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _Section(
-            title: 'Keywords',
-            child: Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: c.keywords
-                  .map(
-                    (k) => Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: Text(
-                        k,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF475569),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -263,6 +381,7 @@ class _SummaryTab extends StatelessWidget {
   String _formatAnterior(Map<String, dynamic>? anterior) {
     if (anterior == null || anterior.isEmpty) return '-';
     final lines = <String>[];
+    final topRemarks = (anterior['remarks'] as String?) ?? '';
     for (final eyeKey in ['RE', 'LE']) {
       final eye = Map<String, dynamic>.from(anterior[eyeKey] as Map? ?? {});
       for (final section in anteriorSegmentSections) {
@@ -276,6 +395,9 @@ class _SummaryTab extends StatelessWidget {
       if (remarks.trim().isNotEmpty) {
         lines.add('$eyeKey Remarks: $remarks');
       }
+    }
+    if (topRemarks.trim().isNotEmpty) {
+      lines.add('Remarks: $topRemarks');
     }
     return lines.join('\n');
   }
@@ -313,6 +435,64 @@ class _SummaryTab extends StatelessWidget {
       lines.add('Remarks: $remarks');
     }
     return lines.join('\n');
+  }
+
+  bool _hasRopMeta(Map<String, dynamic>? fundus) {
+    if (fundus == null || fundus.isEmpty) return false;
+    return fundus['rop_meta'] is Map;
+  }
+
+  List<Widget> _ropMetaRows(Map<String, dynamic>? fundus) {
+    final rows = <Widget>[];
+    if (fundus == null || fundus.isEmpty) return rows;
+    final meta = Map<String, dynamic>.from(fundus['rop_meta'] as Map? ?? {});
+    if (meta.isEmpty) return rows;
+    final gestational = meta['gestational_age']?.toString();
+    final postConception = meta['post_conceptional_age']?.toString();
+    if ((gestational ?? '').isNotEmpty) {
+      rows.add(_InfoRow(label: 'Gestational age', value: '$gestational weeks'));
+    }
+    if ((postConception ?? '').isNotEmpty) {
+      rows.add(
+        _InfoRow(
+          label: 'Post conceptional age',
+          value: '$postConception weeks',
+        ),
+      );
+    }
+    return rows;
+  }
+
+  List<Widget> _buildRopMetaRows(Map<String, dynamic>? fundus) {
+    final rows = <Widget>[];
+    if (fundus == null || fundus.isEmpty) return rows;
+    final meta = Map<String, dynamic>.from(fundus['rop_meta'] as Map? ?? {});
+    if (meta.isEmpty) return rows;
+
+    void addEyePair(String label, Map? values) {
+      if (values == null) return;
+      final right = values['RE']?.toString() ?? '-';
+      final left = values['LE']?.toString() ?? '-';
+      rows.add(_EyePairRow(label: label, right: right, left: left));
+      rows.add(const SizedBox(height: 8));
+    }
+
+    addEyePair('Zone', meta['zone'] as Map?);
+    addEyePair('Stage', meta['stage'] as Map?);
+    addEyePair('Plus disease', _boolEyeMap(meta['plus_disease']));
+    addEyePair('AGROP', _boolEyeMap(meta['agrop']));
+    if (rows.isNotEmpty) {
+      rows.removeLast();
+    }
+    return rows;
+  }
+
+  Map<String, String> _boolEyeMap(dynamic raw) {
+    if (raw is! Map) return {'RE': '-', 'LE': '-'};
+    return {
+      'RE': raw['RE'] == true ? 'Yes' : raw['RE'] == false ? 'No' : '-',
+      'LE': raw['LE'] == true ? 'Yes' : raw['LE'] == false ? 'No' : '-',
+    };
   }
 
   String _formatSection(Map<String, dynamic> sectionData) {
@@ -792,220 +972,219 @@ class _EmptyState extends StatelessWidget {
 class _AssessmentTab extends ConsumerStatefulWidget {
   const _AssessmentTab({
     required this.caseId,
-    required this.assessment,
-    required this.isConsultant,
+    required this.recipients,
+    required this.caseOwnerId,
+    required this.patientName,
+    required this.uidNumber,
+    required this.mrNumber,
+    required this.caseStatus,
   });
   final String caseId;
-  final dynamic assessment;
-  final bool isConsultant;
+  final List<AssessmentRecipient> recipients;
+  final String caseOwnerId;
+  final String patientName;
+  final String uidNumber;
+  final String mrNumber;
+  final String caseStatus;
 
   @override
   ConsumerState<_AssessmentTab> createState() => _AssessmentTabState();
 }
 
 class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
-  final _comments = TextEditingController();
-  String? _selectedConsultant;
+  final TextEditingController _searchController = TextEditingController();
+  final Set<String> _selectedRecipients = {};
+  bool _seededSelection = false;
 
   @override
   Widget build(BuildContext context) {
     final mutation = ref.watch(assessmentMutationProvider);
+    final authState = ref.watch(authControllerProvider);
     final profileState = ref.watch(profileControllerProvider);
-    final centre = profileState.profile?.aravindCentre ??
-        profileState.profile?.centre ??
-        '';
-    final monthKey = _monthKey(DateTime.now());
-    final rosterAsync = centre.isEmpty
-        ? null
-        : ref.watch(
-            assessmentRosterProvider((centre: centre, monthKey: monthKey)),
-          );
-    final assessment = widget.assessment;
+    final doctorsAsync = ref.watch(assessmentDoctorsProvider);
+    final authId = authState.session?.user.id;
+    final isOwner = authId != null && authId == widget.caseOwnerId;
+    final isReviewer = profileState.profile?.designation == 'Reviewer';
 
-    if (assessment == null) {
-      return Container(
-        color: const Color(0xFFF7F9FC),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView(
-                children: [
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Submit for Assessment',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          if (centre.isEmpty)
-                            const Text('Complete your profile centre first.')
-                          else if (rosterAsync == null)
-                            const SizedBox.shrink()
-                          else
-                            rosterAsync.when(
-                              data: (list) {
-                                if (list.isEmpty) {
-                                  return const Text(
-                                    'No consultants available for this month.',
-                                  );
-                                }
-                                return DropdownButtonFormField<String>(
-                                  value: _selectedConsultant,
-                                  items: list
-                                      .map(
-                                        (c) => DropdownMenuItem(
-                                          value: c.id,
-                                          child: Text(
-                                            '${c.name} - ${c.designation}',
-                                          ),
-                                        ),
-                                      )
-                                      .toList(),
-                                  onChanged: (v) =>
-                                      setState(() => _selectedConsultant = v),
-                                  decoration: const InputDecoration(
-                                    labelText: 'Select Consultant',
-                                  ),
-                                );
-                              },
-                              loading: () =>
-                                  const CircularProgressIndicator(strokeWidth: 2),
-                              error: (e, _) => Text('Error: $e'),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _selectedConsultant == null
-                    ? null
-                    : () async {
-                        await ref
-                            .read(assessmentMutationProvider.notifier)
-                            .submit(widget.caseId, _selectedConsultant!);
-                      },
-                icon: const Icon(Icons.send, color: Colors.white),
-                label: const Text('Submit for Assessment'),
-              ),
-            ),
-          ],
-        ),
-      );
+    if (!_seededSelection && widget.recipients.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _selectedRecipients
+            ..clear()
+            ..addAll(widget.recipients.map((r) => r.recipientId));
+          _seededSelection = true;
+        });
+      });
     }
 
-    final authState = ref.watch(authControllerProvider);
-    final isAssignee =
-        authState.session?.user.id == assessment.assignedConsultantId;
-    final consultantProfileAsync =
-        ref.watch(profileByIdProvider(assessment.assignedConsultantId));
+    final isAssignedReviewer = widget.recipients.any(
+      (r) => r.recipientId == authId && r.canReview,
+    );
 
     return Container(
       color: const Color(0xFFF7F9FC),
       padding: const EdgeInsets.all(16),
-      child: Column(
+      child: ListView(
         children: [
-          Expanded(
-            child: ListView(
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      _StatusPill(status: widget.caseStatus),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Assessment',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (widget.recipients.isEmpty)
+                    const Text(
+                      'No assessment submitted yet.',
+                      style: TextStyle(color: Color(0xFF64748B)),
+                    )
+                  else
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            _StatusPill(status: assessment.status),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        consultantProfileAsync.when(
-                          data: (profile) {
-                            if (profile == null) return const SizedBox.shrink();
-                            return Text(
-                              'Consultant: ${profile.name} - ${profile.designation} (${profile.aravindCentre ?? profile.centre})',
-                              style: const TextStyle(fontSize: 13),
-                            );
-                          },
-                          loading: () => const SizedBox.shrink(),
-                          error: (_, __) => const SizedBox.shrink(),
-                        ),
-                        if (assessment.consultantComments != null &&
-                            assessment.consultantComments.toString().isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: Text(
-                              assessment.consultantComments,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF475569),
-                              ),
-                            ),
+                        const Text(
+                          'Submitted to',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
                           ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: widget.recipients
+                              .map(
+                                (r) => Chip(
+                                  label: Text('${r.name} (${r.designation})'),
+                                  avatar: r.canReview
+                                      ? const Icon(
+                                          Icons.verified,
+                                          size: 16,
+                                          color: Color(0xFF0B5FFF),
+                                        )
+                                      : null,
+                                ),
+                              )
+                              .toList(),
+                        ),
                       ],
                     ),
-                  ),
-                ),
-                if (widget.isConsultant &&
-                    isAssignee &&
-                    assessment.status != 'completed') ...[
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Add Comments',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: _comments,
-                            maxLines: 4,
-                            decoration: const InputDecoration(
-                              hintText: 'Enter your assessment comments...',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 ],
-              ],
+              ),
             ),
           ),
-          if (widget.isConsultant &&
-              isAssignee &&
-              assessment.status != 'completed') ...[
-            const SizedBox(height: 16),
+          if (isOwner) ...[
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Select doctors for assessment',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _searchController,
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.search),
+                        hintText: 'Search doctors by name or designation',
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 12),
+                    doctorsAsync.when(
+                      data: (list) {
+                        final query = _searchController.text.trim().toLowerCase();
+                        final filtered = query.isEmpty
+                            ? list
+                            : list.where((p) {
+                                final centre = p.aravindCentre ?? p.centre;
+                                return p.name.toLowerCase().contains(query) ||
+                                    p.designation.toLowerCase().contains(query) ||
+                                    centre.toLowerCase().contains(query);
+                              }).toList();
+                        if (filtered.isEmpty) {
+                          return const Text('No doctors found.');
+                        }
+                        return ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: filtered.length,
+                          separatorBuilder: (_, __) =>
+                              const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final doctor = filtered[index];
+                            final isSelected =
+                                _selectedRecipients.contains(doctor.id);
+                            return CheckboxListTile(
+                              value: isSelected,
+                              title: Text(doctor.name),
+                              subtitle: Text(
+                                '${doctor.designation} | ${doctor.aravindCentre ?? doctor.centre}',
+                              ),
+                              onChanged: (value) {
+                                setState(() {
+                                  if (value == true) {
+                                    _selectedRecipients.add(doctor.id);
+                                  } else {
+                                    _selectedRecipients.remove(doctor.id);
+                                  }
+                                });
+                              },
+                            );
+                          },
+                        );
+                      },
+                      loading: () => const Padding(
+                        padding: EdgeInsets.only(top: 12),
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      error: (e, _) => Text('Error: $e'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: mutation.isLoading
+                onPressed: _selectedRecipients.isEmpty || mutation.isLoading
                     ? null
                     : () async {
                         await ref
                             .read(assessmentMutationProvider.notifier)
-                            .complete(assessment.id, _comments.text);
+                            .submitRecipients(
+                              widget.caseId,
+                              _selectedRecipients.toList(),
+                            );
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Assessment submitted'),
+                            ),
+                          );
+                        }
+                        ref.invalidate(
+                          caseAssessmentRecipientsProvider(widget.caseId),
+                        );
                       },
                 icon: mutation.isLoading
                     ? const SizedBox(
@@ -1016,21 +1195,64 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
                           color: Colors.white,
                         ),
                       )
-                    : const Icon(Icons.check_circle, color: Colors.white),
+                    : const Icon(Icons.send, color: Colors.white),
                 label: Text(
-                  mutation.isLoading ? 'Processing...' : 'Mark Complete',
+                  mutation.isLoading ? 'Submitting...' : 'Submit Assessment',
                 ),
+              ),
+            ),
+          ],
+          if (!isOwner && widget.recipients.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.visibility, color: Color(0xFF64748B)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'You have view access to this case. Only reviewers can submit scores.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFF64748B),
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          if (isReviewer && isAssignedReviewer) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  final item = ReviewItem(
+                    entityType: 'clinical_case',
+                    entityId: widget.caseId,
+                    traineeId: widget.caseOwnerId,
+                    title: widget.patientName,
+                    subtitle:
+                        'UID ${widget.uidNumber} | MR ${widget.mrNumber}',
+                    updatedAt: DateTime.now(),
+                  );
+                  context.push(
+                    '/reviewer/pending/assess/clinical_case/${widget.caseId}',
+                    extra: item,
+                  );
+                },
+                icon: const Icon(Icons.rate_review, color: Colors.white),
+                label: const Text('Open Review'),
               ),
             ),
           ],
         ],
       ),
     );
-  }
-
-  String _monthKey(DateTime date) {
-    final m = date.month.toString().padLeft(2, '0');
-    return '${date.year}-$m';
   }
 }
 

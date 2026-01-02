@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../clinical_cases/application/clinical_cases_controller.dart';
+import '../../clinical_cases/data/clinical_cases_repository.dart';
 import '../../portfolio/application/portfolio_controller.dart';
 import '../../review/application/review_controller.dart';
 import '../application/logbook_providers.dart';
@@ -27,7 +28,15 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
     final isPublications = section == logbookSectionPublications;
     final isReviews = section == logbookSectionReviews;
     final entries = isEntrySection ? ref.watch(entriesListProvider) : null;
-    final cases = isCaseSection ? ref.watch(clinicalCaseListProvider) : null;
+    final AsyncValue<List<ClinicalCase>>? cases = isCaseSection
+        ? (section == logbookSectionRetinoblastoma
+            ? ref.watch(clinicalCaseListByKeywordProvider('retinoblastoma'))
+            : section == logbookSectionRop
+                ? ref.watch(clinicalCaseListByKeywordProvider('rop'))
+                : section == logbookSectionLaser
+                    ? ref.watch(clinicalCaseListByKeywordProvider('laser'))
+                : ref.watch(clinicalCaseListProvider))
+        : null;
     final publications =
         isPublications ? ref.watch(publicationListProvider) : null;
     final reviews = isReviews ? ref.watch(reviewControllerProvider) : null;
@@ -71,9 +80,16 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
         onPressed: () {
           switch (section) {
             case logbookSectionOpdCases:
-            case logbookSectionRetinoblastoma:
-            case logbookSectionRop:
               context.push('/cases/new');
+              return;
+            case logbookSectionRop:
+              context.push('/cases/new?type=rop');
+              return;
+            case logbookSectionRetinoblastoma:
+              context.push('/cases/new?type=retinoblastoma');
+              return;
+            case logbookSectionLaser:
+              context.push('/cases/new?type=laser');
               return;
             case logbookSectionAtlas:
             case logbookSectionSurgicalRecord:
@@ -171,29 +187,81 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
   }
 }
 
-class _SectionSelector extends StatelessWidget {
+class _SectionSelector extends StatefulWidget {
   const _SectionSelector({required this.selected, required this.onChanged});
 
   final String selected;
   final ValueChanged<String> onChanged;
 
   @override
+  State<_SectionSelector> createState() => _SectionSelectorState();
+}
+
+class _SectionSelectorState extends State<_SectionSelector> {
+  late ScrollController _scrollController;
+  late PageController _pageController;
+  static const int itemsPerPage = 3;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _pageController = PageController(
+      viewportFraction: 0.33, // Show 3 items
+      initialPage: _getInitialPage(),
+    );
+  }
+
+  int _getInitialPage() {
+    final index = logbookSections.indexWhere((s) => s.key == widget.selected);
+    return index >= 0 ? index : 0;
+  }
+
+  @override
+  void didUpdateWidget(_SectionSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selected != widget.selected) {
+      final index = logbookSections.indexWhere((s) => s.key == widget.selected);
+      if (index >= 0 && _pageController.hasClients) {
+        _pageController.animateToPage(
+          index,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: logbookSections
-            .map(
-              (m) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: _ModuleChip(
-                  label: m.label,
-                  selected: selected == m.key,
-                  onTap: () => onChanged(m.key),
-                ),
-              ),
-            )
-            .toList(),
+    return SizedBox(
+      height: 60,
+      child: PageView.builder(
+        controller: _pageController,
+        itemCount: logbookSections.length,
+        onPageChanged: (index) {
+          widget.onChanged(logbookSections[index].key);
+        },
+        itemBuilder: (context, index) {
+          final section = logbookSections[index];
+          final isSelected = widget.selected == section.key;
+          return _ModuleChip(
+            label: section.label,
+            selected: isSelected,
+            onTap: () {
+              if (!isSelected) {
+                widget.onChanged(section.key);
+              }
+            },
+          );
+        },
       ),
     );
   }
@@ -212,26 +280,85 @@ class _ModuleChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: selected ? const Color(0xFF0B5FFF) : Colors.grey[100],
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? const Color(0xFF0B5FFF) : Colors.grey[300]!,
-            width: 1.5,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? Colors.white : const Color(0xFF64748B),
-            fontSize: 13,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          child: Column(
+            children: [
+              // Card with shadow effect
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                margin: EdgeInsets.only(
+                  top: selected ? 0 : 4,
+                  bottom: selected ? 0 : 4,
+                ),
+                decoration: BoxDecoration(
+                  color: selected ? const Color(0xFF0B5FFF) : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: selected
+                          ? const Color(0xFF0B5FFF).withOpacity(0.3)
+                          : Colors.black.withOpacity(0.05),
+                      blurRadius: selected ? 12 : 4,
+                      offset: Offset(0, selected ? 4 : 2),
+                      spreadRadius: selected ? 2 : 0,
+                    ),
+                  ],
+                  border: Border.all(
+                    color: selected
+                        ? const Color(0xFF0B5FFF)
+                        : Colors.grey[300]!,
+                    width: selected ? 2 : 1,
+                  ),
+                ),
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 300),
+                  opacity: selected ? 1.0 : 0.4,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: selected ? 16 : 12,
+                      vertical: selected ? 12 : 10,
+                    ),
+                    child: Center(
+                      child: Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: selected ? Colors.white : const Color(0xFF64748B),
+                          fontSize: selected ? 12 : 11,
+                          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Connector line for selected
+              if (selected)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  width: 2,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        const Color(0xFF0B5FFF),
+                        const Color(0xFF0B5FFF).withOpacity(0),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ),
@@ -334,7 +461,7 @@ class _SectionBody extends StatelessWidget {
   final bool isPublications;
   final bool isReviews;
   final AsyncValue<List<ElogEntry>>? entries;
-  final AsyncValue<List<dynamic>>? cases;
+  final AsyncValue<List<ClinicalCase>>? cases;
   final AsyncValue<List<dynamic>>? publications;
   final ReviewQueueState? reviews;
   final String section;
@@ -379,7 +506,8 @@ class _SectionBody extends StatelessWidget {
     if (isCaseSection && cases != null) {
       return cases!.when(
         data: (list) {
-          if (list.isEmpty) {
+          final filtered = _filterCasesForSection(list);
+          if (filtered.isEmpty) {
             return _EmptyState(
               icon: Icons.medical_information_outlined,
               title: 'No cases yet',
@@ -388,10 +516,10 @@ class _SectionBody extends StatelessWidget {
           }
           return ListView.separated(
             padding: const EdgeInsets.all(16),
-            itemCount: list.length,
+            itemCount: filtered.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
-              final c = list[index] as dynamic;
+              final c = filtered[index];
               return Card(
                 child: ListTile(
                   title: Text(c.patientName),
@@ -483,6 +611,34 @@ class _SectionBody extends StatelessWidget {
     }
 
     return const SizedBox.shrink();
+  }
+
+  List<ClinicalCase> _filterCasesForSection(List<ClinicalCase> list) {
+    switch (section) {
+      case logbookSectionRetinoblastoma:
+        return list
+            .where((c) => _hasKeyword(c, 'retinoblastoma'))
+            .toList();
+      case logbookSectionRop:
+        return list.where((c) => _hasKeyword(c, 'rop')).toList();
+      case logbookSectionLaser:
+        return list.where((c) => _hasKeyword(c, 'laser')).toList();
+      case logbookSectionOpdCases:
+        return list
+            .where(
+              (c) =>
+                  !_hasKeyword(c, 'retinoblastoma') &&
+                  !_hasKeyword(c, 'rop') &&
+                  !_hasKeyword(c, 'laser'),
+            )
+            .toList();
+    }
+    return list;
+  }
+
+  bool _hasKeyword(ClinicalCase c, String keyword) {
+    final target = keyword.toLowerCase();
+    return c.keywords.any((k) => k.toLowerCase() == target);
   }
 }
 

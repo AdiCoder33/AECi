@@ -36,6 +36,22 @@ class CaseAssessment {
       );
 }
 
+class AssessmentRecipient {
+  AssessmentRecipient({
+    required this.recipientId,
+    required this.name,
+    required this.designation,
+    required this.centre,
+    required this.canReview,
+  });
+
+  final String recipientId;
+  final String name;
+  final String designation;
+  final String centre;
+  final bool canReview;
+}
+
 class RosterConsultant {
   RosterConsultant({
     required this.id,
@@ -80,6 +96,107 @@ class AssessmentRepository {
         .maybeSingle();
     if (row == null) return null;
     return CaseAssessment.fromMap(Map<String, dynamic>.from(row));
+  }
+
+  Future<List<AssessmentRecipient>> listRecipients(String caseId) async {
+    final rows = await _client
+        .from('case_assessment_recipients')
+        .select('recipient_id, can_review')
+        .eq('case_id', caseId)
+        .order('created_at');
+    final recipients = (rows as List)
+        .map((row) => Map<String, dynamic>.from(row))
+        .toList();
+    final ids = recipients
+        .map((row) => row['recipient_id'] as String)
+        .toList();
+    if (ids.isEmpty) return [];
+
+    final quoted = ids.map((id) => '"$id"').join(',');
+    final profiles = await _client
+        .from('profiles')
+        .select('id, name, designation, centre, aravind_centre')
+        .filter('id', 'in', '($quoted)');
+    final byId = {
+      for (final row in profiles as List)
+        (row as Map)['id'] as String: row
+    };
+
+    return recipients.map((row) {
+      final profile = Map<String, dynamic>.from(
+        byId[row['recipient_id']] as Map? ?? {},
+      );
+      return AssessmentRecipient(
+        recipientId: row['recipient_id'] as String,
+        name: (profile['name'] as String?) ?? 'Unknown',
+        designation: (profile['designation'] as String?) ?? 'Doctor',
+        centre: (profile['aravind_centre'] as String?) ??
+            (profile['centre'] as String?) ??
+            '',
+        canReview: (row['can_review'] as bool?) ?? false,
+      );
+    }).toList();
+  }
+
+  Future<void> submitRecipients({
+    required String caseId,
+    required List<String> recipientIds,
+  }) async {
+    final uid = _client.auth.currentUser?.id;
+    if (uid == null) throw AuthException('Not signed in');
+    if (recipientIds.isEmpty) {
+      throw PostgrestException(message: 'Select at least one doctor');
+    }
+
+    await _client.from('case_assessment_recipients').delete().eq(
+          'case_id',
+          caseId,
+        );
+
+    final quotedIds = recipientIds.map((id) => '"$id"').join(',');
+    final profiles = await _client
+        .from('profiles')
+        .select('id, name, designation')
+        .filter('id', 'in', '($quotedIds)');
+    final byId = {
+      for (final row in profiles as List)
+        (row as Map)['id'] as String: row
+    };
+
+    final inserts = recipientIds.map((id) {
+      final profile = Map<String, dynamic>.from(byId[id] as Map? ?? {});
+      final designation = (profile['designation'] as String?) ?? '';
+      return {
+        'case_id': caseId,
+        'recipient_id': id,
+        'can_review': designation == 'Reviewer',
+      };
+    }).toList();
+
+    await _client.from('case_assessment_recipients').insert(inserts);
+    await _client
+        .from('clinical_cases')
+        .update({'status': 'submitted'}).eq('id', caseId);
+
+    final caseRow = await _client
+        .from('clinical_cases')
+        .select('patient_name, uid_number')
+        .eq('id', caseId)
+        .maybeSingle();
+    final title = 'New case submitted';
+    final body = caseRow == null
+        ? 'A clinical case was submitted for assessment.'
+        : '${caseRow['patient_name']} (UID ${caseRow['uid_number']})';
+    for (final id in recipientIds) {
+      await _client.rpc('notify_user', params: {
+        'p_user_id': id,
+        'p_type': 'case_submitted',
+        'p_title': title,
+        'p_body': body,
+        'p_entity_type': 'clinical_case',
+        'p_entity_id': caseId,
+      });
+    }
   }
 
   Future<String> submitForAssessment({

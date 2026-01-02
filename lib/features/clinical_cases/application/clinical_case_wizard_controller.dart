@@ -10,6 +10,7 @@ class ClinicalCaseWizardState {
     required this.caseId,
     required this.isLoading,
     required this.errorMessage,
+    required this.caseType,
     required this.dateOfExamination,
     required this.patientName,
     required this.uidNumber,
@@ -35,6 +36,7 @@ class ClinicalCaseWizardState {
   final String? caseId;
   final bool isLoading;
   final String? errorMessage;
+  final String? caseType;
   final DateTime dateOfExamination;
   final String patientName;
   final String uidNumber;
@@ -60,6 +62,7 @@ class ClinicalCaseWizardState {
         caseId: null,
         isLoading: false,
         errorMessage: null,
+        caseType: null,
         dateOfExamination: DateTime.now(),
         patientName: '',
         uidNumber: '',
@@ -86,6 +89,7 @@ class ClinicalCaseWizardState {
     String? caseId,
     bool? isLoading,
     String? errorMessage,
+    String? caseType,
     DateTime? dateOfExamination,
     String? patientName,
     String? uidNumber,
@@ -111,6 +115,7 @@ class ClinicalCaseWizardState {
       caseId: caseId ?? this.caseId,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage ?? this.errorMessage,
+      caseType: caseType ?? this.caseType,
       dateOfExamination: dateOfExamination ?? this.dateOfExamination,
       patientName: patientName ?? this.patientName,
       uidNumber: uidNumber ?? this.uidNumber,
@@ -137,7 +142,7 @@ class ClinicalCaseWizardState {
 
   Map<String, dynamic> toMap(String statusValue) {
     final date = dateOfExamination.toIso8601String().split('T').first;
-    final cleanedKeywords = keywords.toList();
+    final cleanedKeywords = _applyCaseTypeKeywords(keywords, caseType);
     final systemic = [
       ...systemicHistory,
       if (systemicOther.trim().isNotEmpty) 'Others: ${systemicOther.trim()}',
@@ -211,8 +216,12 @@ class ClinicalCaseWizardController
             _normalizeAnterior(data.anteriorSegment ?? _initialAnterior()),
         fundus: _normalizeFundus(data.fundus ?? _initialFundus()),
         diagnosis: data.diagnosis,
-        keywords: data.keywords,
+        keywords: _applyCaseTypeKeywords(
+          data.keywords,
+          state.caseType ?? _detectCaseType(data.keywords),
+        ),
         status: data.status,
+        caseType: state.caseType ?? _detectCaseType(data.keywords),
         isLoading: false,
       );
     } catch (e) {
@@ -244,7 +253,12 @@ class ClinicalCaseWizardController
     String? diagnosis,
     List<String>? keywords,
     String? status,
+    String? caseType,
   }) {
+    final nextCaseType = caseType ?? state.caseType;
+    final nextKeywords = keywords == null
+        ? null
+        : _applyCaseTypeKeywords(keywords, nextCaseType);
     state = state.copyWith(
       dateOfExamination: dateOfExamination,
       patientName: patientName,
@@ -264,12 +278,22 @@ class ClinicalCaseWizardController
       anteriorSegment: anteriorSegment,
       fundus: fundus,
       diagnosis: diagnosis,
-      keywords: keywords,
+      keywords: nextKeywords,
       status: status,
+      caseType: nextCaseType,
     );
   }
 
+  void setCaseType(String? caseType) {
+    final normalized = caseType?.toLowerCase();
+    final nextKeywords = _applyCaseTypeKeywords(state.keywords, normalized);
+    state = state.copyWith(caseType: normalized, keywords: nextKeywords);
+  }
+
   Future<String> save({required String status}) async {
+    final effectiveKeywords =
+        _applyCaseTypeKeywords(state.keywords, state.caseType);
+    state = state.copyWith(keywords: effectiveKeywords);
     final data = state.toMap(status);
     if (state.caseId == null) {
       final id = await _repo.createCaseDraft(data);
@@ -657,6 +681,35 @@ String _normalOptionForFundusSection(String sectionKey) {
   final mapped = normalMap[sectionKey];
   if (mapped != null) return mapped;
   return 'Normal';
+}
+
+String? _detectCaseType(List<String> keywords) {
+  for (final keyword in keywords) {
+    final normalized = keyword.trim().toLowerCase();
+    if (normalized == 'rop') return 'rop';
+  }
+  return null;
+}
+
+List<String> _applyCaseTypeKeywords(
+  List<String> keywords,
+  String? caseType,
+) {
+  final deduped = <String>[];
+  for (final keyword in keywords) {
+    final cleaned = keyword.trim();
+    if (cleaned.isEmpty) continue;
+    final exists = deduped.any(
+      (e) => e.toLowerCase() == cleaned.toLowerCase(),
+    );
+    if (!exists) deduped.add(cleaned);
+  }
+  if (caseType != null) {
+    final forced = caseType.toLowerCase();
+    final exists = deduped.any((e) => e.toLowerCase() == forced);
+    if (!exists) deduped.add(forced);
+  }
+  return deduped;
 }
 String? _legacyAnteriorLabel(String sectionKey) {
   switch (sectionKey) {
