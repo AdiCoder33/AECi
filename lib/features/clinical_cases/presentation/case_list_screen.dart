@@ -73,241 +73,97 @@ class ClinicalCaseListScreen extends ConsumerWidget {
               ),
             );
           }
-          
-          // Sort cases by diagnosis
-          final sortedList = [...list];
-          sortedList.sort((a, b) => a.diagnosis.compareTo(b.diagnosis));
-          
-          // Group by diagnosis
-          final Map<String, List<dynamic>> groupedCases = {};
-          for (final c in sortedList) {
-            if (!groupedCases.containsKey(c.diagnosis)) {
-              groupedCases[c.diagnosis] = [];
-            }
-            groupedCases[c.diagnosis]!.add(c);
-          }
-          
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: groupedCases.keys.length,
-            itemBuilder: (context, groupIndex) {
-              final diagnosis = groupedCases.keys.elementAt(groupIndex);
-              final diagnosisCases = groupedCases[diagnosis]!;
-              
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    margin: EdgeInsets.only(bottom: 10, top: groupIndex == 0 ? 0 : 10),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF0B5FFF), Color(0xFF0EA5E9)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF0B5FFF).withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
+          return ListView.separated(
+            padding: const EdgeInsets.all(18),
+            itemCount: list.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 16),
+            itemBuilder: (context, index) {
+              final c = list[index];
+              final updated = c.updatedAt?.toIso8601String().split('T').first ?? '-';
+              return Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                elevation: 2,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () => context.push('/cases/${c.id}'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
-                          Icons.local_hospital,
-                          color: Colors.white,
-                          size: 18,
+                        CircleAvatar(
+                          backgroundColor: const Color(0xFF0B5FFF).withOpacity(0.08),
+                          child: const Icon(Icons.person, color: Color(0xFF0B5FFF)),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 16),
                         Expanded(
-                          child: Text(
-                            diagnosis,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              letterSpacing: 0.3,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    c.patientName,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: Color(0xFF0B172A),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  _StatusBadge(status: c.status),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'UID: ${c.uidNumber}   MR: ${c.mrNumber}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Diagnosis: ${c.diagnosis}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF0B5FFF),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(Icons.calendar_today, size: 14, color: Color(0xFF94A3B8)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    c.dateOfExamination.toIso8601String().split('T').first,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF94A3B8),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Icon(Icons.update, size: 14, color: Color(0xFF94A3B8)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    updated,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF94A3B8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.25),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${diagnosisCases.length}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
+                        const Icon(Icons.chevron_right, color: Color(0xFF0B5FFF)),
                       ],
                     ),
                   ),
-                  ...diagnosisCases.map((c) {
-                    final updated = c.updatedAt?.toIso8601String().split('T').first ?? '-';
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: () => context.push('/cases/${c.id}'),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        const Color(0xFF0B5FFF).withOpacity(0.1),
-                                        const Color(0xFF0EA5E9).withOpacity(0.05),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: const Color(0xFF0B5FFF).withOpacity(0.2),
-                                    ),
-                                  ),
-                                  child: const Icon(
-                                    Icons.person,
-                                    color: Color(0xFF0B5FFF),
-                                    size: 20,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              c.patientName,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w700,
-                                                color: Color(0xFF1E293B),
-                                              ),
-                                            ),
-                                          ),
-                                          _StatusBadge(status: c.status),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              'UID: ${c.uidNumber}',
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                color: Color(0xFF64748B),
-                                              ),
-                                            ),
-                                          ),
-                                          Text(
-                                            'MR: ${c.mrNumber}',
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              color: Color(0xFF64748B),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.calendar_today,
-                                            size: 11,
-                                            color: Colors.grey[400],
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            c.dateOfExamination.toIso8601String().split('T').first,
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: Colors.grey[500],
-                                            ),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Icon(
-                                            Icons.update,
-                                            size: 11,
-                                            color: Colors.grey[400],
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            updated,
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: Colors.grey[500],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      if (c.keywords.isNotEmpty) ...[
-                                        const SizedBox(height: 6),
-                                        Wrap(
-                                          spacing: 4,
-                                          runSpacing: 4,
-                                          children: c.keywords.take(3).map((k) => Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFF1F5F9),
-                                              borderRadius: BorderRadius.circular(4),
-                                              border: Border.all(color: const Color(0xFFE2E8F0)),
-                                            ),
-                                            child: Text(
-                                              k,
-                                              style: const TextStyle(
-                                                fontSize: 9,
-                                                color: Color(0xFF64748B),
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          )).toList(),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.chevron_right,
-                                  color: Color(0xFF0B5FFF),
-                                  size: 20,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ],
+                ),
               );
             },
           );
@@ -361,48 +217,29 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final normalized = status.toLowerCase();
     Color color;
-    IconData icon;
-    
     switch (normalized) {
       case 'submitted':
-        color = const Color(0xFF10B981);
-        icon = Icons.check_circle;
+        color = const Color(0xFF0B5FFF);
         break;
       case 'draft':
         color = const Color(0xFFF59E0B);
-        icon = Icons.edit;
         break;
       default:
         color = const Color(0xFF64748B);
-        icon = Icons.circle;
     }
-    
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.3)),
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 10,
-            color: color,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            normalized.toUpperCase(),
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-              color: color,
-              letterSpacing: 0.3,
-            ),
-          ),
-        ],
+      child: Text(
+        normalized.toUpperCase(),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
       ),
     );
   }
