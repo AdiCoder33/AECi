@@ -41,52 +41,15 @@ class Step6Anterior extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1E5F8C), Color(0xFF2878A8)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF1E5F8C).withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.visibility_outlined, color: Colors.white, size: 28),
-                SizedBox(width: 12),
-                Text(
-                  'Anterior Segment Examination',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
           Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: _EyeSection(
-                      title: 'Right Eye (RE)',
+                      title: 'RE',
                       eyeKey: 'RE',
                       anterior: anterior,
                       onSelectionChanged: onSelectionChanged,
@@ -95,24 +58,10 @@ class Step6Anterior extends StatelessWidget {
                       onRemarksChanged: onRemarksChanged,
                     ),
                   ),
-                  Container(
-                    width: 2,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.grey[300]!,
-                          Colors.grey[200]!,
-                          Colors.grey[300]!,
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
+                  const SizedBox(width: 16),
                   Expanded(
                     child: _EyeSection(
-                      title: 'Left Eye (LE)',
+                      title: 'LE',
                       eyeKey: 'LE',
                       anterior: anterior,
                       onSelectionChanged: onSelectionChanged,
@@ -209,48 +158,13 @@ class _EyeSectionState extends State<_EyeSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFF1E5F8C).withOpacity(0.1),
-                const Color(0xFF2878A8).withOpacity(0.05),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xFF1E5F8C).withOpacity(0.3),
-              width: 2,
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E5F8C),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.remove_red_eye,
-                  color: Colors.white,
-                  size: 20,
-                ),
+        Text(
+          widget.title,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
-              const SizedBox(width: 10),
-              Text(
-                widget.title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1E5F8C),
-                ),
-              ),
-            ],
-          ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         ...anteriorSegmentSections.map((section) {
           final sectionData =
               Map<String, dynamic>.from(eye[section.key] as Map? ?? {});
@@ -267,71 +181,31 @@ class _EyeSectionState extends State<_EyeSection> {
               .where((option) => option != normalOption)
               .toList();
           return Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFFE2E8F0),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Card(
+              elevation: 0,
               child: Padding(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 4,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF1E5F8C), Color(0xFF2878A8)],
-                            ),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          section.label,
-                          style: const TextStyle(
-                            fontSize: 14,
+                    Text(
+                      section.label,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF1E293B),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant,
                           ),
-                        ),
-                      ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
-                      runSpacing: 8,
                       children: [
                         ChoiceChip(
                           label: const Text('Normal'),
-                          avatar: selected.contains(normalOption) && !showOptions
-                              ? const Icon(Icons.check_circle, size: 18, color: Colors.white)
-                              : null,
                           selected: selected.contains(normalOption) &&
                               !showOptions,
-                          selectedColor: const Color(0xFF10B981),
-                          backgroundColor: Colors.grey[100],
-                          labelStyle: TextStyle(
-                            color: selected.contains(normalOption) && !showOptions
-                                ? Colors.white
-                                : const Color(0xFF64748B),
-                            fontWeight: FontWeight.w600,
-                          ),
                           onSelected: (value) {
                             if (value) {
                               setState(() => _abnormalExpanded[abnormalKey] = false);
@@ -352,18 +226,7 @@ class _EyeSectionState extends State<_EyeSection> {
                         ),
                         ChoiceChip(
                           label: const Text('Abnormal'),
-                          avatar: showOptions
-                              ? const Icon(Icons.warning_amber_rounded, size: 18, color: Colors.white)
-                              : null,
                           selected: showOptions,
-                          selectedColor: const Color(0xFFEF4444),
-                          backgroundColor: Colors.grey[100],
-                          labelStyle: TextStyle(
-                            color: showOptions
-                                ? Colors.white
-                                : const Color(0xFF64748B),
-                            fontWeight: FontWeight.w600,
-                          ),
                           onSelected: (value) {
                             setState(() => _abnormalExpanded[abnormalKey] = value);
                             if (value && selected.contains(normalOption)) {
