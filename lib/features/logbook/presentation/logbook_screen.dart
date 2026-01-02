@@ -247,7 +247,7 @@ class _ModuleChip extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected ? const Color(0xFF1E5F8C) : Colors.grey[300]!,
-            width: 1. 5,
+            width: 1.5,
           ),
           boxShadow: selected
               ? [
