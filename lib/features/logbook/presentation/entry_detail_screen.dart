@@ -45,36 +45,42 @@ class EntryDetailScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Header with icon and patient info
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(10),
+                            padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF0B5FFF).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
+                              gradient: LinearGradient(
+                                colors: [
+                                  const Color(0xFF0B5FFF),
+                                  const Color(0xFF0B5FFF).withOpacity(0.7),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(
-                              Icons.description,
-                              color: Color(0xFF0B5FFF),
-                              size: 24,
+                              Icons.person,
+                              color: Colors.white,
+                              size: 28,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,51 +88,87 @@ class EntryDetailScreen extends ConsumerWidget {
                                 Text(
                                   entry.patientUniqueId,
                                   style: const TextStyle(
-                                    fontSize: 18,
+                                    fontSize: 20,
                                     fontWeight: FontWeight.w700,
                                     color: Color(0xFF1E293B),
                                   ),
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'MRN: ${entry.mrn}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF64748B),
-                                  ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.badge_outlined,
+                                      size: 16,
+                                      color: Color(0xFF64748B),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'MRN: ${entry.mrn}',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Color(0xFF64748B),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      const Divider(),
-                      const SizedBox(height: 12),
+                      
+                      // Keywords section
                       if (entry.keywords.isNotEmpty) ...[
+                        const SizedBox(height: 20),
+                        const Row(
+                          children: [
+                            Icon(
+                              Icons.local_offer_outlined,
+                              size: 18,
+                              color: Color(0xFF64748B),
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Keywords',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF64748B),
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
                         Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
+                          spacing: 8,
+                          runSpacing: 8,
                           children: entry.keywords
                               .map(
                                 (k) => Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
+                                    horizontal: 12,
+                                    vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF1F5F9),
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        const Color(0xFF0B5FFF).withOpacity(0.1),
+                                        const Color(0xFF0B5FFF).withOpacity(0.05),
+                                      ],
+                                    ),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: const Color(0xFFE2E8F0),
+                                      color: const Color(0xFF0B5FFF).withOpacity(0.3),
                                     ),
                                   ),
                                   child: Text(
                                     k,
                                     style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF475569),
-                                      fontWeight: FontWeight.w500,
+                                      fontSize: 13,
+                                      color: Color(0xFF0B5FFF),
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
@@ -134,12 +176,35 @@ class EntryDetailScreen extends ConsumerWidget {
                               .toList(),
                         ),
                       ],
+                      
+                      // Details section
+                      const SizedBox(height: 24),
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 18,
+                            color: Color(0xFF64748B),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Details',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF64748B),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      ..._buildDetailRows(entry),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
-                _PayloadView(entry: entry),
                 const SizedBox(height: 16),
+                _ImagesSection(entry: entry),
               ],
             ),
           );
@@ -196,6 +261,293 @@ class EntryDetailScreen extends ConsumerWidget {
     } else {
       return date.toLocal().toString().split(' ')[0];
     }
+  }
+
+  List<Widget> _buildDetailRows(ElogEntry entry) {
+    final payload = entry.payload;
+    final rows = <Widget>[];
+    
+    switch (entry.moduleType) {
+      case moduleImages:
+        final mediaType = payload['mediaType'] ?? '';
+        final diagnosis = payload['diagnosis'] ?? payload['keyDescriptionOrPathology'] ?? '';
+        final brief = payload['briefDescription'] ?? payload['additionalInformation'] ?? '';
+        
+        if (mediaType.toString().isNotEmpty) {
+          rows.add(_DetailRow(
+            icon: Icons.category_outlined,
+            label: 'Type of media',
+            value: mediaType.toString(),
+          ));
+        }
+        if (diagnosis.toString().isNotEmpty) {
+          rows.add(_DetailRow(
+            icon: Icons.medical_information_outlined,
+            label: 'Diagnosis',
+            value: diagnosis.toString(),
+          ));
+        }
+        if (brief.toString().isNotEmpty) {
+          rows.add(_DetailRow(
+            icon: Icons.description_outlined,
+            label: 'Brief description',
+            value: brief.toString(),
+          ));
+        }
+        break;
+        
+      case moduleCases:
+        final briefDesc = payload['briefDescription'] ?? '';
+        if (briefDesc.toString().isNotEmpty) {
+          rows.add(_DetailRow(
+            icon: Icons.description_outlined,
+            label: 'Brief description',
+            value: briefDesc.toString(),
+          ));
+        }
+        final followUp = payload['followUpVisitDescription'] ?? '';
+        if (followUp.toString().isNotEmpty) {
+          rows.add(_DetailRow(
+            icon: Icons.follow_the_signs_outlined,
+            label: 'Follow up',
+            value: followUp.toString(),
+          ));
+        }
+        break;
+        
+      default:
+        break;
+    }
+    
+    return rows;
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: const Color(0xFFE2E8F0),
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 18,
+              color: const Color(0xFF0B5FFF),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF64748B),
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF1E293B),
+                    fontWeight: FontWeight.w500,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ImagesSection extends ConsumerWidget {
+  const _ImagesSection({required this.entry});
+
+  final ElogEntry entry;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final signedCache = ref.read(signedUrlCacheProvider.notifier);
+    final payload = entry.payload;
+    
+    List<String> imagePaths = [];
+    if (entry.moduleType == moduleCases) {
+      imagePaths = [
+        ...List<String>.from(payload['ancillaryImagingPaths'] ?? []),
+        ...List<String>.from(payload['followUpVisitImagingPaths'] ?? []),
+      ];
+    } else if (entry.moduleType == moduleImages) {
+      imagePaths = [
+        ...List<String>.from(payload['uploadImagePaths'] ?? []),
+        ...List<String>.from(payload['followUpVisitImagingPaths'] ?? []),
+      ];
+    }
+    
+    if (imagePaths.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF0B5FFF),
+                      const Color(0xFF0B5FFF).withOpacity(0.7),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.image_outlined,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Images (${imagePaths.length})',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: imagePaths.length,
+            itemBuilder: (context, index) {
+              final path = imagePaths[index];
+              return FutureBuilder(
+                future: signedCache.getUrl(path),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFFE2E8F0),
+                        ),
+                      ),
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFF0B5FFF),
+                        ),
+                      ),
+                    );
+                  }
+                  return GestureDetector(
+                    onTap: () => showDialog(
+                      context: context,
+                      builder: (_) => Dialog(
+                        backgroundColor: Colors.transparent,
+                        child: Stack(
+                          children: [
+                            Center(
+                              child: InteractiveViewer(
+                                child: Image.network(snapshot.data!),
+                              ),
+                            ),
+                            Positioned(
+                              top: 20,
+                              right: 20,
+                              child: IconButton(
+                                onPressed: () => Navigator.pop(context),
+                                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.black54,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          snapshot.data!,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
   }
 }
 

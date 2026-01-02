@@ -503,6 +503,10 @@ class _SectionBody extends StatelessWidget {
               subtitle: 'Tap "New Entry" to create your first case',
             );
           }
+          // For retinoblastoma, show flat list without grouping
+          if (section == logbookSectionRetinoblastoma) {
+            return _FlatCaseListView(cases: filtered);
+          }
           return _CaseListView(cases: filtered);
         },
         loading: () => const Center(
@@ -1078,6 +1082,24 @@ class _StatusBadge extends StatelessWidget {
           color: isDraft ? Colors.orange[700] : Colors.green[700],
         ),
       ),
+    );
+  }
+}
+
+class _FlatCaseListView extends StatelessWidget {
+  final List<ClinicalCase> cases;
+
+  const _FlatCaseListView({required this.cases});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: cases.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        return _CaseCard(case_: cases[index]);
+      },
     );
   }
 }
