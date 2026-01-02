@@ -132,11 +132,32 @@ class _SummaryTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _Section(
-          title: 'Patient Information',
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Patient Information
+              const Text(
+                'Patient Information',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 12),
               _InfoRow(label: 'Patient', value: c.patientName),
               _InfoRow(label: 'UID', value: c.uidNumber),
               _InfoRow(label: 'MR Number', value: c.mrNumber),
@@ -145,37 +166,54 @@ class _SummaryTab extends StatelessWidget {
               _InfoRow(label: 'Exam Date', value: examDate),
               _InfoRow(label: 'Status', value: c.status),
               ..._ropMetaRows(c.fundus),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Complaints',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+              
+              const Divider(height: 32, color: Color(0xFFE2E8F0)),
+              
+              // Complaints
+              const Text(
+                'Complaints',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 12),
               _InfoRow(label: 'Chief Complaint', value: c.chiefComplaint),
               _InfoRow(
                 label: 'Duration',
                 value: '${c.complaintDurationValue} ${c.complaintDurationUnit}',
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Systemic History',
-          child: Text(
-            _formatSystemic(c.systemicHistory),
-            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Vision (BCVA) & IOP',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+              
+              const Divider(height: 32, color: Color(0xFFE2E8F0)),
+              
+              // Systemic History
+              const Text(
+                'Systemic History',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _formatSystemic(c.systemicHistory),
+                style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+              ),
+              
+              const Divider(height: 32, color: Color(0xFFE2E8F0)),
+              
+              // Vision & IOP
+              const Text(
+                'Vision (BCVA) & IOP',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 12),
               _EyePairRow(
                 label: 'BCVA',
                 right: c.bcvaRe ?? '-',
@@ -187,98 +225,150 @@ class _SummaryTab extends StatelessWidget {
                 right: c.iopRe?.toString() ?? '-',
                 left: c.iopLe?.toString() ?? '-',
               ),
+              
+              const Divider(height: 32, color: Color(0xFFE2E8F0)),
+              
+              // Anterior Segment
+              const Text(
+                'Anterior Segment',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _formatAnterior(c.anteriorSegment),
+                style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+              ),
+              
+              const Divider(height: 32, color: Color(0xFFE2E8F0)),
+              
+              // Fundus Examination
+              const Text(
+                'Fundus Examination',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _formatFundus(c.fundus),
+                style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+              ),
+              
+              if (_hasRopMeta(c.fundus)) ...[
+                const Divider(height: 32, color: Color(0xFFE2E8F0)),
+                const Text(
+                  'ROP Assessment',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ..._buildRopMetaRows(c.fundus),
+              ],
+              
+              const Divider(height: 32, color: Color(0xFFE2E8F0)),
+              
+              // Diagnosis
+              const Text(
+                'Diagnosis',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                c.diagnosisOther == null || c.diagnosisOther!.isEmpty
+                    ? c.diagnosis
+                    : '${c.diagnosis} (${c.diagnosisOther})',
+                style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+              ),
+              
+              if (c.management != null && c.management!.isNotEmpty) ...[
+                const Divider(height: 32, color: Color(0xFFE2E8F0)),
+                const Text(
+                  'Management',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  c.management!,
+                  style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+                ),
+              ],
+              
+              if (c.learningPoint != null && c.learningPoint!.isNotEmpty) ...[
+                const Divider(height: 32, color: Color(0xFFE2E8F0)),
+                const Text(
+                  'Learning Point',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  c.learningPoint!,
+                  style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+                ),
+              ],
+              
+              if (c.keywords.isNotEmpty) ...[
+                const Divider(height: 32, color: Color(0xFFE2E8F0)),
+                const Text(
+                  'Keywords',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: c.keywords
+                      .map(
+                        (k) => Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Text(
+                            k,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF475569),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Anterior Segment',
-          child: Text(
-            _formatAnterior(c.anteriorSegment),
-            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Fundus Examination',
-          child: Text(
-            _formatFundus(c.fundus),
-            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
-        ),
-        if (_hasRopMeta(c.fundus)) ...[
-          const SizedBox(height: 12),
-          _Section(
-            title: 'ROP Assessment',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: _buildRopMetaRows(c.fundus),
-            ),
-          ),
-        ],
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Diagnosis',
-          child: Text(
-            c.diagnosisOther == null || c.diagnosisOther!.isEmpty
-                ? c.diagnosis
-                : '${c.diagnosis} (${c.diagnosisOther})',
-            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
-        ),
-        if (c.management != null && c.management!.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _Section(
-            title: 'Management',
-            child: Text(
-              c.management!,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-            ),
-          ),
-        ],
-        if (c.learningPoint != null && c.learningPoint!.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _Section(
-            title: 'Learning Point',
-            child: Text(
-              c.learningPoint!,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-            ),
-          ),
-        ],
-        if (c.keywords.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _Section(
-            title: 'Keywords',
-            child: Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: c.keywords
-                  .map(
-                    (k) => Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: Text(
-                        k,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF475569),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-        ],
       ],
     );
   }
