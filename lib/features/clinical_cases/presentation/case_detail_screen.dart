@@ -21,33 +21,30 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final caseAsync = ref.watch(clinicalCaseDetailProvider(caseId));
-    final recipientsAsync =
-        ref.watch(caseAssessmentRecipientsProvider(caseId));
+    final recipientsAsync = ref.watch(caseAssessmentRecipientsProvider(caseId));
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
       appBar: AppBar(
         elevation: 0,
-        backgroundColor:  Colors.white,
+        backgroundColor: Colors.white,
         title: const Text('Case Detail'),
         actions: [
           caseAsync.maybeWhen(
-            data:  (c) {
+            data: (c) {
               final canEdit = c.status == 'draft' || c.status == 'submitted';
-              if (! canEdit) return const SizedBox. shrink();
+              if (!canEdit) return const SizedBox.shrink();
               final isRetinoblastoma = c.keywords.any(
                 (k) => k.toLowerCase().contains('retinoblastoma'),
               );
-              final isRop = c.keywords.any(
-                (k) => k.toLowerCase() == 'rop',
-              );
+              final isRop = c.keywords.any((k) => k.toLowerCase() == 'rop');
               return IconButton(
-                icon: const Icon(Icons. edit_outlined),
+                icon: const Icon(Icons.edit_outlined),
                 onPressed: () => context.push(
                   isRetinoblastoma
                       ? '/cases/${c.id}/edit? type=retinoblastoma'
                       : isRop
-                          ? '/cases/${c.id}/edit?type=rop'
+                      ? '/cases/${c.id}/edit?type=rop'
                       : '/cases/${c.id}/edit',
                 ),
               );
@@ -76,8 +73,8 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
                     tabs: [
                       Tab(text: 'Summary'),
                       Tab(text: 'Follow-ups'),
-                      Tab(text:  'Media'),
-                      Tab(text:  'Assessment'),
+                      Tab(text: 'Media'),
+                      Tab(text: 'Assessment'),
                     ],
                   ),
                 ),
@@ -94,7 +91,7 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
                           caseOwnerId: c.createdBy,
                           patientName: c.patientName,
                           uidNumber: c.uidNumber,
-                          mrNumber: c. mrNumber,
+                          mrNumber: c.mrNumber,
                           caseStatus: c.status,
                         ),
                         loading: () => const Center(
@@ -102,7 +99,7 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
                             color: Color(0xFF0B5FFF),
                           ),
                         ),
-                        error:  (e, _) => Center(child: Text('Error: $e')),
+                        error: (e, _) => Center(child: Text('Error: $e')),
                       ),
                     ],
                   ),
@@ -111,10 +108,8 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
             ),
           );
         },
-        loading:  () => const Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF0B5FFF),
-          ),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: Color(0xFF0B5FFF)),
         ),
         error: (e, _) => Center(child: Text('Error: $e')),
       ),
@@ -128,7 +123,7 @@ class _SummaryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final examDate = c.dateOfExamination. toIso8601String().split('T').first;
+    final examDate = c.dateOfExamination.toIso8601String().split('T').first;
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
@@ -140,10 +135,10 @@ class _SummaryTab extends StatelessWidget {
             _StyledInfoRow(label: 'UID', value: c.uidNumber),
             _StyledInfoRow(label: 'MR Number', value: c.mrNumber),
             _StyledInfoRow(label: 'Gender', value: c.patientGender),
-            _StyledInfoRow(label: 'Age', value: c.patientAge. toString()),
+            _StyledInfoRow(label: 'Age', value: c.patientAge.toString()),
             _StyledInfoRow(label: 'Exam Date', value: examDate),
-            _StyledInfoRow(label:  'Status', value: c.status),
-            .. ._ropMetaInfoRows(c.fundus),
+            _StyledInfoRow(label: 'Status', value: c.status),
+            ..._ropMetaInfoRows(c.fundus),
           ],
         ),
         const SizedBox(height: 10),
@@ -167,7 +162,7 @@ class _SummaryTab extends StatelessWidget {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
-                borderRadius:  BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: Text(
@@ -179,9 +174,9 @@ class _SummaryTab extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         _VisionIopSection(
-          bcvaRe: c.bcvaRe ??  '-',
+          bcvaRe: c.bcvaRe ?? '-',
           bcvaLe: c.bcvaLe ?? '-',
-          iopRe: c.iopRe?. toString() ?? '-',
+          iopRe: c.iopRe?.toString() ?? '-',
           iopLe: c.iopLe?.toString() ?? '-',
         ),
         const SizedBox(height: 10),
@@ -193,7 +188,7 @@ class _SummaryTab extends StatelessWidget {
         const SizedBox(height: 10),
         _EyeSeparatedSection(
           title: 'Fundus Examination',
-          data: c. fundus,
+          data: c.fundus,
           isFundus: true,
         ),
         if (_hasRopMeta(c.fundus)) ...[
@@ -214,10 +209,10 @@ class _SummaryTab extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(6),
-                border: Border. all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
-              child:  Text(
-                c.diagnosisOther == null || c.diagnosisOther! .isEmpty
+              child: Text(
+                c.diagnosisOther == null || c.diagnosisOther!.isEmpty
                     ? c.diagnosis
                     : '${c.diagnosis} (${c.diagnosisOther})',
                 style: const TextStyle(fontSize: 12, color: Color(0xFF475569)),
@@ -232,15 +227,18 @@ class _SummaryTab extends StatelessWidget {
             icon: Icons.medication_outlined,
             children: [
               Container(
-                padding:  const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF8FAFC),
-                  borderRadius:  BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: Text(
                   c.management!,
-                  style: const TextStyle(fontSize: 12, color:  Color(0xFF475569)),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF475569),
+                  ),
                 ),
               ),
             ],
@@ -250,7 +248,7 @@ class _SummaryTab extends StatelessWidget {
           const SizedBox(height: 10),
           _StyledSection(
             title: 'Learning Point',
-            icon:  Icons.lightbulb_outline,
+            icon: Icons.lightbulb_outline,
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
@@ -261,17 +259,20 @@ class _SummaryTab extends StatelessWidget {
                 ),
                 child: Text(
                   c.learningPoint!,
-                  style: const TextStyle(fontSize: 12, color:  Color(0xFF475569)),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF475569),
+                  ),
                 ),
               ),
             ],
           ),
         ],
         if (c.keywords.isNotEmpty) ...[
-          const SizedBox(height:  10),
+          const SizedBox(height: 10),
           _StyledSection(
             title: 'Keywords',
-            icon: Icons. label_outline,
+            icon: Icons.label_outline,
             children: [
               Wrap(
                 spacing: 6,
@@ -287,13 +288,13 @@ class _SummaryTab extends StatelessWidget {
                           gradient: const LinearGradient(
                             colors: [Color(0xFF0B5FFF), Color(0xFF0EA5E9)],
                             begin: Alignment.topLeft,
-                            end: Alignment. bottomRight,
+                            end: Alignment.bottomRight,
                           ),
-                          borderRadius: BorderRadius. circular(6),
+                          borderRadius: BorderRadius.circular(6),
                           boxShadow: [
                             BoxShadow(
                               color: const Color(0xFF0B5FFF).withOpacity(0.2),
-                              blurRadius:  3,
+                              blurRadius: 3,
                               offset: const Offset(0, 2),
                             ),
                           ],
@@ -302,8 +303,8 @@ class _SummaryTab extends StatelessWidget {
                           k,
                           style: const TextStyle(
                             fontSize: 11,
-                            color: Colors. white,
-                            fontWeight:  FontWeight.w600,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -330,12 +331,14 @@ class _SummaryTab extends StatelessWidget {
   List<Widget> _ropMetaInfoRows(Map<String, dynamic>? fundus) {
     final rows = <Widget>[];
     if (fundus == null || fundus.isEmpty) return rows;
-    final meta = Map<String, dynamic>.from(fundus['rop_meta'] as Map?  ?? {});
+    final meta = Map<String, dynamic>.from(fundus['rop_meta'] as Map? ?? {});
     if (meta.isEmpty) return rows;
     final gestational = meta['gestational_age']?.toString();
     final postConception = meta['post_conceptional_age']?.toString();
-    if ((gestational ??  '').isNotEmpty) {
-      rows.add(_StyledInfoRow(label: 'Gestational age', value: '$gestational weeks'));
+    if ((gestational ?? '').isNotEmpty) {
+      rows.add(
+        _StyledInfoRow(label: 'Gestational age', value: '$gestational weeks'),
+      );
     }
     if ((postConception ?? '').isNotEmpty) {
       rows.add(
@@ -351,29 +354,37 @@ class _SummaryTab extends StatelessWidget {
   List<Widget> _buildRopMetaRows(Map<String, dynamic>? fundus) {
     final rows = <Widget>[];
     if (fundus == null || fundus.isEmpty) return rows;
-    final meta = Map<String, dynamic>.from(fundus['rop_meta'] as Map?  ?? {});
+    final meta = Map<String, dynamic>.from(fundus['rop_meta'] as Map? ?? {});
     if (meta.isEmpty) return rows;
 
-    void addEyePair(String label, Map?  values) {
+    void addEyePair(String label, Map? values) {
       if (values == null) return;
       final right = values['RE']?.toString() ?? '-';
       final left = values['LE']?.toString() ?? '-';
       rows.add(_RopEyePairRow(label: label, right: right, left: left));
     }
 
-    addEyePair('Zone', meta['zone'] as Map? );
-    addEyePair('Stage', meta['stage'] as Map? );
+    addEyePair('Zone', meta['zone'] as Map?);
+    addEyePair('Stage', meta['stage'] as Map?);
     addEyePair('Plus disease', _boolEyeMap(meta['plus_disease']));
     addEyePair('AGROP', _boolEyeMap(meta['agrop']));
-    
+
     return rows;
   }
 
   Map<String, String> _boolEyeMap(dynamic raw) {
-    if (raw is!  Map) return {'RE': '-', 'LE': '-'};
+    if (raw is! Map) return {'RE': '-', 'LE': '-'};
     return {
-      'RE': raw['RE'] == true ? 'Yes' : raw['RE'] == false ? 'No' : '-',
-      'LE': raw['LE'] == true ? 'Yes' :  raw['LE'] == false ?  'No' : '-',
+      'RE': raw['RE'] == true
+          ? 'Yes'
+          : raw['RE'] == false
+          ? 'No'
+          : '-',
+      'LE': raw['LE'] == true
+          ? 'Yes'
+          : raw['LE'] == false
+          ? 'No'
+          : '-',
     };
   }
 
@@ -381,8 +392,9 @@ class _SummaryTab extends StatelessWidget {
     final selected =
         (sectionData['selected'] as List?)?.cast<String>() ?? <String>[];
     if (selected.isEmpty) return '';
-    final descriptions =
-        Map<String, dynamic>.from(sectionData['descriptions'] as Map? ?? {});
+    final descriptions = Map<String, dynamic>.from(
+      sectionData['descriptions'] as Map? ?? {},
+    );
     final other = (sectionData['other'] as String?) ?? '';
     final parts = <String>[];
     for (final option in selected) {
@@ -394,7 +406,7 @@ class _SummaryTab extends StatelessWidget {
         }
         continue;
       }
-      final desc = (descriptions[option] ??  '').toString().trim();
+      final desc = (descriptions[option] ?? '').toString().trim();
       if (desc.isNotEmpty) {
         parts.add('$option: $desc');
       } else {
@@ -418,7 +430,7 @@ class _SummaryTab extends StatelessWidget {
           'other': notes,
         };
       }
-      if (status. isNotEmpty) {
+      if (status.isNotEmpty) {
         return {
           'selected': <String>['Normal'],
           'descriptions': <String, String>{},
@@ -500,7 +512,7 @@ class _RopEyePairRow extends StatelessWidget {
                       'LE: ',
                       style: TextStyle(
                         fontSize: 11,
-                        fontWeight:  FontWeight.w600,
+                        fontWeight: FontWeight.w600,
                         color: Color(0xFF64748B),
                       ),
                     ),
@@ -527,7 +539,7 @@ class _StyledSection extends StatelessWidget {
   const _StyledSection({
     required this.title,
     required this.icon,
-    required this. children,
+    required this.children,
   });
 
   final String title;
@@ -541,7 +553,7 @@ class _StyledSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow:  [
+        boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
@@ -559,18 +571,14 @@ class _StyledSection extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF0B5FFF), Color(0xFF0EA5E9)],
-                    begin:  Alignment.topLeft,
+                    begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child:  Icon(
-                  icon,
-                  color: Colors.white,
-                  size: 18,
-                ),
+                child: Icon(icon, color: Colors.white, size: 18),
               ),
-              const SizedBox(width:  12),
+              const SizedBox(width: 12),
               Text(
                 title,
                 style: const TextStyle(
@@ -597,10 +605,7 @@ class _StyledSection extends StatelessWidget {
 }
 
 class _StyledInfoRow extends StatelessWidget {
-  const _StyledInfoRow({
-    required this.label,
-    required this.value,
-  });
+  const _StyledInfoRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -631,8 +636,8 @@ class _StyledInfoRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style:  const TextStyle(
-                fontSize:  12,
+              style: const TextStyle(
+                fontSize: 12,
                 color: Color(0xFF1E293B),
                 fontWeight: FontWeight.w500,
               ),
@@ -648,8 +653,8 @@ class _VisionIopSection extends StatelessWidget {
   const _VisionIopSection({
     required this.bcvaRe,
     required this.bcvaLe,
-    required this. iopRe,
-    required this. iopLe,
+    required this.iopRe,
+    required this.iopLe,
   });
 
   final String bcvaRe;
@@ -664,9 +669,9 @@ class _VisionIopSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow:  [
+        boxShadow: [
           BoxShadow(
-            color: Colors.black. withOpacity(0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -700,7 +705,7 @@ class _VisionIopSection extends StatelessWidget {
                   eyeLabel: 'LE',
                   bcva: bcvaLe,
                   iop: iopLe,
-                  isRight:  false,
+                  isRight: false,
                 ),
               ),
             ],
@@ -730,28 +735,36 @@ class _VisionIopEyeCard extends StatelessWidget {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors:  isRight
-              ? [const Color(0xFF0B5FFF).withOpacity(0.08), const Color(0xFF0EA5E9).withOpacity(0.05)]
-              : [const Color(0xFF10B981).withOpacity(0.08), const Color(0xFF059669).withOpacity(0.05)],
+          colors: isRight
+              ? [
+                  const Color(0xFF0B5FFF).withOpacity(0.08),
+                  const Color(0xFF0EA5E9).withOpacity(0.05),
+                ]
+              : [
+                  const Color(0xFF10B981).withOpacity(0.08),
+                  const Color(0xFF059669).withOpacity(0.05),
+                ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: isRight
-              ?  const Color(0xFF0B5FFF).withOpacity(0.2)
+              ? const Color(0xFF0B5FFF).withOpacity(0.2)
               : const Color(0xFF10B981).withOpacity(0.2),
-          width: 1. 5,
+          width: 1.5,
         ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment. start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Icon(
-                isRight ? Icons. remove_red_eye :  Icons.remove_red_eye_outlined,
-                color: isRight ? const Color(0xFF0B5FFF) : const Color(0xFF10B981),
+                isRight ? Icons.remove_red_eye : Icons.remove_red_eye_outlined,
+                color: isRight
+                    ? const Color(0xFF0B5FFF)
+                    : const Color(0xFF10B981),
                 size: 16,
               ),
               const SizedBox(width: 6),
@@ -760,7 +773,9 @@ class _VisionIopEyeCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: isRight ? const Color(0xFF0B5FFF) : const Color(0xFF10B981),
+                  color: isRight
+                      ? const Color(0xFF0B5FFF)
+                      : const Color(0xFF10B981),
                   letterSpacing: 0.5,
                 ),
               ),
@@ -777,10 +792,7 @@ class _VisionIopEyeCard extends StatelessWidget {
 }
 
 class _VisionIopRow extends StatelessWidget {
-  const _VisionIopRow({
-    required this. label,
-    required this.value,
-  });
+  const _VisionIopRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -789,7 +801,7 @@ class _VisionIopRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children:  [
+      children: [
         Text(
           label,
           style: const TextStyle(
@@ -834,9 +846,9 @@ class _EyeSeparatedSection extends StatelessWidget {
       );
     }
 
-    final reData = Map<String, dynamic>.from(data!['RE'] as Map?  ?? {});
+    final reData = Map<String, dynamic>.from(data!['RE'] as Map? ?? {});
     final leData = Map<String, dynamic>.from(data!['LE'] as Map? ?? {});
-    final sections = isFundus ?  fundusSections : anteriorSegmentSections;
+    final sections = isFundus ? fundusSections : anteriorSegmentSections;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -852,7 +864,7 @@ class _EyeSeparatedSection extends StatelessWidget {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment. start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
@@ -934,7 +946,7 @@ class _EyeColumn extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
             decoration: BoxDecoration(
-              color: isRight 
+              color: isRight
                   ? const Color(0xFF0B5FFF).withOpacity(0.03)
                   : const Color(0xFF10B981).withOpacity(0.03),
               borderRadius: BorderRadius.circular(6),
@@ -944,17 +956,19 @@ class _EyeColumn extends StatelessWidget {
                     : const Color(0xFF10B981).withOpacity(0.1),
               ),
             ),
-            child:  Row(
-              crossAxisAlignment:  CrossAxisAlignment.start,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  width:  70,
+                  width: 70,
                   child: Text(
                     sectionLabel,
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: isRight ? const Color(0xFF0B5FFF) : const Color(0xFF10B981),
+                      color: isRight
+                          ? const Color(0xFF0B5FFF)
+                          : const Color(0xFF10B981),
                     ),
                   ),
                 ),
@@ -962,7 +976,7 @@ class _EyeColumn extends StatelessWidget {
                   child: Text(
                     summary,
                     style: const TextStyle(
-                      fontSize:  11,
+                      fontSize: 11,
                       color: Color(0xFF1E293B),
                     ),
                   ),
@@ -975,18 +989,18 @@ class _EyeColumn extends StatelessWidget {
     }
 
     final remarks = (eyeData['remarks'] as String?) ?? '';
-    if (remarks. trim().isNotEmpty) {
+    if (remarks.trim().isNotEmpty) {
       findings.add(
         Container(
           padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
           decoration: BoxDecoration(
-            color: isRight 
+            color: isRight
                 ? const Color(0xFF0B5FFF).withOpacity(0.03)
                 : const Color(0xFF10B981).withOpacity(0.03),
             borderRadius: BorderRadius.circular(6),
             border: Border.all(
               color: isRight
-                  ?  const Color(0xFF0B5FFF).withOpacity(0.1)
+                  ? const Color(0xFF0B5FFF).withOpacity(0.1)
                   : const Color(0xFF10B981).withOpacity(0.1),
             ),
           ),
@@ -999,8 +1013,10 @@ class _EyeColumn extends StatelessWidget {
                   'Remarks',
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight. w600,
-                    color:  isRight ? const Color(0xFF0B5FFF) : const Color(0xFF10B981),
+                    fontWeight: FontWeight.w600,
+                    color: isRight
+                        ? const Color(0xFF0B5FFF)
+                        : const Color(0xFF10B981),
                   ),
                 ),
               ),
@@ -1008,8 +1024,8 @@ class _EyeColumn extends StatelessWidget {
                 child: Text(
                   remarks,
                   style: const TextStyle(
-                    fontSize:  11,
-                    color:  Color(0xFF1E293B),
+                    fontSize: 11,
+                    color: Color(0xFF1E293B),
                   ),
                 ),
               ),
@@ -1027,7 +1043,7 @@ class _EyeColumn extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: isRight
-                  ?  [const Color(0xFF0B5FFF), const Color(0xFF0EA5E9)]
+                  ? [const Color(0xFF0B5FFF), const Color(0xFF0EA5E9)]
                   : [const Color(0xFF10B981), const Color(0xFF059669)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -1035,7 +1051,11 @@ class _EyeColumn extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             boxShadow: [
               BoxShadow(
-                color:  (isRight ? const Color(0xFF0B5FFF) : const Color(0xFF10B981)).withOpacity(0.3),
+                color:
+                    (isRight
+                            ? const Color(0xFF0B5FFF)
+                            : const Color(0xFF10B981))
+                        .withOpacity(0.3),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -1053,7 +1073,7 @@ class _EyeColumn extends StatelessWidget {
               Text(
                 eyeLabel,
                 style: const TextStyle(
-                  fontSize:  12,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                   letterSpacing: 0.5,
@@ -1090,15 +1110,16 @@ class _EyeColumn extends StatelessWidget {
       final m = Map<String, dynamic>.from(raw);
       return {
         'selected': (m['selected'] as List?)?.cast<String>() ?? <String>[],
-        'descriptions': 
-            Map<String, dynamic>.from(m['descriptions'] as Map? ?? {}),
+        'descriptions': Map<String, dynamic>.from(
+          m['descriptions'] as Map? ?? {},
+        ),
         'other': (m['other'] as String?) ?? '',
       };
     }
     return {
       'selected': <String>[],
-      'descriptions':  <String, String>{},
-      'other':  '',
+      'descriptions': <String, String>{},
+      'other': '',
     };
   }
 
@@ -1106,8 +1127,9 @@ class _EyeColumn extends StatelessWidget {
     final selected =
         (sectionData['selected'] as List?)?.cast<String>() ?? <String>[];
     if (selected.isEmpty) return '';
-    final descriptions =
-        Map<String, dynamic>.from(sectionData['descriptions'] as Map? ?? {});
+    final descriptions = Map<String, dynamic>.from(
+      sectionData['descriptions'] as Map? ?? {},
+    );
     final other = (sectionData['other'] as String?) ?? '';
     final parts = <String>[];
     for (final option in selected) {
@@ -1126,7 +1148,7 @@ class _EyeColumn extends StatelessWidget {
         }
       }
     }
-    return parts. join(', ');
+    return parts.join(', ');
   }
 }
 
@@ -1143,9 +1165,9 @@ class _Section extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow:  [
+        boxShadow: [
           BoxShadow(
-            color: Colors.black. withOpacity(0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1162,7 +1184,7 @@ class _Section extends StatelessWidget {
               color: Color(0xFF1E293B),
             ),
           ),
-          const SizedBox(height:  10),
+          const SizedBox(height: 10),
           child,
         ],
       ),
@@ -1179,7 +1201,7 @@ class _FollowupsTab extends ConsumerWidget {
     final followupsAsync = ref.watch(caseFollowupsProvider(caseId));
     return followupsAsync.when(
       data: (list) {
-        if (list. isEmpty) {
+        if (list.isEmpty) {
           return _EmptyState(
             icon: Icons.event_note_outlined,
             title: 'No Follow-ups Yet',
@@ -1191,16 +1213,18 @@ class _FollowupsTab extends ConsumerWidget {
         return Column(
           children: [
             Expanded(
-              child: ListView. separated(
+              child: ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: list.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final f = list[index];
-                  final date =
-                      f.dateOfExamination.toIso8601String().split('T').first;
+                  final date = f.dateOfExamination
+                      .toIso8601String()
+                      .split('T')
+                      .first;
                   return Card(
-                    child:  Padding(
+                    child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1220,7 +1244,7 @@ class _FollowupsTab extends ConsumerWidget {
                           const SizedBox(height: 8),
                           Text('Interval: ${f.intervalDays} days'),
                           if (f.management != null &&
-                              f.management!. isNotEmpty) ...[
+                              f.management!.isNotEmpty) ...[
                             const SizedBox(height: 6),
                             Text('Management: ${f.management}'),
                           ],
@@ -1228,7 +1252,7 @@ class _FollowupsTab extends ConsumerWidget {
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
-                              onPressed:  () => context.push(
+                              onPressed: () => context.push(
                                 '/cases/$caseId/followup/${f.id}',
                               ),
                               child: const Text('Edit'),
@@ -1245,8 +1269,8 @@ class _FollowupsTab extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: SizedBox(
                 width: double.infinity,
-                child: ElevatedButton. icon(
-                  onPressed:  () => context.push('/cases/$caseId/followup'),
+                child: ElevatedButton.icon(
+                  onPressed: () => context.push('/cases/$caseId/followup'),
                   icon: const Icon(Icons.add, color: Colors.white),
                   label: const Text('Add Follow-up'),
                 ),
@@ -1255,22 +1279,22 @@ class _FollowupsTab extends ConsumerWidget {
           ],
         );
       },
-      loading: () => const Center(child:  CircularProgressIndicator()),
+      loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Failed to load follow-ups:  $e')),
     );
   }
 }
 
 class _MediaTab extends ConsumerWidget {
-  const _MediaTab({required this. caseId});
+  const _MediaTab({required this.caseId});
   final String caseId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final mediaAsync = ref. watch(caseMediaProvider(caseId));
+    final mediaAsync = ref.watch(caseMediaProvider(caseId));
     return mediaAsync.when(
       data: (list) {
-        if (list. isEmpty) {
+        if (list.isEmpty) {
           return _EmptyState(
             icon: Icons.photo_library_outlined,
             title: 'No Media Files',
@@ -1303,7 +1327,10 @@ class _MediaTab extends ConsumerWidget {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () => context.push('/cases/$caseId/media'),
-                  icon: const Icon(Icons.add_photo_alternate, color: Colors.white),
+                  icon: const Icon(
+                    Icons.add_photo_alternate,
+                    color: Colors.white,
+                  ),
                   label: const Text('Add Media'),
                 ),
               ),
@@ -1318,7 +1345,7 @@ class _MediaTab extends ConsumerWidget {
 }
 
 class _MediaTile extends ConsumerWidget {
-  const _MediaTile({required this. item});
+  const _MediaTile({required this.item});
 
   final CaseMediaItem item;
 
@@ -1326,7 +1353,7 @@ class _MediaTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final repo = ref.watch(clinicalCasesRepositoryProvider);
     return Card(
-      child:  Padding(
+      child: Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1335,7 +1362,7 @@ class _MediaTile extends ConsumerWidget {
               child: FutureBuilder<String>(
                 future: repo.getSignedUrl(item.storagePath),
                 builder: (context, snapshot) {
-                  if (! snapshot.hasData) {
+                  if (!snapshot.hasData) {
                     return const Center(
                       child: CircularProgressIndicator(strokeWidth: 2),
                     );
@@ -1357,9 +1384,9 @@ class _MediaTile extends ConsumerWidget {
                   }
                   return ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image. network(
+                    child: Image.network(
                       url,
-                      fit: BoxFit. cover,
+                      fit: BoxFit.cover,
                       width: double.infinity,
                     ),
                   );
@@ -1368,13 +1395,10 @@ class _MediaTile extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              item.category. replaceAll('_', ' '),
+              item.category.replaceAll('_', ' '),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight. w600,
-              ),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
             ),
             if (item.note != null && item.note!.isNotEmpty)
               Text(
@@ -1392,7 +1416,7 @@ class _MediaTile extends ConsumerWidget {
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState({
-    required this. icon,
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.actionLabel,
@@ -1431,8 +1455,8 @@ class _EmptyState extends StatelessWidget {
                   Text(
                     subtitle,
                     style: const TextStyle(
-                      fontSize:  14,
-                      color:  Color(0xFF94A3B8),
+                      fontSize: 14,
+                      color: Color(0xFF94A3B8),
                     ),
                   ),
                 ],
@@ -1459,7 +1483,7 @@ class _AssessmentTab extends ConsumerStatefulWidget {
     required this.recipients,
     required this.caseOwnerId,
     required this.patientName,
-    required this. uidNumber,
+    required this.uidNumber,
     required this.mrNumber,
     required this.caseStatus,
   });
@@ -1488,9 +1512,9 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
     final doctorsAsync = ref.watch(assessmentDoctorsProvider);
     final authId = authState.session?.user.id;
     final isOwner = authId != null && authId == widget.caseOwnerId;
-    final isReviewer = profileState.profile?. designation == 'Reviewer';
+    final isReviewer = profileState.profile?.designation == 'Reviewer';
 
-    if (! _seededSelection && widget.recipients.isNotEmpty) {
+    if (!_seededSelection && widget.recipients.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         setState(() {
           _selectedRecipients
@@ -1534,12 +1558,12 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
                     )
                   else
                     Column(
-                      crossAxisAlignment:  CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
                           'Submitted to',
                           style: TextStyle(
-                            fontWeight: FontWeight. w700,
+                            fontWeight: FontWeight.w700,
                             fontSize: 14,
                           ),
                         ),
@@ -1547,10 +1571,10 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: widget. recipients
+                          children: widget.recipients
                               .map(
                                 (r) => Chip(
-                                  label:  Text('${r.name} (${r.designation})'),
+                                  label: Text('${r.name} (${r.designation})'),
                                   avatar: r.canReview
                                       ? const Icon(
                                           Icons.verified,
@@ -1560,7 +1584,7 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
                                       : null,
                                 ),
                               )
-                              . toList(),
+                              .toList(),
                         ),
                       ],
                     ),
@@ -1588,20 +1612,24 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
                       controller: _searchController,
                       decoration: const InputDecoration(
                         prefixIcon: Icon(Icons.search),
-                        hintText:  'Search doctors by name or designation',
+                        hintText: 'Search doctors by name or designation',
                       ),
                       onChanged: (_) => setState(() {}),
                     ),
                     const SizedBox(height: 12),
                     doctorsAsync.when(
                       data: (list) {
-                        final query = _searchController.text.trim().toLowerCase();
+                        final query = _searchController.text
+                            .trim()
+                            .toLowerCase();
                         final filtered = query.isEmpty
                             ? list
                             : list.where((p) {
-                                final centre = p.aravindCentre ??  p.centre;
+                                final centre = p.aravindCentre ?? p.centre;
                                 return p.name.toLowerCase().contains(query) ||
-                                    p.designation.toLowerCase().contains(query) ||
+                                    p.designation.toLowerCase().contains(
+                                      query,
+                                    ) ||
                                     centre.toLowerCase().contains(query);
                               }).toList();
                         if (filtered.isEmpty) {
@@ -1611,24 +1639,24 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: filtered.length,
-                          separatorBuilder: (_, __) =>
-                              const Divider(height: 1),
+                          separatorBuilder: (_, __) => const Divider(height: 1),
                           itemBuilder: (context, index) {
                             final doctor = filtered[index];
-                            final isSelected =
-                                _selectedRecipients.contains(doctor.id);
+                            final isSelected = _selectedRecipients.contains(
+                              doctor.id,
+                            );
                             return CheckboxListTile(
                               value: isSelected,
                               title: Text(doctor.name),
                               subtitle: Text(
-                                '${doctor.designation} · ${doctor.aravindCentre ??  doctor.centre}',
+                                '${doctor.designation} · ${doctor.aravindCentre ?? doctor.centre}',
                               ),
                               onChanged: (value) {
                                 setState(() {
                                   if (value == true) {
                                     _selectedRecipients.add(doctor.id);
                                   } else {
-                                    _selectedRecipients.remove(doctor. id);
+                                    _selectedRecipients.remove(doctor.id);
                                   }
                                 });
                               },
@@ -1651,13 +1679,13 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: _selectedRecipients.isEmpty || mutation.isLoading
-                    ?  null
+                    ? null
                     : () async {
                         await ref
                             .read(assessmentMutationProvider.notifier)
                             .submitRecipients(
                               widget.caseId,
-                              _selectedRecipients. toList(),
+                              _selectedRecipients.toList(),
                             );
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -1671,7 +1699,7 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
                         );
                       },
                 icon: mutation.isLoading
-                    ?  const SizedBox(
+                    ? const SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
@@ -1686,7 +1714,7 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
               ),
             ),
           ],
-          if (! isOwner && widget.recipients.isNotEmpty) ...[
+          if (!isOwner && widget.recipients.isNotEmpty) ...[
             const SizedBox(height: 12),
             Card(
               child: Padding(
@@ -1699,9 +1727,9 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
                     Expanded(
                       child: Text(
                         'You have view access to this case. Only reviewers can submit scores.',
-                        style: Theme.of(context).textTheme.bodySmall?. copyWith(
-                              color:  const Color(0xFF64748B),
-                            ),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF64748B),
+                        ),
                       ),
                     ),
                   ],
@@ -1717,11 +1745,10 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
                 onPressed: () {
                   final item = ReviewItem(
                     entityType: 'clinical_case',
-                    entityId:  widget.caseId,
+                    entityId: widget.caseId,
                     traineeId: widget.caseOwnerId,
                     title: widget.patientName,
-                    subtitle: 
-                        'UID ${widget.uidNumber} | MR ${widget.mrNumber}',
+                    subtitle: 'UID ${widget.uidNumber} | MR ${widget.mrNumber}',
                     updatedAt: DateTime.now(),
                   );
                   context.push(
@@ -1741,7 +1768,7 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
 }
 
 class _StatusPill extends StatelessWidget {
-  const _StatusPill({required this. status});
+  const _StatusPill({required this.status});
 
   final String status;
 
@@ -1765,11 +1792,11 @@ class _StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color. withOpacity(0.12),
+        color: color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        normalized. toUpperCase(),
+        normalized.toUpperCase(),
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
