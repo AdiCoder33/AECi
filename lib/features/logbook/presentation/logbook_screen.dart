@@ -508,6 +508,37 @@ class _SectionBody extends StatelessWidget {
             return _FlatCaseListView(cases: filtered);
           }
           return _CaseListView(cases: filtered);
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: filtered.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final c = filtered[index];
+              return Card(
+                child: ListTile(
+                  title: Text(c.patientName),
+                  subtitle: Text('UID ${c.uidNumber} | MR ${c.mrNumber}'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    switch (section) {
+                      case logbookSectionRop:
+                        context.push('/cases/rop/${c.id}');
+                        return;
+                      case logbookSectionRetinoblastoma:
+                        context.push('/cases/retinoblastoma/${c.id}');
+                        return;
+                      case logbookSectionLaser:
+                        context.push('/cases/laser/${c.id}');
+                        return;
+                      default:
+                        context.push('/cases/${c.id}');
+                        return;
+                    }
+                  },
+                ),
+              );
+            },
+          );
         },
         loading: () => const Center(
           child: CircularProgressIndicator(

@@ -269,7 +269,7 @@ class _SearchResults extends ConsumerWidget {
                 (c) => ListTile(
                   title: Text(c.patientName),
                   subtitle: Text('${c.uidNumber} - ${c.diagnosis}'),
-                  onTap: () => GoRouter.of(context).go('/cases/${c.id}'),
+                  onTap: () => GoRouter.of(context).go(_caseRoute(c)),
                 ),
               ),
               const SizedBox(height: 12),
@@ -324,4 +324,18 @@ class _SearchResults extends ConsumerWidget {
       },
     );
   }
+}
+
+String _caseRoute(ClinicalCase c) {
+  final keywords = c.keywords.map((k) => k.toLowerCase()).toList();
+  if (keywords.any((k) => k.contains('retinoblastoma'))) {
+    return '/cases/retinoblastoma/${c.id}';
+  }
+  if (keywords.any((k) => k == 'rop')) {
+    return '/cases/rop/${c.id}';
+  }
+  if (keywords.any((k) => k == 'laser')) {
+    return '/cases/laser/${c.id}';
+  }
+  return '/cases/${c.id}';
 }

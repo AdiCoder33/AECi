@@ -39,6 +39,9 @@ import '../features/clinical_cases/presentation/wizard/clinical_case_wizard_scre
 import '../features/clinical_cases/presentation/retinoblastoma_form_screen.dart';
 import '../features/clinical_cases/presentation/rop_screening_form_screen.dart';
 import '../features/clinical_cases/presentation/laser_form_screen.dart';
+import '../features/clinical_cases/presentation/rop_detail_screen.dart';
+import '../features/clinical_cases/presentation/retinoblastoma_detail_screen.dart';
+import '../features/clinical_cases/presentation/laser_detail_screen.dart';
 import '../features/reviewer/presentation/reviewer_queue_screen.dart';
 import '../features/reviewer/presentation/reviewer_reviewed_screen.dart';
 import '../features/reviewer/presentation/reviewer_assessment_screen.dart';
@@ -347,6 +350,27 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: ':id',
                 name: 'caseDetail',
                 builder: (context, state) => ClinicalCaseDetailScreen(
+                  caseId: state.pathParameters['id']!,
+                ),
+              ),
+              GoRoute(
+                path: 'rop/:id',
+                name: 'ropDetail',
+                builder: (context, state) => RopScreeningDetailScreen(
+                  caseId: state.pathParameters['id']!,
+                ),
+              ),
+              GoRoute(
+                path: 'retinoblastoma/:id',
+                name: 'retinoblastomaDetail',
+                builder: (context, state) => RetinoblastomaDetailScreen(
+                  caseId: state.pathParameters['id']!,
+                ),
+              ),
+              GoRoute(
+                path: 'laser/:id',
+                name: 'laserDetail',
+                builder: (context, state) => LaserDetailScreen(
                   caseId: state.pathParameters['id']!,
                 ),
               ),

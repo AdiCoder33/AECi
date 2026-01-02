@@ -568,12 +568,12 @@ class _RopScreeningFormScreenState extends ConsumerState<RopScreeningFormScreen>
       if (widget.caseId == null) {
         final id = await mutation.create(data);
         if (mounted) {
-          context.go('/cases/$id');
+          context.go('/cases/rop/$id');
         }
       } else {
         await mutation.update(widget.caseId!, data);
         if (mounted) {
-          context.go('/cases/${widget.caseId}');
+          context.go('/cases/rop/${widget.caseId}');
         }
       }
     } catch (e) {
