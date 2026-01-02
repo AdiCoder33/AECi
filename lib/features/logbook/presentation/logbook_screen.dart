@@ -33,6 +33,8 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
             ? ref.watch(clinicalCaseListByKeywordProvider('retinoblastoma'))
             : section == logbookSectionRop
                 ? ref.watch(clinicalCaseListByKeywordProvider('rop'))
+                : section == logbookSectionLaser
+                    ? ref.watch(clinicalCaseListByKeywordProvider('laser'))
                 : ref.watch(clinicalCaseListProvider))
         : null;
     final publications =
@@ -85,6 +87,9 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
               return;
             case logbookSectionRetinoblastoma:
               context.push('/cases/new?type=retinoblastoma');
+              return;
+            case logbookSectionLaser:
+              context.push('/cases/new?type=laser');
               return;
             case logbookSectionAtlas:
             case logbookSectionSurgicalRecord:
@@ -505,12 +510,15 @@ class _SectionBody extends StatelessWidget {
             .toList();
       case logbookSectionRop:
         return list.where((c) => _hasKeyword(c, 'rop')).toList();
+      case logbookSectionLaser:
+        return list.where((c) => _hasKeyword(c, 'laser')).toList();
       case logbookSectionOpdCases:
         return list
             .where(
               (c) =>
                   !_hasKeyword(c, 'retinoblastoma') &&
-                  !_hasKeyword(c, 'rop'),
+                  !_hasKeyword(c, 'rop') &&
+                  !_hasKeyword(c, 'laser'),
             )
             .toList();
     }
