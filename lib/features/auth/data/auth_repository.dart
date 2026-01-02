@@ -9,14 +9,10 @@ class AuthRepository {
 
   final supabase.SupabaseClient _client;
   
-  // Initialize GoogleSignIn with client ID for web and server
+  // Initialize GoogleSignIn with client ID for web
   late final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email'],
     clientId: const String.fromEnvironment(
-      'GOOGLE_WEB_CLIENT_ID',
-      defaultValue: '362737514668-ejdc1dvss4j3r9l7negebv1dfn7gto64.apps.googleusercontent.com',
-    ),
-    serverClientId: const String.fromEnvironment(
       'GOOGLE_WEB_CLIENT_ID',
       defaultValue: '362737514668-ejdc1dvss4j3r9l7negebv1dfn7gto64.apps.googleusercontent.com',
     ),
