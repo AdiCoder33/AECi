@@ -57,7 +57,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final refreshStream = StreamGroup.merge([authChanges, profileStream]);
 
   return GoRouter(
-    initialLocation: '/splash',
+    initialLocation: '/loading',
     refreshListenable: GoRouterRefreshStream(refreshStream),
     redirect: (context, state) {
       final loggedIn = authState.session != null;
@@ -101,11 +101,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/splash',
-        name: 'splash',
-        builder: (context, state) => const SplashScreen(),
-      ),
+      // Splash screen removed for direct GIF launch
       GoRoute(
         path: '/loading',
         name: 'loading',

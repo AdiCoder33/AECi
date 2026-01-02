@@ -16,12 +16,13 @@ class HomeScreen extends ConsumerWidget {
     final profile = profileState.profile;
     final displayName = profile?.name;
     final isConsultant = profile?.designation == 'Consultant';
-    final fellowStats = ref.watch(fellowDashboardProvider);
-    final consultantStats = ref.watch(consultantDashboardProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0B5FFF),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -34,74 +35,45 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _ProfileHeader(
-                name: displayName,
-                designation: profile?.designation,
-                centre: profile?.centre,
-                onTap: () => context.go('/profile'),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Logbook Overview',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    const SizedBox(height: 12),
-                    fellowStats.when(
-                      data: (stats) => _StatsGrid(
-                        stats: [
-                          _StatData('Drafts', stats.drafts, Icons.edit_note, const Color(0xFFF59E0B)),
-                          _StatData('Submitted', stats.submitted, Icons.upload_file, const Color(0xFF0B5FFF)),
-                          _StatData('Approved', stats.approved, Icons.check_circle_outline, const Color(0xFF10B981)),
-                        ],
-                      ),
-                      loading: () => const Center(child: CircularProgressIndicator()),
-                      error: (e, _) => Text('Stats error: $e', style: const TextStyle(color: Colors.red)),
-                    ),
-                    if (isConsultant) ...[
-                      const SizedBox(height: 20),
+        child: Container(
+          color: const Color(0xFFF8FAFC),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20),
+                // Greeting Card
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _GreetingCard(
+                    name: displayName,
+                    designation: profile?.designation,
+                    centre: profile?.centre,
+                    onTap: () => context.go('/profile'),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Quick Actions Section
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        'Consultant Dashboard',
+                        'Quick Actions',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF1E293B),
                             ),
                       ),
-                      const SizedBox(height: 12),
-                      consultantStats.when(
-                        data: (stats) => _StatsGrid(
-                          stats: [
-                            _StatData('Pending', stats.pending, Icons.pending_actions, const Color(0xFFF59E0B)),
-                            _StatData('Approved', stats.approvalsThisMonth, Icons.verified_outlined, const Color(0xFF10B981)),
-                          ],
-                        ),
-                        loading: () => const Center(child: CircularProgressIndicator()),
-                        error: (e, _) => Text('Error: $e', style: const TextStyle(color: Colors.red)),
-                      ),
+                      const SizedBox(height: 16),
+                      _ActionGrid(isConsultant: isConsultant),
+                      const SizedBox(height: 32),
                     ],
-                    const SizedBox(height: 20),
-                    Text(
-                      'Quick Actions',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    const SizedBox(height: 12),
-                    _ActionGrid(isConsultant: isConsultant),
-                    const SizedBox(height: 24),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -116,86 +88,213 @@ class _ActionGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tiles = <_ActionTile>[
-      _ActionTile('Teaching', Icons.school, '/teaching', const Color(0xFFF59E0B)),
-      _ActionTile('Analytics', Icons.insights, '/analytics', const Color(0xFF8B5CF6)),
-      _ActionTile('Research', Icons.science, '/research', const Color(0xFFEC4899)),
-      _ActionTile('Publications', Icons.slideshow, '/publications', const Color(0xFF06B6D4)),
-      if (isConsultant) _ActionTile('Reviews', Icons.rate_review, '/review-queue', const Color(0xFFEF4444)),
-      if (isConsultant) _ActionTile('Proposals', Icons.inbox, '/teaching/proposals', const Color(0xFF6366F1)),
+    final actions = <_ActionData>[
+      _ActionData(
+        title: 'OPD Cases',
+        icon: Icons.local_hospital,
+        color: const Color(0xFF0B5FFF),
+        route: '/cases',
+        description: 'Manage outpatient cases',
+      ),
+      _ActionData(
+        title: 'Atlas',
+        icon: Icons.collections,
+        color: const Color(0xFF8B5CF6),
+        route: '/atlas',
+        description: 'Browse medical atlas',
+      ),
+      _ActionData(
+        title: 'Surgical Record',
+        icon: Icons.medical_services,
+        color: const Color(0xFFEF4444),
+        route: '/surgical',
+        description: 'Log surgical procedures',
+      ),
+      _ActionData(
+        title: 'Learning',
+        icon: Icons.school,
+        color: const Color(0xFFF59E0B),
+        route: '/teaching',
+        description: 'Educational resources',
+      ),
+      _ActionData(
+        title: 'RB Screening',
+        icon: Icons.child_care,
+        color: const Color(0xFFEC4899),
+        route: '/screening/rb',
+        description: 'Retinoblastoma screening',
+      ),
+      _ActionData(
+        title: 'ROP Screening',
+        icon: Icons.baby_changing_station,
+        color: const Color(0xFF06B6D4),
+        route: '/screening/rop',
+        description: 'Retinopathy of prematurity',
+      ),
+      _ActionData(
+        title: 'Publications',
+        icon: Icons.article,
+        color: const Color(0xFF10B981),
+        route: '/publications',
+        description: 'Research publications',
+      ),
+      if (isConsultant)
+        _ActionData(
+          title: 'Reviews',
+          icon: Icons.rate_review,
+          color: const Color(0xFF6366F1),
+          route: '/review-queue',
+          description: 'Review submissions',
+        ),
     ];
 
-    return GridView.count(
+    return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.4,
-      children: tiles,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 1.1,
+      ),
+      itemCount: actions.length,
+      itemBuilder: (context, index) => _ActionCard(action: actions[index]),
     );
   }
 }
 
-class _ActionTile extends StatelessWidget {
-  const _ActionTile(this.label, this.icon, this.route, this.color);
+// Action data model
+class _ActionData {
+  const _ActionData({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.route,
+    required this.description,
+  });
 
-  final String label;
+  final String title;
   final IconData icon;
-  final String route;
   final Color color;
+  final String route;
+  final String description;
+}
+
+// Modern Action Card with submit button
+class _ActionCard extends StatelessWidget {
+  const _ActionCard({required this.action});
+
+  final _ActionData action;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => context.go(route),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE5EAF2)),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 8,
-              offset: Offset(0, 2),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: action.color.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => context.go(action.route),
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Icon container
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        action.color,
+                        action.color.withOpacity(0.7),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: action.color.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    action.icon,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Title
+                Text(
+                  action.title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                // Description
+                Text(
+                  action.description,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[600],
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                // Submit button
+                Container(
+                  width: double.infinity,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: action.color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Open',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: action.color,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({
+// Greeting Card Component
+class _GreetingCard extends StatelessWidget {
+  const _GreetingCard({
     required this.name,
     required this.designation,
     required this.centre,
@@ -207,64 +306,138 @@ class _ProfileHeader extends StatelessWidget {
   final String? centre;
   final VoidCallback onTap;
 
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  }
+
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF0B5FFF), Color(0xFF0A2E73)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFF0B5FFF),
+                Color(0xFF0A47B8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0B5FFF).withOpacity(0.4),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+                spreadRadius: 0,
+              ),
+            ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF0B5FFF).withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.2),
-                border: Border.all(color: Colors.white, width: 2),
-              ),
-              child: const Icon(Icons.visibility, color: Colors.white, size: 32),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name ?? 'Aravind Trainee',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
+          padding: const EdgeInsets.all(24),
+          child: Row(
+            children: [
+              // Avatar
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 3,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    [designation, centre].where((e) => (e ?? '').isNotEmpty).join(' • '),
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14,
-                    ),
+                ),
+                child: Container(
+                  margin: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
                   ),
-                ],
+                  child: const Icon(
+                    Icons.visibility,
+                    color: Colors.white,
+                    size: 36,
+                  ),
+                ),
               ),
-            ),
-            const Icon(Icons.chevron_right, color: Colors.white),
-          ],
+              const SizedBox(width: 20),
+              // Text content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _getGreeting(),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      name ?? 'Aravind Trainee',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        height: 1.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    if (designation != null || centre != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          [designation, centre]
+                              .where((e) => (e ?? '').isNotEmpty)
+                              .join(' • '),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              // Arrow icon
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -277,72 +450,4 @@ class _StatData {
   final int value;
   final IconData icon;
   final Color color;
-}
-
-class _StatsGrid extends StatelessWidget {
-  const _StatsGrid({required this.stats});
-  final List<_StatData> stats;
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 0.95,
-      ),
-      itemCount: stats.length,
-      itemBuilder: (context, index) {
-        final stat = stats[index];
-        return Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE5EAF2)),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 6,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: stat.color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(stat.icon, color: stat.color, size: 20),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '${stat.value}',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                stat.label,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 10, color: Color(0xFF475569)),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 }
