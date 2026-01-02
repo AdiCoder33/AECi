@@ -526,7 +526,22 @@ class _SectionBody extends StatelessWidget {
                   title: Text(c.patientName),
                   subtitle: Text('UID ${c.uidNumber} | MR ${c.mrNumber}'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/cases/${c.id}'),
+                  onTap: () {
+                    switch (section) {
+                      case logbookSectionRop:
+                        context.push('/cases/rop/${c.id}');
+                        return;
+                      case logbookSectionRetinoblastoma:
+                        context.push('/cases/retinoblastoma/${c.id}');
+                        return;
+                      case logbookSectionLaser:
+                        context.push('/cases/laser/${c.id}');
+                        return;
+                      default:
+                        context.push('/cases/${c.id}');
+                        return;
+                    }
+                  },
                 ),
               );
             },

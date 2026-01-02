@@ -134,7 +134,6 @@ class _SummaryTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final examDate = c.dateOfExamination.toIso8601String().split('T').first;
-    final laserSection = _buildLaserSection(c.anteriorSegment);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -375,99 +374,6 @@ class _SummaryTab extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Anterior Segment',
-          child: Text(
-            _formatAnterior(c.anteriorSegment),
-            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Fundus Examination',
-          child: Text(
-            _formatFundus(c.fundus),
-            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
-        ),
-        if (laserSection != null) ...[
-          const SizedBox(height: 12),
-          laserSection,
-        ],
-        if (_hasRopMeta(c.fundus)) ...[
-          const SizedBox(height: 12),
-          _Section(
-            title: 'ROP Assessment',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: _buildRopMetaRows(c.fundus),
-            ),
-          ),
-        ],
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Diagnosis',
-          child: Text(
-            c.diagnosisOther == null || c.diagnosisOther!.isEmpty
-                ? c.diagnosis
-                : '${c.diagnosis} (${c.diagnosisOther})',
-            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
-        ),
-        if (c.management != null && c.management!.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _Section(
-            title: 'Management',
-            child: Text(
-              c.management!,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-            ),
-          ),
-        ],
-        if (c.learningPoint != null && c.learningPoint!.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _Section(
-            title: 'Learning Point',
-            child: Text(
-              c.learningPoint!,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-            ),
-          ),
-        ],
-        if (c.keywords.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _Section(
-            title: 'Keywords',
-            child: Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: c.keywords
-                  .map(
-                    (k) => Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: Text(
-                        k,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF475569),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-        ],
       ],
     );
   }

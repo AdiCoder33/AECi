@@ -504,12 +504,12 @@ class _RetinoblastomaScreeningFormScreenState
       if (widget.caseId == null) {
         final id = await mutation.create(data);
         if (mounted) {
-          context.go('/cases/$id');
+          context.go('/cases/retinoblastoma/$id');
         }
       } else {
         await mutation.update(widget.caseId!, data);
         if (mounted) {
-          context.go('/cases/${widget.caseId}');
+          context.go('/cases/retinoblastoma/${widget.caseId}');
         }
       }
     } catch (e) {

@@ -8,7 +8,6 @@ import '../application/logbook_providers.dart';
 import '../domain/elog_entry.dart';
 import '../../quality/data/quality_repository.dart';
 import '../../teaching/application/teaching_controller.dart';
-import '../../quality/data/quality_repository.dart';
 
 class EntryDetailScreen extends ConsumerWidget {
   const EntryDetailScreen({super.key, required this.entryId});
@@ -560,6 +559,10 @@ class _PayloadView extends ConsumerWidget {
         ...List<String>.from(payload['followUpVisitImagingPaths'] ?? []),
       ];
     }
+    final recordPreOpPaths =
+        List<String>.from(payload['preOpImagePaths'] ?? []);
+    final recordPostOpPaths =
+        List<String>.from(payload['postOpImagePaths'] ?? []);
 
     final videoLink = payload['surgicalVideoLink'] as String?;
     final videoPaths = List<String>.from(payload['videoPaths'] ?? []);
@@ -663,52 +666,35 @@ class _PayloadView extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 8),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
+            _ImageGrid(paths: imagePaths),
+          ],
+          if (entry.moduleType == moduleRecords &&
+              recordPreOpPaths.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Pre-op images',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1E293B),
+                fontSize: 14,
               ),
-              itemCount: imagePaths.length,
-              itemBuilder: (context, index) {
-                final path = imagePaths[index];
-                return FutureBuilder(
-                  future: signedCache.getUrl(path),
-                  builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Color(0xFF0B5FFF),
-                          ),
-                        ),
-                      );
-                    }
-                    return GestureDetector(
-                      onTap: () => showDialog(
-                        context: context,
-                        builder: (_) => Dialog(
-                          child: InteractiveViewer(
-                            child: Image.network(snapshot.data!),
-                          ),
-                        ),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(snapshot.data!, fit: BoxFit.cover),
-                      ),
-                    );
-                  },
-                );
-              },
             ),
+            const SizedBox(height: 8),
+            _ImageGrid(paths: recordPreOpPaths),
+          ],
+          if (entry.moduleType == moduleRecords &&
+              recordPostOpPaths.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Post-op images',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1E293B),
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 8),
+            _ImageGrid(paths: recordPostOpPaths),
           ],
         ],
       ),
@@ -730,11 +716,14 @@ class _PayloadView extends ConsumerWidget {
         final brief =
             payload['briefDescription'] ?? payload['additionalInformation'] ?? '';
         final mediaType = payload['mediaType'] ?? '';
+        final keywords = entry.keywords;
         return [
           if (mediaType.toString().isNotEmpty)
             _FieldRow('Type of media', mediaType.toString()),
           _FieldRow('Diagnosis', diagnosis.toString()),
           _FieldRow('Brief description', brief.toString()),
+          if (keywords.isNotEmpty)
+            _FieldRow('Keywords', keywords.join(', ')),
           if ((payload['additionalInformation'] ?? '').toString().isNotEmpty &&
               payload['additionalInformation'] != payload['briefDescription'])
             _FieldRow('Additional info', payload['additionalInformation']),
@@ -761,6 +750,10 @@ class _PayloadView extends ConsumerWidget {
         final assistedBy =
             payload['assistedBy'] ?? payload['surgeonOrAssistant'] ?? '';
         final duration = payload['duration'] ?? '';
+        final rightEye = payload['rightEye'] ?? '';
+        final leftEye = payload['leftEye'] ?? '';
+        final surgicalNotes = payload['surgicalNotes'] ?? '';
+        final complications = payload['complications'] ?? '';
         return [
           if (patientName.toString().isNotEmpty)
             _FieldRow('Patient name', patientName.toString()),
@@ -770,10 +763,75 @@ class _PayloadView extends ConsumerWidget {
           _FieldRow('Surgery', surgery.toString()),
           _FieldRow('Assisted by', assistedBy.toString()),
           _FieldRow('Duration', duration.toString()),
+          if (rightEye.toString().isNotEmpty)
+            _FieldRow('Right eye', rightEye.toString()),
+          if (leftEye.toString().isNotEmpty)
+            _FieldRow('Left eye', leftEye.toString()),
+          if (surgicalNotes.toString().isNotEmpty)
+            _FieldRow('Surgical notes', surgicalNotes.toString()),
+          if (complications.toString().isNotEmpty)
+            _FieldRow('Complications', complications.toString()),
         ];
       default:
         return [];
     }
+  }
+}
+
+class _ImageGrid extends ConsumerWidget {
+  const _ImageGrid({required this.paths});
+
+  final List<String> paths;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final signedCache = ref.read(signedUrlCacheProvider.notifier);
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+      ),
+      itemCount: paths.length,
+      itemBuilder: (context, index) {
+        final path = paths[index];
+        return FutureBuilder(
+          future: signedCache.getUrl(path),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Color(0xFF0B5FFF),
+                  ),
+                ),
+              );
+            }
+            return GestureDetector(
+              onTap: () => showDialog(
+                context: context,
+                builder: (_) => Dialog(
+                  child: InteractiveViewer(
+                    child: Image.network(snapshot.data!),
+                  ),
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(snapshot.data!, fit: BoxFit.cover),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }
 
