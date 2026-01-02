@@ -116,6 +116,19 @@ class ReviewerRepository {
         .toList();
   }
 
+  Future<List<ReviewerAssessment>> listAssessmentsForTrainee() async {
+    final uid = _client.auth.currentUser?.id;
+    if (uid == null) return [];
+    final rows = await _client
+        .from('reviewer_assessments')
+        .select('*')
+        .eq('trainee_id', uid)
+        .order('updated_at', ascending: false);
+    return (rows as List)
+        .map((e) => ReviewerAssessment.fromMap(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
   Future<List<ReviewItem>> listPendingItems({int sinceDays = 90}) async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) return [];

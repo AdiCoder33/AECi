@@ -1047,7 +1047,7 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
                               value: isSelected,
                               title: Text(doctor.name),
                               subtitle: Text(
-                                '${doctor.designation} · ${doctor.aravindCentre ?? doctor.centre}',
+                                '${doctor.designation} | ${doctor.aravindCentre ?? doctor.centre}',
                               ),
                               onChanged: (value) {
                                 setState(() {
