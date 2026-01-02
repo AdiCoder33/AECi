@@ -103,51 +103,7 @@ class EntryDetailScreen extends ConsumerWidget {
                       const SizedBox(height: 16),
                       const Divider(),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          _StatusBadge(status: entry.status),
-                          const Spacer(),
-                          Text(
-                            'Updated ${_formatDate(entry.updatedAt)}',
-                            style: const TextStyle(
-                              color: Color(0xFF64748B),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.category_outlined,
-                              size: 16,
-                              color: Color(0xFF64748B),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              entry.moduleType,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF475569),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                       if (entry.keywords.isNotEmpty) ...[
-                        const SizedBox(height: 12),
                         Wrap(
                           spacing: 6,
                           runSpacing: 6,
@@ -182,203 +138,8 @@ class EntryDetailScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                _AuthorInfo(author: entry.authorProfile),
-                const SizedBox(height: 12),
                 _PayloadView(entry: entry),
-                const SizedBox(height: 12),
-                _QualitySection(entry: entry),
-                const SizedBox(height: 12),
-                _ReviewPanel(entry: entry),
-                const SizedBox(height: 12),
-                _SimilarEntries(entry: entry),
                 const SizedBox(height: 16),
-                const SizedBox(height: 16),
-                if (entry.status == statusApproved)
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        final note = await showDialog<String>(
-                          context: context,
-                          builder: (_) {
-                            final controller = TextEditingController();
-                            return AlertDialog(
-                              title: const Text('Propose to Teaching Library'),
-                              content: TextField(
-                                controller: controller,
-                                decoration: const InputDecoration(
-                                  hintText: 'Optional note',
-                                ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.of(context, rootNavigator: true)
-                                          .pop(null),
-                                  child: const Text('Cancel'),
-                                ),
-                                TextButton(
-                                  onPressed: () =>
-                                      Navigator.of(context, rootNavigator: true)
-                                          .pop(controller.text.trim()),
-                                  child: const Text('Submit'),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                        if (note != null) {
-                          try {
-                            await ref
-                                .read(teachingMutationProvider.notifier)
-                                .propose(entry.id, note);
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Proposal submitted')),
-                              );
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(SnackBar(content: Text('Failed: $e')));
-                            }
-                          }
-                        }
-                      },
-                      icon: const Icon(Icons.school, color: Colors.white),
-                      label: const Text(
-                        'Propose to Teaching Library',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF10B981),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
-                  ),
-                if (canEdit)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: () => context.pushNamed(
-                          'logbookEdit',
-                          pathParameters: {'id': entry.id},
-                          extra: entry.moduleType,
-                        ),
-                        icon: const Icon(Icons.edit, color: Colors.white),
-                        label: const Text(
-                          'Edit',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0B5FFF),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 0,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: entry.status == statusDraft
-                            ? () async {
-                                final confirmed = await showDialog<bool>(
-                                  context: context,
-                                  builder: (_) => AlertDialog(
-                                    title: const Text('Delete entry?'),
-                                    content: const Text(
-                                      'This will remove the entry permanently.',
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.of(context, rootNavigator: true)
-                                                .pop(false),
-                                        child: const Text('Cancel'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.of(context, rootNavigator: true)
-                                                .pop(true),
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: Colors.red,
-                                        ),
-                                        child: const Text('Delete'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                                if (confirmed == true) {
-                                  await ref
-                                      .read(entryMutationProvider.notifier)
-                                      .delete(entry.id);
-                                  if (context.mounted) {
-                                    context.go('/logbook');
-                                  }
-                                }
-                              }
-                            : null,
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        label: const Text(
-                          'Delete Draft',
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: const BorderSide(color: Colors.red),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                if (!canEdit && isOwner)
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFEF3C7),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFFF59E0B),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.lock_outline,
-                          color: Color(0xFFD97706),
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        const Expanded(
-                          child: Text(
-                            'Editing locked while submitted/approved/rejected. You can edit after consultant requests changes.',
-                            style: TextStyle(
-                              color: Color(0xFF92400E),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
               ],
             ),
           );
@@ -733,11 +494,10 @@ class _PayloadView extends ConsumerWidget {
         return [
           if (mediaType.toString().isNotEmpty)
             _FieldRow('Type of media', mediaType.toString()),
-          _FieldRow('Diagnosis', diagnosis.toString()),
-          _FieldRow('Brief description', brief.toString()),
-          if ((payload['additionalInformation'] ?? '').toString().isNotEmpty &&
-              payload['additionalInformation'] != payload['briefDescription'])
-            _FieldRow('Additional info', payload['additionalInformation']),
+          if (diagnosis.toString().isNotEmpty)
+            _FieldRow('Diagnosis', diagnosis.toString()),
+          if (brief.toString().isNotEmpty)
+            _FieldRow('Brief description', brief.toString()),
         ];
       case moduleLearning:
         final surgery =
