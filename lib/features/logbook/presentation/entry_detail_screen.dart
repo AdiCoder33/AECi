@@ -268,80 +268,28 @@ class EntryDetailScreen extends ConsumerWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () => context.pushNamed(
-                                'logbookEdit',
-                                pathParameters: {'id': entry.id},
-                                extra: entry.moduleType,
-                              ),
-                              icon: const Icon(Icons.edit, color: Colors.white),
-                              label: const Text(
-                                'Edit',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0B5FFF),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 0,
-                              ),
-                            ),
+                      ElevatedButton.icon(
+                        onPressed: () => context.pushNamed(
+                          'logbookEdit',
+                          pathParameters: {'id': entry.id},
+                          extra: entry.moduleType,
+                        ),
+                        icon: const Icon(Icons.edit, color: Colors.white),
+                        label: const Text(
+                          'Edit',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () async {
-                                await ref
-                                    .read(entryMutationProvider.notifier)
-                                    .update(
-                                      entry.id,
-                                      ElogEntryUpdate(
-                                        status: statusSubmitted,
-                                        submittedAt: DateTime.now(),
-                                        clearReview: true,
-                                      ),
-                                    );
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        entry.status == statusNeedsRevision
-                                            ? 'Resubmitted for review'
-                                            : 'Submitted for review',
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
-                              icon: const Icon(Icons.send, color: Colors.white),
-                              label: Text(
-                                entry.status == statusNeedsRevision
-                                    ? 'Resubmit'
-                                    : 'Submit',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF10B981),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 0,
-                              ),
-                            ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0B5FFF),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        ],
+                          elevation: 0,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       OutlinedButton.icon(
@@ -792,14 +740,15 @@ class _PayloadView extends ConsumerWidget {
             _FieldRow('Additional info', payload['additionalInformation']),
         ];
       case moduleLearning:
+        final surgery =
+            payload['surgery'] ?? payload['preOpDiagnosisOrPathology'] ?? '';
+        final step = payload['stepName'] ?? payload['teachingPoint'] ?? '';
+        final consultant =
+            payload['consultantName'] ?? payload['surgeon'] ?? '';
         return [
-          _FieldRow(
-            'Pre-op diagnosis / pathology',
-            payload['preOpDiagnosisOrPathology'] ?? '',
-          ),
-          _FieldRow('Surgical video link', payload['surgicalVideoLink'] ?? ''),
-          _FieldRow('Teaching point', payload['teachingPoint'] ?? ''),
-          _FieldRow('Surgeon', payload['surgeon'] ?? ''),
+          _FieldRow('Name of the surgery', surgery.toString()),
+          _FieldRow('Name of the step', step.toString()),
+          _FieldRow('Consultant name', consultant.toString()),
         ];
       case moduleRecords:
         final patientName = payload['patientName'] ?? '';

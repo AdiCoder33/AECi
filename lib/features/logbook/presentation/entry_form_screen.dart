@@ -59,6 +59,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   String? _mediaType;
   String? _recordSex;
   String? _recordSurgery;
+  String? _learningSurgery;
 
   @override
   void initState() {
@@ -107,10 +108,14 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
           ];
           break;
         case moduleLearning:
-          _preOpController.text = payload['preOpDiagnosisOrPathology'] ?? '';
-          _surgicalVideoController.text = payload['surgicalVideoLink'] ?? '';
-          _teachingPointController.text = payload['teachingPoint'] ?? '';
-          _surgeonController.text = payload['surgeon'] ?? '';
+          _learningSurgery =
+              payload['surgery'] ?? payload['preOpDiagnosisOrPathology'];
+          _teachingPointController.text =
+              payload['stepName'] ?? payload['teachingPoint'] ?? '';
+          _surgeonController.text =
+              payload['consultantName'] ?? payload['surgeon'] ?? '';
+          _existingVideoPaths =
+              List<String>.from(payload['videoPaths'] ?? []);
           break;
         case moduleRecords:
           _recordPatientNameController.text =
@@ -164,6 +169,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     final isEditing = widget.entryId != null;
     final isAtlas = _moduleType == moduleImages;
     final isRecords = _moduleType == moduleRecords;
+    final isLearning = _moduleType == moduleLearning;
     final mutation = ref.watch(entryMutationProvider);
 
     return Scaffold(
@@ -175,7 +181,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (!isAtlas && !isRecords)
+              if (!isAtlas && !isRecords && !isLearning)
                 DropdownButtonFormField<String>(
                   value: _moduleType,
                   decoration: const InputDecoration(labelText: 'Module'),
@@ -233,6 +239,15 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                 _buildText(
                   controller: _recordDurationController,
                   label: 'Duration',
+                  validator: _required,
+                  enabled: _canEditStatus,
+                ),
+              ] else if (isLearning) ...[
+                _buildLearningSurgeryDropdown(),
+                _buildLearningStepDropdown(),
+                _buildText(
+                  controller: _surgeonController,
+                  label: 'Consultant name',
                   validator: _required,
                   enabled: _canEditStatus,
                 ),
@@ -308,7 +323,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                     enabled: _canEditStatus,
                   ),
               ],
-              if (isRecords)
+              if (isRecords || isLearning)
                 _VideoPickerSection(
                   existingPaths: _existingVideoPaths,
                   newVideos: _newVideos,
@@ -339,24 +354,12 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                               color: Colors.black,
                             ),
                           )
-                        : Text(
-                            (isAtlas || isRecords) ? 'Save' : 'Save Draft',
-                            style: const TextStyle(color: Colors.black),
+                        : const Text(
+                            'Save',
+                            style: TextStyle(color: Colors.black),
                           ),
                   ),
                   const SizedBox(width: 12),
-                  if (!isAtlas && !isRecords) ...[
-                    ElevatedButton(
-                      onPressed: !_canEditStatus || mutation.isLoading
-                          ? null
-                          : () => _save(submit: true),
-                      child: const Text(
-                        'Submit for review',
-                        style: TextStyle(color: Colors.black),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                  ],
                   TextButton(
                     onPressed: () => context.pop(),
                     child: const Text('Cancel'),
@@ -413,19 +416,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   }
 
   Widget _buildSurgeryDropdown() {
-    final options = <String>[
-      'SOR',
-      'VH',
-      'RRD',
-      'SFIOL',
-      'MH',
-      'Scleral buckle',
-      'Belt buckle',
-      'ERM',
-      'TRD',
-      'PPL+PPV+SFIOL',
-      'ROP laser',
-    ];
+    final options = List<String>.from(_surgeryOptions);
     final current = _recordSurgery;
     if (current != null && current.isNotEmpty && !options.contains(current)) {
       options.insert(0, current);
@@ -446,6 +437,63 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     );
   }
 
+  Widget _buildLearningSurgeryDropdown() {
+    final options = List<String>.from(_surgeryOptions);
+    final current = _learningSurgery;
+    if (current != null && current.isNotEmpty && !options.contains(current)) {
+      options.insert(0, current);
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: DropdownButtonFormField<String>(
+        value: current == null || current.isEmpty ? null : current,
+        decoration: const InputDecoration(labelText: 'Name of the surgery'),
+        items: options
+            .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+            .toList(),
+        validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+        onChanged: _canEditStatus
+            ? (value) => setState(() => _learningSurgery = value)
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildLearningStepDropdown() {
+    final current = _teachingPointController.text.trim();
+    final options = [...surgicalLearningOptions];
+    if (current.isNotEmpty && !options.contains(current)) {
+      options.insert(0, current);
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: DropdownButtonFormField<String>(
+        value: current.isEmpty ? null : current,
+        items: options
+            .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+            .toList(),
+        decoration: const InputDecoration(labelText: 'Name of the step'),
+        validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+        onChanged:
+            _canEditStatus ? (v) => _teachingPointController.text = v ?? '' : null,
+      ),
+    );
+  }
+
+  List<String> get _surgeryOptions => const [
+        'SOR',
+        'VH',
+        'RRD',
+        'SFIOL',
+        'MH',
+        'Scleral buckle',
+        'Belt buckle',
+        'ERM',
+        'TRD',
+        'PPL+PPV+SFIOL',
+        'ROP laser',
+      ];
+
   Future<void> _save({required bool submit}) async {
     if (!_formKey.currentState!.validate()) return;
     if (!_canEditStatus) {
@@ -459,21 +507,29 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     final module = _moduleType ?? moduleCases;
     final keywords = module == moduleRecords
         ? _buildRecordKeywords()
-        : _keywordsController.text
-            .split(',')
-            .map((e) => e.trim())
-            .where((e) => e.isNotEmpty)
-            .toList();
+        : module == moduleLearning
+            ? _buildLearningKeywords()
+            : _keywordsController.text
+                .split(',')
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty)
+                .toList();
 
     final mediaRepo = ref.read(mediaRepositoryProvider);
     Map<String, dynamic> payload = _buildPayload(module);
 
     try {
       if (widget.entryId == null) {
+        final patientId = module == moduleLearning
+            ? (_learningSurgery?.trim() ?? '')
+            : _patientController.text.trim();
+        final mrn = module == moduleLearning
+            ? _teachingPointController.text.trim()
+            : _mrnController.text.trim();
         final create = ElogEntryCreate(
           moduleType: module,
-          patientUniqueId: _patientController.text.trim(),
-          mrn: _mrnController.text.trim(),
+          patientUniqueId: patientId,
+          mrn: mrn,
           keywords: keywords,
           payload: payload,
         );
@@ -487,7 +543,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
               .read(entryMutationProvider.notifier)
               .update(entryId, ElogEntryUpdate(payload: payload));
         }
-        if (module == moduleRecords) {
+        if (module == moduleRecords || module == moduleLearning) {
           final videoPaths = await _uploadNewVideos(mediaRepo, entryId);
           if (videoPaths.isNotEmpty) {
             payload = _withNewVideos(payload, videoPaths);
@@ -512,15 +568,21 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
         if (newPaths.isNotEmpty) {
           payload = _withNewPaths(module, payload, newPaths);
         }
-        if (module == moduleRecords) {
+        if (module == moduleRecords || module == moduleLearning) {
           final videoPaths = await _uploadNewVideos(mediaRepo, entryId);
           if (videoPaths.isNotEmpty) {
             payload = _withNewVideos(payload, videoPaths);
           }
         }
+        final patientId = module == moduleLearning
+            ? (_learningSurgery?.trim() ?? '')
+            : _patientController.text.trim();
+        final mrn = module == moduleLearning
+            ? _teachingPointController.text.trim()
+            : _mrnController.text.trim();
         final update = ElogEntryUpdate(
-          patientUniqueId: _patientController.text.trim(),
-          mrn: _mrnController.text.trim(),
+          patientUniqueId: patientId,
+          mrn: mrn,
           keywords: keywords,
           payload: payload,
           status: submit ? statusSubmitted : _currentStatus,
@@ -592,11 +654,18 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
           'followUpVisitImagingPaths': <String>[],
         };
       case moduleLearning:
+        final surgery = _learningSurgery?.trim() ?? '';
+        final step = _teachingPointController.text.trim();
+        final consultant = _surgeonController.text.trim();
         return {
-          'preOpDiagnosisOrPathology': _preOpController.text.trim(),
-          'surgicalVideoLink': _surgicalVideoController.text.trim(),
-          'teachingPoint': _teachingPointController.text.trim(),
-          'surgeon': _surgeonController.text.trim(),
+          'surgery': surgery,
+          'stepName': step,
+          'consultantName': consultant,
+          'videoPaths': _existingVideoPaths,
+          'preOpDiagnosisOrPathology': surgery,
+          'teachingPoint': step,
+          'surgeon': consultant,
+          'surgicalVideoLink': '',
         };
       case moduleRecords:
         final ageText = _recordAgeController.text.trim();
@@ -670,6 +739,27 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     }
     if (keywords.isEmpty) {
       keywords.add('record');
+    }
+    return keywords;
+  }
+
+  List<String> _buildLearningKeywords() {
+    final seeds = [
+      _learningSurgery?.trim() ?? '',
+      _teachingPointController.text.trim(),
+    ];
+    final keywords = <String>[];
+    for (final seed in seeds) {
+      if (seed.isEmpty) continue;
+      final parts = seed.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty);
+      for (final part in parts) {
+        if (keywords.every((k) => k.toLowerCase() != part.toLowerCase())) {
+          keywords.add(part);
+        }
+      }
+    }
+    if (keywords.isEmpty) {
+      keywords.add('learning');
     }
     return keywords;
   }

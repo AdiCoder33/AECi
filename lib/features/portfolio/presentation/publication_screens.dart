@@ -1,9 +1,9 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../logbook/application/logbook_providers.dart';
@@ -17,7 +17,7 @@ class PublicationListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final list = ref.watch(publicationListProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Presentations & Publications')),
+      appBar: AppBar(title: const Text('Publications')),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.pushNamed('pubNew'),
         child: const Icon(Icons.add),
@@ -33,13 +33,17 @@ class PublicationListScreen extends ConsumerWidget {
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, index) {
               final item = items[index];
+              final title = (item.venueOrJournal?.isNotEmpty == true)
+                  ? item.venueOrJournal!
+                  : item.title;
+              final year = item.date?.year.toString() ?? '-';
               return ListTile(
                 tileColor: Colors.white.withValues(alpha: 0.04),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                title: Text(item.title),
-                subtitle: Text('${item.type} • ${item.updatedAt.toLocal()}'),
+                title: Text(title),
+                subtitle: Text('Year: $year'),
                 onTap: () => context.pushNamed(
                   'pubDetail',
                   pathParameters: {'id': item.id},
@@ -82,33 +86,28 @@ class PublicationDetailScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: ListView(
             children: [
-              Text(item.title, style: Theme.of(context).textTheme.headlineSmall),
+              Text(
+                item.venueOrJournal?.isNotEmpty == true
+                    ? item.venueOrJournal!
+                    : item.title,
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
               const SizedBox(height: 8),
-              Text('Type: ${item.type}'),
+              if (item.abstractText?.isNotEmpty == true) ...[
+                const Text('Abstract', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                Text(item.abstractText!),
+                const SizedBox(height: 12),
+              ],
               if (item.venueOrJournal?.isNotEmpty == true)
-                Text('Venue/Journal: ${item.venueOrJournal}'),
-              if (item.date != null) Text('Date: ${item.date!.toLocal()}'),
+                Text('Journal: ${item.venueOrJournal}'),
+              if (item.date != null) Text('Year: ${item.date!.year}'),
               if (item.link?.isNotEmpty == true)
                 TextButton.icon(
                   onPressed: () => launchUrl(Uri.parse(item.link!)),
                   icon: const Icon(Icons.link),
                   label: const Text('Open link'),
                 ),
-              if (item.keywords.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: item.keywords
-                      .map(
-                        (k) => Chip(
-                          label: Text(k),
-                          backgroundColor: Colors.white.withValues(alpha: 0.08),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ],
               if (item.attachments.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 const Text('Attachments'),
@@ -123,7 +122,7 @@ class PublicationDetailScreen extends ConsumerWidget {
                         );
                       }
                       return ListTile(
-                        leading: const Icon(Icons.link),
+                        leading: const Icon(Icons.picture_as_pdf),
                         title: Text(path.split('/').last),
                         onTap: () => launchUrl(Uri.parse(snapshot.data!)),
                       );
@@ -152,12 +151,11 @@ class PublicationFormScreen extends ConsumerStatefulWidget {
 
 class _PublicationFormScreenState extends ConsumerState<PublicationFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _title = TextEditingController();
-  final _venue = TextEditingController();
+  final _abstract = TextEditingController();
+  final _journal = TextEditingController();
+  final _year = TextEditingController();
   final _link = TextEditingController();
-  final _keywords = TextEditingController();
-  String _type = 'presentation';
-  DateTime? _date;
+  List<String> _keywords = [];
 
   List<String> _existingAttachments = [];
   final List<File> _newAttachments = [];
@@ -170,12 +168,11 @@ class _PublicationFormScreenState extends ConsumerState<PublicationFormScreen> {
 
   Future<void> _load() async {
     final item = await ref.read(publicationDetailProvider(widget.id!).future);
-    _title.text = item.title;
-    _venue.text = item.venueOrJournal ?? '';
+    _abstract.text = item.abstractText ?? '';
+    _journal.text = item.venueOrJournal ?? '';
+    _year.text = item.date?.year.toString() ?? '';
     _link.text = item.link ?? '';
-    _type = item.type;
-    _date = item.date;
-    _keywords.text = item.keywords.join(', ');
+    _keywords = item.keywords;
     _existingAttachments = item.attachments;
     setState(() {});
   }
@@ -187,7 +184,7 @@ class _PublicationFormScreenState extends ConsumerState<PublicationFormScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.id == null ? 'New Item' : 'Edit Item'),
+        title: Text(widget.id == null ? 'New Publication' : 'Edit Publication'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -195,70 +192,59 @@ class _PublicationFormScreenState extends ConsumerState<PublicationFormScreen> {
           key: _formKey,
           child: Column(
             children: [
-              DropdownButtonFormField<String>(
-                value: _type,
-                decoration: const InputDecoration(labelText: 'Type'),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'presentation',
-                    child: Text('Presentation'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'publication',
-                    child: Text('Publication'),
-                  ),
-                ],
-                onChanged: (v) => setState(() => _type = v ?? 'presentation'),
-              ),
               TextFormField(
-                controller: _title,
-                decoration: const InputDecoration(labelText: 'Title'),
+                controller: _abstract,
+                decoration: const InputDecoration(labelText: 'Abstract'),
+                minLines: 3,
+                maxLines: 6,
                 validator: (v) =>
-                    v == null || v.isEmpty ? 'Title required' : null,
+                    v == null || v.trim().isEmpty ? 'Abstract required' : null,
               ),
               TextFormField(
-                controller: _venue,
-                decoration:
-                    const InputDecoration(labelText: 'Venue / Journal'),
+                controller: _journal,
+                decoration: const InputDecoration(labelText: 'Journal name'),
+                validator: (v) =>
+                    v == null || v.trim().isEmpty ? 'Journal required' : null,
               ),
-              TextButton(
-                onPressed: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  );
-                  if (picked != null) {
-                    setState(() => _date = picked);
+              TextFormField(
+                controller: _year,
+                decoration:
+                    const InputDecoration(labelText: 'Year of publication'),
+                keyboardType: TextInputType.number,
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) {
+                    return 'Year required';
                   }
+                  final year = int.tryParse(v.trim());
+                  if (year == null || year < 1900 || year > 2100) {
+                    return 'Enter a valid year';
+                  }
+                  return null;
                 },
-                child: Text(
-                  _date == null
-                      ? 'Pick date'
-                      : 'Date: ${_date!.toLocal().toString().split(' ').first}',
-                ),
               ),
               TextFormField(
                 controller: _link,
-                decoration: const InputDecoration(labelText: 'Link'),
-              ),
-              TextFormField(
-                controller: _keywords,
                 decoration:
-                    const InputDecoration(labelText: 'Keywords (comma separated)'),
+                    const InputDecoration(labelText: 'Link to the journal'),
               ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Attachments'),
+                  const Text('PDF Upload'),
                   TextButton.icon(
                     onPressed: () async {
-                      final picker = ImagePicker();
-                      final picked = await picker.pickMultiImage();
-                      if (picked.isNotEmpty) {
-                        _newAttachments.addAll(picked.map((e) => File(e.path)));
+                      final result = await FilePicker.platform.pickFiles(
+                        type: FileType.custom,
+                        allowedExtensions: const ['pdf'],
+                        allowMultiple: true,
+                      );
+                      if (result != null && result.files.isNotEmpty) {
+                        final files = result.paths
+                            .whereType<String>()
+                            .map((path) => File(path))
+                            .toList();
+                        _newAttachments.addAll(files);
                         setState(() {});
                       }
                     },
@@ -279,7 +265,7 @@ class _PublicationFormScreenState extends ConsumerState<PublicationFormScreen> {
                           );
                         }
                         return ListTile(
-                          leading: const Icon(Icons.link),
+                          leading: const Icon(Icons.picture_as_pdf),
                           title: Text(path.split('/').last),
                           onTap: () => launchUrl(Uri.parse(snapshot.data!)),
                         );
@@ -288,7 +274,7 @@ class _PublicationFormScreenState extends ConsumerState<PublicationFormScreen> {
                   ),
                   ..._newAttachments.map(
                     (file) => ListTile(
-                      leading: const Icon(Icons.insert_drive_file),
+                      leading: const Icon(Icons.picture_as_pdf),
                       title: Text(file.path.split(Platform.pathSeparator).last),
                     ),
                   ),
@@ -310,22 +296,27 @@ class _PublicationFormScreenState extends ConsumerState<PublicationFormScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    final keywords = _keywords.text
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
+    final year = int.tryParse(_year.text.trim());
+    final date = year != null ? DateTime(year, 1, 1) : null;
+    final journal = _journal.text.trim();
+    final title = journal.isNotEmpty
+        ? journal
+        : year != null
+            ? 'Publication $year'
+            : 'Publication';
     final repo = ref.read(portfolioRepositoryProvider);
     final mutation = ref.read(portfolioMutationProvider.notifier);
     PublicationItem payload = PublicationItem(
       id: widget.id ?? '',
-      type: _type,
-      title: _title.text.trim(),
+      type: 'publication',
+      title: title,
       createdBy: '',
-      venueOrJournal: _venue.text.trim().isEmpty ? null : _venue.text.trim(),
-      date: _date,
+      abstractText:
+          _abstract.text.trim().isEmpty ? null : _abstract.text.trim(),
+      venueOrJournal: journal.isEmpty ? null : journal,
+      date: date,
       link: _link.text.trim().isEmpty ? null : _link.text.trim(),
-      keywords: keywords,
+      keywords: _keywords,
       attachments: _existingAttachments,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -352,6 +343,7 @@ class _PublicationFormScreenState extends ConsumerState<PublicationFormScreen> {
           type: payload.type,
           title: payload.title,
           createdBy: '',
+          abstractText: payload.abstractText,
           venueOrJournal: payload.venueOrJournal,
           date: payload.date,
           link: payload.link,

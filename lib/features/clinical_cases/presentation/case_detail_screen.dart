@@ -35,9 +35,21 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
             data: (c) {
               final canEdit = c.status == 'draft' || c.status == 'submitted';
               if (!canEdit) return const SizedBox.shrink();
+              final isRetinoblastoma = c.keywords.any(
+                (k) => k.toLowerCase().contains('retinoblastoma'),
+              );
+              final isRop = c.keywords.any(
+                (k) => k.toLowerCase() == 'rop',
+              );
               return IconButton(
                 icon: const Icon(Icons.edit_outlined),
-                onPressed: () => context.push('/cases/${c.id}/edit'),
+                onPressed: () => context.push(
+                  isRetinoblastoma
+                      ? '/cases/${c.id}/edit?type=retinoblastoma'
+                      : isRop
+                          ? '/cases/${c.id}/edit?type=rop'
+                      : '/cases/${c.id}/edit',
+                ),
               );
             },
             orElse: () => const SizedBox.shrink(),
@@ -132,6 +144,7 @@ class _SummaryTab extends StatelessWidget {
               _InfoRow(label: 'Age', value: c.patientAge.toString()),
               _InfoRow(label: 'Exam Date', value: examDate),
               _InfoRow(label: 'Status', value: c.status),
+              ..._ropMetaRows(c.fundus),
             ],
           ),
         ),
@@ -193,6 +206,16 @@ class _SummaryTab extends StatelessWidget {
             style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
           ),
         ),
+        if (_hasRopMeta(c.fundus)) ...[
+          const SizedBox(height: 12),
+          _Section(
+            title: 'ROP Assessment',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: _buildRopMetaRows(c.fundus),
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         _Section(
           title: 'Diagnosis',
@@ -268,6 +291,7 @@ class _SummaryTab extends StatelessWidget {
   String _formatAnterior(Map<String, dynamic>? anterior) {
     if (anterior == null || anterior.isEmpty) return '-';
     final lines = <String>[];
+    final topRemarks = (anterior['remarks'] as String?) ?? '';
     for (final eyeKey in ['RE', 'LE']) {
       final eye = Map<String, dynamic>.from(anterior[eyeKey] as Map? ?? {});
       for (final section in anteriorSegmentSections) {
@@ -281,6 +305,9 @@ class _SummaryTab extends StatelessWidget {
       if (remarks.trim().isNotEmpty) {
         lines.add('$eyeKey Remarks: $remarks');
       }
+    }
+    if (topRemarks.trim().isNotEmpty) {
+      lines.add('Remarks: $topRemarks');
     }
     return lines.join('\n');
   }
@@ -318,6 +345,64 @@ class _SummaryTab extends StatelessWidget {
       lines.add('Remarks: $remarks');
     }
     return lines.join('\n');
+  }
+
+  bool _hasRopMeta(Map<String, dynamic>? fundus) {
+    if (fundus == null || fundus.isEmpty) return false;
+    return fundus['rop_meta'] is Map;
+  }
+
+  List<Widget> _ropMetaRows(Map<String, dynamic>? fundus) {
+    final rows = <Widget>[];
+    if (fundus == null || fundus.isEmpty) return rows;
+    final meta = Map<String, dynamic>.from(fundus['rop_meta'] as Map? ?? {});
+    if (meta.isEmpty) return rows;
+    final gestational = meta['gestational_age']?.toString();
+    final postConception = meta['post_conceptional_age']?.toString();
+    if ((gestational ?? '').isNotEmpty) {
+      rows.add(_InfoRow(label: 'Gestational age', value: '$gestational weeks'));
+    }
+    if ((postConception ?? '').isNotEmpty) {
+      rows.add(
+        _InfoRow(
+          label: 'Post conceptional age',
+          value: '$postConception weeks',
+        ),
+      );
+    }
+    return rows;
+  }
+
+  List<Widget> _buildRopMetaRows(Map<String, dynamic>? fundus) {
+    final rows = <Widget>[];
+    if (fundus == null || fundus.isEmpty) return rows;
+    final meta = Map<String, dynamic>.from(fundus['rop_meta'] as Map? ?? {});
+    if (meta.isEmpty) return rows;
+
+    void addEyePair(String label, Map? values) {
+      if (values == null) return;
+      final right = values['RE']?.toString() ?? '-';
+      final left = values['LE']?.toString() ?? '-';
+      rows.add(_EyePairRow(label: label, right: right, left: left));
+      rows.add(const SizedBox(height: 8));
+    }
+
+    addEyePair('Zone', meta['zone'] as Map?);
+    addEyePair('Stage', meta['stage'] as Map?);
+    addEyePair('Plus disease', _boolEyeMap(meta['plus_disease']));
+    addEyePair('AGROP', _boolEyeMap(meta['agrop']));
+    if (rows.isNotEmpty) {
+      rows.removeLast();
+    }
+    return rows;
+  }
+
+  Map<String, String> _boolEyeMap(dynamic raw) {
+    if (raw is! Map) return {'RE': '-', 'LE': '-'};
+    return {
+      'RE': raw['RE'] == true ? 'Yes' : raw['RE'] == false ? 'No' : '-',
+      'LE': raw['LE'] == true ? 'Yes' : raw['LE'] == false ? 'No' : '-',
+    };
   }
 
   String _formatSection(Map<String, dynamic> sectionData) {

@@ -204,7 +204,10 @@ class EntryCard extends StatelessWidget {
             payload['keyDescriptionOrPathology'] ??
             'Image';
       case moduleLearning:
-        return payload['teachingPoint'] ?? 'Learning';
+        return payload['stepName'] ??
+            payload['teachingPoint'] ??
+            payload['surgery'] ??
+            'Learning';
       case moduleRecords:
         return payload['diagnosis'] ??
             payload['surgery'] ??

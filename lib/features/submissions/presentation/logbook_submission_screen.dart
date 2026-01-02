@@ -159,20 +159,23 @@ class _LogbookSubmissionScreenState
       case logbookSectionRop:
         final casesAsync = ref.watch(submissionCasesProvider);
         return casesAsync.when(
-          data: (cases) => _SectionSelectionPage(
-            title: 'Select ${section.label}',
-            items: cases
-                .map(
-                  (c) => _SelectableRow(
-                    id: c.id,
-                    title: c.patientName,
-                    subtitle: 'UID ${c.uidNumber} | MR ${c.mrNumber}',
-                  ),
-                )
-                .toList(),
-            selected: _selectedBySection[section.key] ?? <String>{},
-            onToggle: (id) => _toggleSection(section.key, id),
-          ),
+          data: (cases) {
+            final filtered = _filterCasesForSection(cases, section.key);
+            return _SectionSelectionPage(
+              title: 'Select ${section.label}',
+              items: filtered
+                  .map(
+                    (c) => _SelectableRow(
+                      id: c.id,
+                      title: c.patientName,
+                      subtitle: 'UID ${c.uidNumber} | MR ${c.mrNumber}',
+                    ),
+                  )
+                  .toList(),
+              selected: _selectedBySection[section.key] ?? <String>{},
+              onToggle: (id) => _toggleSection(section.key, id),
+            );
+          },
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => _ErrorState(message: e.toString()),
         );
@@ -325,6 +328,32 @@ class _LogbookSubmissionScreenState
       default:
         return 'clinical_case';
     }
+  }
+
+  List<ClinicalCase> _filterCasesForSection(
+    List<ClinicalCase> cases,
+    String sectionKey,
+  ) {
+    switch (sectionKey) {
+      case logbookSectionRetinoblastoma:
+        return cases.where((c) => _hasKeyword(c, 'retinoblastoma')).toList();
+      case logbookSectionRop:
+        return cases.where((c) => _hasKeyword(c, 'rop')).toList();
+      case logbookSectionOpdCases:
+        return cases
+            .where(
+              (c) =>
+                  !_hasKeyword(c, 'retinoblastoma') &&
+                  !_hasKeyword(c, 'rop'),
+            )
+            .toList();
+    }
+    return cases;
+  }
+
+  bool _hasKeyword(ClinicalCase c, String keyword) {
+    final target = keyword.toLowerCase();
+    return c.keywords.any((k) => k.toLowerCase() == target);
   }
 }
 

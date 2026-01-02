@@ -36,6 +36,8 @@ import '../features/clinical_cases/presentation/assessment_queue_screen.dart';
 import '../features/clinical_cases/presentation/case_followup_form_screen.dart';
 import '../features/clinical_cases/presentation/case_media_screen.dart';
 import '../features/clinical_cases/presentation/wizard/clinical_case_wizard_screen.dart';
+import '../features/clinical_cases/presentation/retinoblastoma_form_screen.dart';
+import '../features/clinical_cases/presentation/rop_screening_form_screen.dart';
 import '../features/reviewer/presentation/reviewer_queue_screen.dart';
 import '../features/reviewer/presentation/reviewer_reviewed_screen.dart';
 import '../features/reviewer/presentation/reviewer_assessment_screen.dart';
@@ -330,7 +332,16 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'new',
                 name: 'caseNew',
-                builder: (context, state) => const ClinicalCaseWizardScreen(),
+                builder: (context, state) {
+                  final type = state.uri.queryParameters['type'];
+                  if (type == 'retinoblastoma') {
+                    return const RetinoblastomaScreeningFormScreen();
+                  }
+                  if (type == 'rop') {
+                    return const RopScreeningFormScreen();
+                  }
+                  return ClinicalCaseWizardScreen(caseType: type);
+                },
               ),
               GoRoute(
                 path: ':id',
@@ -342,9 +353,23 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: ':id/edit',
                 name: 'caseEdit',
-                builder: (context, state) => ClinicalCaseWizardScreen(
-                  caseId: state.pathParameters['id']!,
-                ),
+                builder: (context, state) {
+                  final type = state.uri.queryParameters['type'];
+                  if (type == 'retinoblastoma') {
+                    return RetinoblastomaScreeningFormScreen(
+                      caseId: state.pathParameters['id']!,
+                    );
+                  }
+                  if (type == 'rop') {
+                    return RopScreeningFormScreen(
+                      caseId: state.pathParameters['id']!,
+                    );
+                  }
+                  return ClinicalCaseWizardScreen(
+                    caseId: state.pathParameters['id']!,
+                    caseType: type,
+                  );
+                },
               ),
               GoRoute(
                 path: 'notifications',

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../clinical_cases/application/clinical_cases_controller.dart';
+import '../../clinical_cases/data/clinical_cases_repository.dart';
 import '../../portfolio/application/portfolio_controller.dart';
 import '../../review/application/review_controller.dart';
 import '../application/logbook_providers.dart';
@@ -27,7 +28,13 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
     final isPublications = section == logbookSectionPublications;
     final isReviews = section == logbookSectionReviews;
     final entries = isEntrySection ? ref.watch(entriesListProvider) : null;
-    final cases = isCaseSection ? ref.watch(clinicalCaseListProvider) : null;
+    final AsyncValue<List<ClinicalCase>>? cases = isCaseSection
+        ? (section == logbookSectionRetinoblastoma
+            ? ref.watch(clinicalCaseListByKeywordProvider('retinoblastoma'))
+            : section == logbookSectionRop
+                ? ref.watch(clinicalCaseListByKeywordProvider('rop'))
+                : ref.watch(clinicalCaseListProvider))
+        : null;
     final publications =
         isPublications ? ref.watch(publicationListProvider) : null;
     final reviews = isReviews ? ref.watch(reviewControllerProvider) : null;
@@ -71,9 +78,13 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
         onPressed: () {
           switch (section) {
             case logbookSectionOpdCases:
-            case logbookSectionRetinoblastoma:
-            case logbookSectionRop:
               context.push('/cases/new');
+              return;
+            case logbookSectionRop:
+              context.push('/cases/new?type=rop');
+              return;
+            case logbookSectionRetinoblastoma:
+              context.push('/cases/new?type=retinoblastoma');
               return;
             case logbookSectionAtlas:
             case logbookSectionSurgicalRecord:
@@ -334,7 +345,7 @@ class _SectionBody extends StatelessWidget {
   final bool isPublications;
   final bool isReviews;
   final AsyncValue<List<ElogEntry>>? entries;
-  final AsyncValue<List<dynamic>>? cases;
+  final AsyncValue<List<ClinicalCase>>? cases;
   final AsyncValue<List<dynamic>>? publications;
   final ReviewQueueState? reviews;
   final String section;
@@ -379,7 +390,8 @@ class _SectionBody extends StatelessWidget {
     if (isCaseSection && cases != null) {
       return cases!.when(
         data: (list) {
-          if (list.isEmpty) {
+          final filtered = _filterCasesForSection(list);
+          if (filtered.isEmpty) {
             return _EmptyState(
               icon: Icons.medical_information_outlined,
               title: 'No cases yet',
@@ -388,10 +400,10 @@ class _SectionBody extends StatelessWidget {
           }
           return ListView.separated(
             padding: const EdgeInsets.all(16),
-            itemCount: list.length,
+            itemCount: filtered.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
-              final c = list[index] as dynamic;
+              final c = filtered[index];
               return Card(
                 child: ListTile(
                   title: Text(c.patientName),
@@ -483,6 +495,31 @@ class _SectionBody extends StatelessWidget {
     }
 
     return const SizedBox.shrink();
+  }
+
+  List<ClinicalCase> _filterCasesForSection(List<ClinicalCase> list) {
+    switch (section) {
+      case logbookSectionRetinoblastoma:
+        return list
+            .where((c) => _hasKeyword(c, 'retinoblastoma'))
+            .toList();
+      case logbookSectionRop:
+        return list.where((c) => _hasKeyword(c, 'rop')).toList();
+      case logbookSectionOpdCases:
+        return list
+            .where(
+              (c) =>
+                  !_hasKeyword(c, 'retinoblastoma') &&
+                  !_hasKeyword(c, 'rop'),
+            )
+            .toList();
+    }
+    return list;
+  }
+
+  bool _hasKeyword(ClinicalCase c, String keyword) {
+    final target = keyword.toLowerCase();
+    return c.keywords.any((k) => k.toLowerCase() == target);
   }
 }
 

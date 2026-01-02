@@ -190,6 +190,17 @@ class ClinicalCasesRepository {
         .toList();
   }
 
+  Future<List<ClinicalCase>> listCasesByKeyword(String keyword) async {
+    final rows = await _client
+        .from('clinical_cases')
+        .select('*')
+        .contains('keywords', [keyword])
+        .order('updated_at', ascending: false);
+    return (rows as List)
+        .map((e) => ClinicalCase.fromMap(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
   Future<List<ClinicalCase>> listMyCases() async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) return [];

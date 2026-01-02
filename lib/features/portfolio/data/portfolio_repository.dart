@@ -90,6 +90,7 @@ class PublicationItem {
     required this.type,
     required this.title,
     required this.createdBy,
+    this.abstractText,
     this.venueOrJournal,
     this.date,
     this.link,
@@ -103,6 +104,7 @@ class PublicationItem {
   final String type; // presentation | publication
   final String title;
   final String createdBy;
+  final String? abstractText;
   final String? venueOrJournal;
   final DateTime? date;
   final String? link;
@@ -117,6 +119,7 @@ class PublicationItem {
       type: map['type'] as String,
       title: map['title'] as String,
       createdBy: map['created_by'] as String,
+      abstractText: map['abstract'] as String?,
       venueOrJournal: map['venue_or_journal'] as String?,
       date:
           map['date'] != null ? DateTime.parse(map['date'] as String) : null,
@@ -132,6 +135,7 @@ class PublicationItem {
     return {
       'type': type,
       'title': title,
+      'abstract': abstractText,
       'venue_or_journal': venueOrJournal,
       'date': date?.toIso8601String(),
       'link': link,
@@ -145,6 +149,7 @@ class PublicationItem {
     return {
       'type': type,
       'title': title,
+      'abstract': abstractText,
       'venue_or_journal': venueOrJournal,
       'date': date?.toIso8601String(),
       'link': link,
