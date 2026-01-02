@@ -267,6 +267,9 @@ class _ClinicalCaseWizardScreenState
         formKey: _formKeys[7],
         diagnosisController: _diagnosisController,
         keywordsController: _keywordsController,
+        diagnoses: _parseDiagnoses(wizard.diagnosis),
+        onDiagnosesChanged: (value) =>
+            notifier.update(diagnosis: value.join(', ')),
         keywords: wizard.keywords,
         onKeywordsChanged: (value) => notifier.update(keywords: value),
       ),
@@ -409,7 +412,7 @@ class _ClinicalCaseWizardScreenState
       case 6:
         return _fundusIssues(state.fundus).isEmpty;
       case 7:
-        return _diagnosisController.text.trim().isNotEmpty &&
+        return _parseDiagnoses(state.diagnosis).isNotEmpty &&
             state.keywords.isNotEmpty &&
             state.keywords.length <= 5;
       default:
@@ -567,5 +570,18 @@ class _ClinicalCaseWizardScreenState
         backgroundColor: Colors.redAccent,
       ),
     );
+  }
+
+  List<String> _parseDiagnoses(String raw) {
+    final parts = raw.split(',');
+    final normalized = <String>[];
+    for (final part in parts) {
+      final cleaned = part.trim();
+      if (cleaned.isEmpty) continue;
+      final exists =
+          normalized.any((e) => e.toLowerCase() == cleaned.toLowerCase());
+      if (!exists) normalized.add(cleaned);
+    }
+    return normalized;
   }
 }
