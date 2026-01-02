@@ -254,42 +254,36 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                   const SizedBox(height: 16),
                 ],
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header with icon and patient info
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  const Color(0xFF0B5FFF),
-                                  const Color(0xFF0B5FFF).withOpacity(0.7),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(12),
+                              color: const Color(0xFF0B5FFF).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(
-                              Icons.person,
-                              color: Colors.white,
-                              size: 28,
+                              Icons.description,
+                              color: Color(0xFF0B5FFF),
+                              size: 24,
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,87 +291,95 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                                 Text(
                                   entry.patientUniqueId,
                                   style: const TextStyle(
-                                    fontSize: 20,
+                                    fontSize: 18,
                                     fontWeight: FontWeight.w700,
                                     color: Color(0xFF1E293B),
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.badge_outlined,
-                                      size: 16,
-                                      color: Color(0xFF64748B),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'MRN: ${entry.mrn}',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: Color(0xFF64748B),
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
+                                const SizedBox(height: 2),
+                                Text(
+                                  'MRN: ${entry.mrn}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF64748B),
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                         ],
                       ),
-                      
-                      // Keywords section
-                      if (entry.keywords.isNotEmpty) ...[
-                        const SizedBox(height: 20),
-                        const Row(
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          _StatusBadge(status: entry.status),
+                          const Spacer(),
+                          Text(
+                            'Updated ${_formatDate(entry.updatedAt)}',
+                            style: const TextStyle(
+                              color: Color(0xFF64748B),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.local_offer_outlined,
-                              size: 18,
+                            const Icon(
+                              Icons.category_outlined,
+                              size: 16,
                               color: Color(0xFF64748B),
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             Text(
-                              'Keywords',
-                              style: TextStyle(
+                              entry.moduleType,
+                              style: const TextStyle(
                                 fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF64748B),
-                                letterSpacing: 0.5,
+                                color: Color(0xFF475569),
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
+                      ),
+                      if (entry.keywords.isNotEmpty) ...[
+                        const SizedBox(height: 12),
                         Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
+                          spacing: 6,
+                          runSpacing: 6,
                           children: entry.keywords
                               .map(
                                 (k) => Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
+                                    horizontal: 10,
+                                    vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        const Color(0xFF0B5FFF).withOpacity(0.1),
-                                        const Color(0xFF0B5FFF).withOpacity(0.05),
-                                      ],
-                                    ),
+                                    color: const Color(0xFFF1F5F9),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: const Color(0xFF0B5FFF).withOpacity(0.3),
+                                      color: const Color(0xFFE2E8F0),
                                     ),
                                   ),
                                   child: Text(
                                     k,
                                     style: const TextStyle(
-                                      fontSize: 13,
-                                      color: Color(0xFF0B5FFF),
-                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                      color: Color(0xFF475569),
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                 ),
@@ -385,35 +387,207 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                               .toList(),
                         ),
                       ],
-                      
-                      // Details section
-                      const SizedBox(height: 24),
-                      const Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            size: 18,
-                            color: Color(0xFF64748B),
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Details',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF64748B),
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      ..._buildDetailRows(entry),
                     ],
                   ),
                 ),
+                const SizedBox(height: 12),
+                _AuthorInfo(author: entry.authorProfile),
+                const SizedBox(height: 12),
+                _PayloadView(entry: entry),
+                const SizedBox(height: 12),
+                _QualitySection(entry: entry),
+                const SizedBox(height: 12),
+                _ReviewPanel(entry: entry),
+                const SizedBox(height: 12),
+                _SimilarEntries(entry: entry),
                 const SizedBox(height: 16),
-                _ImagesSection(entry: entry),
+                const SizedBox(height: 16),
+                if (entry.status == statusApproved)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        final note = await showDialog<String>(
+                          context: context,
+                          builder: (_) {
+                            final controller = TextEditingController();
+                            return AlertDialog(
+                              title: const Text('Propose to Teaching Library'),
+                              content: TextField(
+                                controller: controller,
+                                decoration: const InputDecoration(
+                                  hintText: 'Optional note',
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(context, rootNavigator: true)
+                                          .pop(null),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(context, rootNavigator: true)
+                                          .pop(controller.text.trim()),
+                                  child: const Text('Submit'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                        if (note != null) {
+                          try {
+                            await ref
+                                .read(teachingMutationProvider.notifier)
+                                .propose(entry.id, note);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Proposal submitted')),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context)
+                                  .showSnackBar(SnackBar(content: Text('Failed: $e')));
+                            }
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.school, color: Colors.white),
+                      label: const Text(
+                        'Propose to Teaching Library',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF10B981),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                if (canEdit)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () => context.pushNamed(
+                          'logbookEdit',
+                          pathParameters: {'id': entry.id},
+                          extra: entry.moduleType,
+                        ),
+                        icon: const Icon(Icons.edit, color: Colors.white),
+                        label: const Text(
+                          'Edit',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0B5FFF),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: entry.status == statusDraft
+                            ? () async {
+                                final confirmed = await showDialog<bool>(
+                                  context: context,
+                                  builder: (_) => AlertDialog(
+                                    title: const Text('Delete entry?'),
+                                    content: const Text(
+                                      'This will remove the entry permanently.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.of(context, rootNavigator: true)
+                                                .pop(false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.of(context, rootNavigator: true)
+                                                .pop(true),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: Colors.red,
+                                        ),
+                                        child: const Text('Delete'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirmed == true) {
+                                  await ref
+                                      .read(entryMutationProvider.notifier)
+                                      .delete(entry.id);
+                                  if (context.mounted) {
+                                    context.go('/logbook');
+                                  }
+                                }
+                              }
+                            : null,
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        label: const Text(
+                          'Delete Draft',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: const BorderSide(color: Colors.red),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                if (!canEdit && isOwner)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFFF59E0B),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.lock_outline,
+                          color: Color(0xFFD97706),
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Editing locked while submitted/approved/rejected. You can edit after consultant requests changes.',
+                            style: TextStyle(
+                              color: Color(0xFF92400E),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           );
@@ -1574,10 +1748,13 @@ class _PayloadView extends ConsumerWidget {
         return [
           if (mediaType.toString().isNotEmpty)
             _FieldRow('Type of media', mediaType.toString()),
-          if (diagnosis.toString().isNotEmpty)
-            _FieldRow('Diagnosis', diagnosis.toString()),
-          if (brief.toString().isNotEmpty)
-            _FieldRow('Brief description', brief.toString()),
+          _FieldRow('Diagnosis', diagnosis.toString()),
+          _FieldRow('Brief description', brief.toString()),
+          if (keywords.isNotEmpty)
+            _FieldRow('Keywords', keywords.join(', ')),
+          if ((payload['additionalInformation'] ?? '').toString().isNotEmpty &&
+              payload['additionalInformation'] != payload['briefDescription'])
+            _FieldRow('Additional info', payload['additionalInformation']),
         ];
       case moduleLearning:
         final surgery =
