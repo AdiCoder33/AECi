@@ -38,6 +38,7 @@ import '../features/clinical_cases/presentation/case_media_screen.dart';
 import '../features/clinical_cases/presentation/wizard/clinical_case_wizard_screen.dart';
 import '../features/clinical_cases/presentation/retinoblastoma_form_screen.dart';
 import '../features/clinical_cases/presentation/rop_screening_form_screen.dart';
+import '../features/clinical_cases/presentation/laser_form_screen.dart';
 import '../features/reviewer/presentation/reviewer_queue_screen.dart';
 import '../features/reviewer/presentation/reviewer_reviewed_screen.dart';
 import '../features/reviewer/presentation/reviewer_assessment_screen.dart';
@@ -336,6 +337,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                   if (type == 'rop') {
                     return const RopScreeningFormScreen();
                   }
+                  if (type == 'laser') {
+                    return const LaserFormScreen();
+                  }
                   return ClinicalCaseWizardScreen(caseType: type);
                 },
               ),
@@ -358,6 +362,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                   }
                   if (type == 'rop') {
                     return RopScreeningFormScreen(
+                      caseId: state.pathParameters['id']!,
+                    );
+                  }
+                  if (type == 'laser') {
+                    return LaserFormScreen(
                       caseId: state.pathParameters['id']!,
                     );
                   }
