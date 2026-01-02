@@ -119,25 +119,35 @@ class ReviewerRepository {
   Future<List<ReviewItem>> listPendingItems({int sinceDays = 90}) async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) return [];
-    final traineeIds = await listAssignedTrainees();
-    if (traineeIds.isEmpty) return [];
     final since = DateTime.now().subtract(Duration(days: sinceDays));
     final assessed = await listMyAssessments();
     final assessedKey = assessed
         .map((a) => '${a.entityType}:${a.entityId}')
         .toSet();
 
-    final quotedTrainees = traineeIds.map((id) => '"$id"').join(',');
     final caseRows = await _client
-        .from('clinical_cases')
+        .from('case_assessment_recipients')
         .select(
-          'id, created_by, patient_name, uid_number, mr_number, diagnosis, updated_at',
+          'case_id, clinical_cases:case_id(id, created_by, patient_name, uid_number, mr_number, status, updated_at)',
         )
-        .eq('status', 'submitted')
-        .gte('created_at', since.toIso8601String())
-        .filter('created_by', 'in', '($quotedTrainees)');
+        .eq('recipient_id', uid)
+        .eq('can_review', true);
     final caseItems = (caseRows as List)
         .map((row) => Map<String, dynamic>.from(row))
+        .map((row) {
+          final caseMap =
+              Map<String, dynamic>.from(row['clinical_cases'] as Map);
+          return {
+            'id': caseMap['id'],
+            'created_by': caseMap['created_by'],
+            'patient_name': caseMap['patient_name'],
+            'uid_number': caseMap['uid_number'],
+            'mr_number': caseMap['mr_number'],
+            'status': caseMap['status'],
+            'updated_at': caseMap['updated_at'],
+          };
+        })
+        .where((row) => row['status'] == 'submitted')
         .where((row) => !assessedKey.contains('clinical_case:${row['id']}'))
         .map((row) {
       final updatedAt = row['updated_at'] as String?;
@@ -153,6 +163,14 @@ class ReviewerRepository {
       );
     }).toList();
 
+    final traineeIds = await listAssignedTrainees();
+    if (traineeIds.isEmpty) {
+      final combined = [...caseItems];
+      combined.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      return combined;
+    }
+
+    final quotedTrainees = traineeIds.map((id) => '"$id"').join(',');
     final entryRows = await _client
         .from('elog_entries')
         .select(

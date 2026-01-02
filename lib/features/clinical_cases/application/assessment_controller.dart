@@ -2,10 +2,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/assessment_repository.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../community/data/community_repository.dart';
+import '../../profile/data/profile_model.dart';
 
 final caseAssessmentProvider = FutureProvider.family
     .autoDispose<CaseAssessment?, String>((ref, caseId) async {
   return ref.watch(assessmentRepositoryProvider).getAssessment(caseId);
+});
+
+final caseAssessmentRecipientsProvider = FutureProvider.family
+    .autoDispose<List<AssessmentRecipient>, String>((ref, caseId) async {
+  return ref.watch(assessmentRepositoryProvider).listRecipients(caseId);
+});
+
+final assessmentDoctorsProvider =
+    FutureProvider.autoDispose<List<Profile>>((ref) async {
+  final repo = ref.watch(communityRepositoryProvider);
+  return repo.listProfiles();
 });
 
 final assessmentQueueProvider =
@@ -28,10 +41,13 @@ class AssessmentMutation extends StateNotifier<AsyncValue<void>> {
   AssessmentMutation(this._repo) : super(const AsyncValue.data(null));
   final AssessmentRepository _repo;
 
-  Future<void> submit(String caseId, String consultantId) async {
+  Future<void> submitRecipients(String caseId, List<String> recipientIds) async {
     state = const AsyncValue.loading();
     try {
-      await _repo.submitForAssessment(caseId: caseId, consultantId: consultantId);
+      await _repo.submitRecipients(
+        caseId: caseId,
+        recipientIds: recipientIds,
+      );
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

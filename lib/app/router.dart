@@ -38,12 +38,15 @@ import '../features/clinical_cases/presentation/assessment_queue_screen.dart';
 import '../features/clinical_cases/presentation/case_followup_form_screen.dart';
 import '../features/clinical_cases/presentation/case_media_screen.dart';
 import '../features/clinical_cases/presentation/wizard/clinical_case_wizard_screen.dart';
+import '../features/clinical_cases/presentation/retinoblastoma_form_screen.dart';
+import '../features/clinical_cases/presentation/rop_screening_form_screen.dart';
 import '../features/reviewer/presentation/reviewer_queue_screen.dart';
 import '../features/reviewer/presentation/reviewer_reviewed_screen.dart';
 import '../features/reviewer/presentation/reviewer_assessment_screen.dart';
 import '../features/reviewer/data/reviewer_repository.dart';
 import '../features/community/presentation/community_screen.dart';
 import '../features/community/presentation/community_profile_screen.dart';
+import '../features/submissions/presentation/logbook_submission_screen.dart';
 import '../splash/splash_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -314,6 +317,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const AnalyticsScreen(),
           ),
           GoRoute(
+            path: '/submit',
+            name: 'submit',
+            builder: (context, state) => const LogbookSubmissionScreen(),
+          ),
+          GoRoute(
             path: '/taxonomy/suggestions',
             name: 'taxonomySuggestions',
             builder: (context, state) => const KeywordSuggestionsScreen(),
@@ -326,7 +334,16 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'new',
                 name: 'caseNew',
-                builder: (context, state) => const ClinicalCaseWizardScreen(),
+                builder: (context, state) {
+                  final type = state.uri.queryParameters['type'];
+                  if (type == 'retinoblastoma') {
+                    return const RetinoblastomaScreeningFormScreen();
+                  }
+                  if (type == 'rop') {
+                    return const RopScreeningFormScreen();
+                  }
+                  return ClinicalCaseWizardScreen(caseType: type);
+                },
               ),
               GoRoute(
                 path: ':id',
@@ -338,9 +355,23 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: ':id/edit',
                 name: 'caseEdit',
-                builder: (context, state) => ClinicalCaseWizardScreen(
-                  caseId: state.pathParameters['id']!,
-                ),
+                builder: (context, state) {
+                  final type = state.uri.queryParameters['type'];
+                  if (type == 'retinoblastoma') {
+                    return RetinoblastomaScreeningFormScreen(
+                      caseId: state.pathParameters['id']!,
+                    );
+                  }
+                  if (type == 'rop') {
+                    return RopScreeningFormScreen(
+                      caseId: state.pathParameters['id']!,
+                    );
+                  }
+                  return ClinicalCaseWizardScreen(
+                    caseId: state.pathParameters['id']!,
+                    caseType: type,
+                  );
+                },
               ),
               GoRoute(
                 path: 'notifications',
@@ -447,7 +478,7 @@ class _MainShell extends StatelessWidget {
       return 1;
     }
     if (location.startsWith('/community')) return 2;
-    if (location.startsWith('/teaching')) return 3;
+    if (location.startsWith('/analytics')) return 3;
     if (location.startsWith('/profile')) return 4;
     return 0;
   }
@@ -475,7 +506,7 @@ class _MainShell extends StatelessWidget {
         context.go('/community');
         break;
       case 3:
-        context.go('/teaching');
+        context.go('/analytics');
         break;
       case 4:
         context.go('/profile');
@@ -538,9 +569,9 @@ class _MainShell extends StatelessWidget {
                   label: 'Community',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.school_outlined),
-                  activeIcon: Icon(Icons.school),
-                  label: 'Teaching',
+                  icon: Icon(Icons.insights_outlined),
+                  activeIcon: Icon(Icons.insights),
+                  label: 'Analytics',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.person_outline),

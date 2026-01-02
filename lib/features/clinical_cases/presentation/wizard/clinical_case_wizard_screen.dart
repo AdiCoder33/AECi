@@ -18,9 +18,10 @@ import 'widgets/wizard_footer.dart';
 import 'widgets/wizard_header.dart';
 
 class ClinicalCaseWizardScreen extends ConsumerStatefulWidget {
-  const ClinicalCaseWizardScreen({super.key, this.caseId});
+  const ClinicalCaseWizardScreen({super.key, this.caseId, this.caseType});
 
   final String? caseId;
+  final String? caseType;
 
   @override
   ConsumerState<ClinicalCaseWizardScreen> createState() =>
@@ -48,6 +49,14 @@ class _ClinicalCaseWizardScreenState
   void initState() {
     super.initState();
     _bindControllers();
+    if (widget.caseType != null) {
+      ref.read(clinicalCaseWizardProvider.notifier).setCaseType(
+            widget.caseType,
+          );
+      if (widget.caseId == null) {
+        _keywordsController.text = widget.caseType!;
+      }
+    }
     if (widget.caseId != null) {
       Future.microtask(() {
         ref.read(clinicalCaseWizardProvider.notifier).loadCase(widget.caseId!);

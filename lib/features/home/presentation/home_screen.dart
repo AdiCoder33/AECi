@@ -35,7 +35,7 @@ class HomeScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Padding(
+          child:  Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,19 +44,19 @@ class HomeScreen extends ConsumerWidget {
                 _ProfileCard(
                   name: displayName,
                   designation: profile?.designation,
-                  centre: profile?.aravindCentre ?? profile?.centre,
+                  centre: profile?.aravindCentre ??  profile?.centre,
                   onTap: () => context.go('/profile'),
                 ),
                 const SizedBox(height: 20),
                 Text(
                   'Quick Access',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  style: Theme.of(context).textTheme.titleLarge?. copyWith(
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF1E5F8C),
                       ),
                 ),
-                const SizedBox(height: 16),
-                const _ActionGrid(),
+                const SizedBox(height:  16),
+                _ActionGrid(isConsultant: isConsultant),
                 const SizedBox(height: 24),
               ],
             ),
@@ -68,7 +68,9 @@ class HomeScreen extends ConsumerWidget {
 }
 
 class _ActionGrid extends StatelessWidget {
-  const _ActionGrid();
+  const _ActionGrid({required this. isConsultant});
+
+  final bool isConsultant;
 
   @override
   Widget build(BuildContext context) {
@@ -76,21 +78,23 @@ class _ActionGrid extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     
     final tiles = <_ActionTile>[
-      _ActionTile('OPD Cases', Icons.medical_services_outlined, '/logbook', const Color(0xFF0B5FFF)),
-      _ActionTile('Atlas', Icons.photo_library_outlined, '/atlas', const Color(0xFF10B981)),
-      _ActionTile('Analysis Record', Icons.analytics_outlined, '/analytics', const Color(0xFF8B5CF6)),
-      _ActionTile('Learning', Icons.school_outlined, '/teaching', const Color(0xFFF59E0B)),
-      _ActionTile('Retinoblastoma', Icons.remove_red_eye_outlined, '/retinoblastoma', const Color(0xFFEC4899)),
-      _ActionTile('ROP', Icons.child_care_outlined, '/rop', const Color(0xFF06B6D4)),
-      _ActionTile('Reviews', Icons.rate_review_outlined, '/review-queue', const Color(0xFFEF4444)),
-      _ActionTile('Publication', Icons.article_outlined, '/publications', const Color(0xFF6366F1)),
+      const _ActionTile('OPD Cases', Icons.medical_services_outlined, '/logbook', Color(0xFF0B5FFF)),
+      const _ActionTile('Atlas', Icons.photo_library_outlined, '/atlas', Color(0xFF10B981)),
+      const _ActionTile('Analysis Record', Icons.analytics_outlined, '/analytics', Color(0xFF8B5CF6)),
+      const _ActionTile('Learning', Icons.school_outlined, '/teaching', Color(0xFFF59E0B)),
+      const _ActionTile('Retinoblastoma', Icons.remove_red_eye_outlined, '/retinoblastoma', Color(0xFFEC4899)),
+      const _ActionTile('ROP', Icons.child_care_outlined, '/rop', Color(0xFF06B6D4)),
+      const _ActionTile('Publication', Icons.article_outlined, '/publications', Color(0xFF6366F1)),
+      if (isConsultant) const _ActionTile('Reviews', Icons.rate_review_outlined, '/review-queue', Color(0xFFEF4444)),
+      if (isConsultant) const _ActionTile('Case Assessments', Icons.fact_check, '/cases/assessment-queue', Color(0xFF0B5FFF)),
+      if (isConsultant) const _ActionTile('Proposals', Icons.inbox, '/teaching/proposals', Color(0xFF14B8A6)),
     ];
 
     return GridView.count(
-      shrinkWrap: true,
+      shrinkWrap:  true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
-      mainAxisSpacing: 16,
+      mainAxisSpacing:  16,
       crossAxisSpacing: 16,
       childAspectRatio: 1.3,
       children: tiles,
@@ -150,8 +154,8 @@ class _ActionTile extends StatelessWidget {
                 boxShadow: [
                   BoxShadow(
                     color: color.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
+                    blurRadius:  8,
+                    offset:  const Offset(0, 3),
                   ),
                 ],
               ),
@@ -166,7 +170,7 @@ class _ActionTile extends StatelessWidget {
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
-                color: isDark ? Colors.white : const Color(0xFF1E293B),
+                color: isDark ?  Colors.white : const Color(0xFF1E293B),
                 height: 1.2,
               ),
             ),
@@ -218,7 +222,7 @@ class _ProfileCard extends StatelessWidget {
     // Get role-specific greeting
     String roleGreeting = '';
     if (designation != null) {
-      switch (designation!.toLowerCase()) {
+      switch (designation!. toLowerCase()) {
         case 'fellow':
           roleGreeting = 'Fellow';
           break;
@@ -244,14 +248,14 @@ class _ProfileCard extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
-            begin: Alignment.topLeft,
+            begin:  Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius:  BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF667EEA).withOpacity(0.35),
-              blurRadius: 16,
+              color:  const Color(0xFF667EEA).withOpacity(0.35),
+              blurRadius:  16,
               offset: const Offset(0, 6),
               spreadRadius: 2,
             ),
@@ -266,13 +270,13 @@ class _ProfileCard extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: Colors.white.withOpacity(0.25),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.5),
+                  color: Colors. white.withOpacity(0.5),
                   width: 3,
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.15),
-                    blurRadius: 10,
+                    blurRadius:  10,
                     offset: const Offset(0, 3),
                   ),
                 ],
@@ -283,7 +287,7 @@ class _ProfileCard extends StatelessWidget {
                 size: 28,
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width:  16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,7 +303,7 @@ class _ProfileCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         greeting,
-                        style: TextStyle(
+                        style:  TextStyle(
                           color: Colors.white.withOpacity(0.95),
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -312,7 +316,7 @@ class _ProfileCard extends StatelessWidget {
                   Text(
                     name ?? 'Aravind Trainee',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color:  Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.2,
@@ -322,7 +326,7 @@ class _ProfileCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      if (roleGreeting.isNotEmpty) ...[
+                      if (roleGreeting. isNotEmpty) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
@@ -331,18 +335,18 @@ class _ProfileCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: Colors.white.withOpacity(0.25),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
+                            border: Border. all(
                               color: Colors.white.withOpacity(0.4),
                               width: 1.5,
                             ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                          child:  Row(
+                            mainAxisSize:  MainAxisSize.min,
                             children: [
                               Icon(
                                 Icons.workspace_premium_rounded,
                                 size: 11,
-                                color: Colors.amber[300],
+                                color: Colors. amber[300],
                               ),
                               const SizedBox(width: 3),
                               Text(
@@ -378,7 +382,7 @@ class _ProfileCard extends StatelessWidget {
                                     fontWeight: FontWeight.w500,
                                   ),
                                   maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  overflow: TextOverflow. ellipsis,
                                 ),
                               ),
                             ],
@@ -421,18 +425,18 @@ class _StatData {
 }
 
 class _StatsGrid extends StatelessWidget {
-  const _StatsGrid({required this.stats});
+  const _StatsGrid({required this. stats});
   final List<_StatData> stats;
 
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
-      shrinkWrap: true,
+      shrinkWrap:  true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
+        crossAxisSpacing:  10,
         childAspectRatio: 0.95,
       ),
       itemCount: stats.length,
@@ -442,7 +446,7 @@ class _StatsGrid extends StatelessWidget {
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius. circular(14),
             border: Border.all(color: const Color(0xFFE5EAF2)),
             boxShadow: const [
               BoxShadow(
@@ -459,16 +463,16 @@ class _StatsGrid extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: stat.color.withOpacity(0.1),
+                  color: stat. color. withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(stat.icon, color: stat.color, size: 20),
+                child:  Icon(stat.icon, color: stat.color, size: 20),
               ),
               const SizedBox(height: 6),
               Text(
                 '${stat.value}',
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize:  20,
                   fontWeight: FontWeight.w700,
                 ),
               ),

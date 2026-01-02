@@ -13,7 +13,7 @@ class CommunityRepository {
     final uid = _client.auth.currentUser?.id;
     var query = _client.from('profiles').select('*');
     if (uid != null) {
-      query = query.neq('id', uid);
+      query = query.filter('id', 'neq', uid);
     }
     final rows = await query.order('designation').order('name');
     return (rows as List)

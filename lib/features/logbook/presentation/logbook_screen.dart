@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../clinical_cases/application/clinical_cases_controller.dart';
+import '../../clinical_cases/data/clinical_cases_repository.dart';
 import '../../portfolio/application/portfolio_controller.dart';
 import '../../review/application/review_controller.dart';
 import '../application/logbook_providers.dart';
@@ -27,10 +28,16 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
     final isPublications = section == logbookSectionPublications;
     final isReviews = section == logbookSectionReviews;
     final entries = isEntrySection ? ref.watch(entriesListProvider) : null;
-    final cases = isCaseSection ? ref.watch(clinicalCaseListProvider) : null;
+    final AsyncValue<List<ClinicalCase>>? cases = isCaseSection
+        ? (section == logbookSectionRetinoblastoma
+            ? ref.watch(clinicalCaseListByKeywordProvider('retinoblastoma'))
+            : section == logbookSectionRop
+                ? ref.watch(clinicalCaseListByKeywordProvider('rop'))
+                : ref.watch(clinicalCaseListProvider))
+        : null;
     final publications =
-        isPublications ? ref.watch(publicationListProvider) : null;
-    final reviews = isReviews ? ref.watch(reviewControllerProvider) : null;
+        isPublications ? ref. watch(publicationListProvider) : null;
+    final reviews = isReviews ?  ref.watch(reviewControllerProvider) : null;
     final showMine = ref.watch(showMineProvider);
     final showDrafts = ref.watch(showDraftsProvider);
 
@@ -54,7 +61,7 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [Color(0xFF1E5F8C), Color(0xFF2878A8)],
-              begin: Alignment.topLeft,
+              begin:  Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
           ),
@@ -75,20 +82,24 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
           const SizedBox(width: 4),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton. extended(
         onPressed: () {
           switch (section) {
             case logbookSectionOpdCases:
-            case logbookSectionRetinoblastoma:
+              context. push('/cases/new');
+              return;
             case logbookSectionRop:
-              context.push('/cases/new');
+              context.push('/cases/new? type=rop');
+              return;
+            case logbookSectionRetinoblastoma: 
+              context.push('/cases/new?type=retinoblastoma');
               return;
             case logbookSectionAtlas:
             case logbookSectionSurgicalRecord:
             case logbookSectionLearning:
               context.pushNamed('logbookNew', extra: module);
               return;
-            case logbookSectionPublications:
+            case logbookSectionPublications: 
               context.pushNamed('pubNew');
               return;
             case logbookSectionReviews:
@@ -102,7 +113,7 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
         label: const Text(
           'New Entry',
           style: TextStyle(
-            color: Colors.white,
+            color: Colors. white,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -129,8 +140,8 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
-                    runSpacing: 8,
-                    children: [
+                    runSpacing:  8,
+                    children:  [
                       _FilterChip(
                         label: 'My Entries',
                         selected: showMine,
@@ -148,7 +159,7 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
                         selected: !showMine && !showDrafts,
                         onSelected: (v) {
                           if (v) {
-                            ref.read(showMineProvider.notifier).state = false;
+                            ref.read(showMineProvider. notifier).state = false;
                             ref.read(showDraftsProvider.notifier).state = false;
                           }
                         },
@@ -163,7 +174,7 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
           Expanded(
             child: _SectionBody(
               isEntrySection: isEntrySection,
-              isCaseSection: isCaseSection,
+              isCaseSection:  isCaseSection,
               isPublications: isPublications,
               isReviews: isReviews,
               entries: entries,
@@ -229,21 +240,21 @@ class _ModuleChip extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: selected
               ? const LinearGradient(
-                  colors: [Color(0xFF1E5F8C), Color(0xFF2878A8)],
+                  colors:  [Color(0xFF1E5F8C), Color(0xFF2878A8)],
                 )
               : null,
-          color: selected ? null : Colors.grey[100],
+          color: selected ?  null : Colors.grey[100],
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected ? const Color(0xFF1E5F8C) : Colors.grey[300]!,
-            width: 1.5,
+            width: 1. 5,
           ),
           boxShadow: selected
               ? [
                   BoxShadow(
                     color: const Color(0xFF1E5F8C).withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    blurRadius:  8,
+                    offset:  const Offset(0, 2),
                   ),
                 ]
               : null,
@@ -253,7 +264,7 @@ class _ModuleChip extends StatelessWidget {
           style: TextStyle(
             color: selected ? Colors.white : const Color(0xFF64748B),
             fontSize: 13,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            fontWeight: selected ? FontWeight.w600 :  FontWeight.w500,
           ),
         ),
       ),
@@ -284,7 +295,7 @@ class _FilterChip extends StatelessWidget {
       labelStyle: TextStyle(
         color: selected ? const Color(0xFF1E5F8C) : const Color(0xFF64748B),
         fontSize: 13,
-        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+        fontWeight: selected ? FontWeight. w600 : FontWeight.w500,
       ),
       side: BorderSide(
         color: selected ? const Color(0xFF1E5F8C) : Colors.grey[300]!,
@@ -356,7 +367,7 @@ class _SectionBody extends StatelessWidget {
   final bool isPublications;
   final bool isReviews;
   final AsyncValue<List<ElogEntry>>? entries;
-  final AsyncValue<List<dynamic>>? cases;
+  final AsyncValue<List<ClinicalCase>>? cases;
   final AsyncValue<List<dynamic>>? publications;
   final ReviewQueueState? reviews;
   final String section;
@@ -401,35 +412,36 @@ class _SectionBody extends StatelessWidget {
     if (isCaseSection && cases != null) {
       return cases!.when(
         data: (list) {
-          if (list.isEmpty) {
+          final filtered = _filterCasesForSection(list);
+          if (filtered.isEmpty) {
             return _EmptyState(
               icon: Icons.medical_information_outlined,
               title: 'No cases yet',
               subtitle: 'Tap "New Entry" to create your first case',
             );
           }
-          
+
           // Sort cases by diagnosis
-          final sortedList = [...list];
-          sortedList.sort((a, b) => (a as dynamic).diagnosis.toString().compareTo((b as dynamic).diagnosis.toString()));
-          
+          final sortedList = [... filtered];
+          sortedList.sort((a, b) => a.diagnosis.compareTo(b.diagnosis));
+
           // Group by diagnosis
-          final Map<String, List<dynamic>> groupedCases = {};
+          final Map<String, List<ClinicalCase>> groupedCases = {};
           for (final c in sortedList) {
-            final diagnosis = (c as dynamic).diagnosis as String;
-            if (!groupedCases.containsKey(diagnosis)) {
+            final diagnosis = c.diagnosis;
+            if (!groupedCases. containsKey(diagnosis)) {
               groupedCases[diagnosis] = [];
             }
-            groupedCases[diagnosis]!.add(c);
+            groupedCases[diagnosis]!. add(c);
           }
-          
+
           return ListView.builder(
             padding: const EdgeInsets.all(10),
             itemCount: groupedCases.keys.length,
             itemBuilder: (context, groupIndex) {
               final diagnosis = groupedCases.keys.elementAt(groupIndex);
               final diagnosisCases = groupedCases[diagnosis]!;
-              
+
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -485,8 +497,8 @@ class _SectionBody extends StatelessWidget {
                             boxShadow: [
                               BoxShadow(
                                 color: const Color(0xFF0B5FFF).withOpacity(0.3),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
+                                blurRadius:  4,
+                                offset:  const Offset(0, 2),
                               ),
                             ],
                           ),
@@ -502,8 +514,8 @@ class _SectionBody extends StatelessWidget {
                       ],
                     ),
                   ),
-                  ...diagnosisCases.map((c) {
-                    final updated = (c as dynamic).updatedAt?.toIso8601String().split('T').first ?? '-';
+                  ... diagnosisCases.map((c) {
+                    final updated = c.updatedAt?. toIso8601String().split('T').first ?? '-';
                     return Container(
                       margin: const EdgeInsets.only(bottom: 6),
                       decoration: BoxDecoration(
@@ -513,18 +525,18 @@ class _SectionBody extends StatelessWidget {
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.03),
-                            blurRadius: 4,
-                            offset: const Offset(0, 1),
+                            blurRadius:  4,
+                            offset:  const Offset(0, 1),
                           ),
                         ],
                       ),
                       child: Material(
-                        color: Colors.transparent,
+                        color: Colors. transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(10),
-                          onTap: () => context.push('/cases/${c.id}'),
+                          onTap:  () => context.push('/cases/${c.id}'),
                           child: Padding(
-                            padding: const EdgeInsets.all(10),
+                            padding: const EdgeInsets. all(10),
                             child: Row(
                               children: [
                                 Container(
@@ -543,12 +555,12 @@ class _SectionBody extends StatelessWidget {
                                     ),
                                   ),
                                   child: const Icon(
-                                    Icons.person,
+                                    Icons. person,
                                     color: Color(0xFF0B5FFF),
                                     size: 20,
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                const SizedBox(width:  10),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -556,11 +568,11 @@ class _SectionBody extends StatelessWidget {
                                       Row(
                                         children: [
                                           Expanded(
-                                            child: Text(
-                                              c.patientName,
+                                            child:  Text(
+                                              c. patientName,
                                               style: const TextStyle(
                                                 fontSize: 13,
-                                                fontWeight: FontWeight.w700,
+                                                fontWeight:  FontWeight.w700,
                                                 color: Color(0xFF1E293B),
                                               ),
                                             ),
@@ -572,7 +584,7 @@ class _SectionBody extends StatelessWidget {
                                       Row(
                                         children: [
                                           Text(
-                                            'UID: ${c.uidNumber}',
+                                            'UID: ${c. uidNumber}',
                                             style: const TextStyle(
                                               fontSize: 10,
                                               color: Color(0xFF64748B),
@@ -581,7 +593,7 @@ class _SectionBody extends StatelessWidget {
                                           const SizedBox(width: 8),
                                           Text(
                                             'MR: ${c.mrNumber}',
-                                            style: const TextStyle(
+                                            style:  const TextStyle(
                                               fontSize: 10,
                                               color: Color(0xFF64748B),
                                             ),
@@ -608,7 +620,7 @@ class _SectionBody extends StatelessWidget {
                                           Icon(
                                             Icons.update,
                                             size: 9,
-                                            color: Colors.grey[400],
+                                            color:  Colors.grey[400],
                                           ),
                                           const SizedBox(width: 3),
                                           Text(
@@ -640,7 +652,7 @@ class _SectionBody extends StatelessWidget {
             },
           );
         },
-        loading: () => const Center(
+        loading:  () => const Center(
           child: CircularProgressIndicator(
             color: Color(0xFF0B5FFF),
           ),
@@ -652,7 +664,7 @@ class _SectionBody extends StatelessWidget {
     if (isPublications && publications != null) {
       return publications!.when(
         data: (items) {
-          if (items.isEmpty) {
+          if (items. isEmpty) {
             return _EmptyState(
               icon: Icons.article_outlined,
               title: 'No publications yet',
@@ -667,10 +679,10 @@ class _SectionBody extends StatelessWidget {
               final item = items[index] as dynamic;
               return Card(
                 child: ListTile(
-                  title: Text(item.title),
-                  subtitle: Text(item.type ?? 'publication'),
+                  title:  Text(item. title),
+                  subtitle: Text(item.type ??  'publication'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.pushNamed(
+                  onTap:  () => context.pushNamed(
                     'pubDetail',
                     pathParameters: {'id': item.id},
                   ),
@@ -680,7 +692,7 @@ class _SectionBody extends StatelessWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => _ErrorState(message: e.toString()),
+        error: (e, _) => _ErrorState(message:  e.toString()),
       );
     }
 
@@ -688,12 +700,12 @@ class _SectionBody extends StatelessWidget {
       if (reviews!.isLoading) {
         return const Center(child: CircularProgressIndicator());
       }
-      if (reviews!.error != null) {
-        return _ErrorState(message: reviews!.error!);
+      if (reviews! .error != null) {
+        return _ErrorState(message: reviews!. error!);
       }
       if (reviews!.entries.isEmpty) {
         return _EmptyState(
-          icon: Icons.rate_review_outlined,
+          icon:  Icons.rate_review_outlined,
           title: 'No reviews pending',
           subtitle: 'You have no submissions to review right now.',
         );
@@ -701,8 +713,8 @@ class _SectionBody extends StatelessWidget {
       return ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: reviews!.entries.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
+        separatorBuilder: (_, __) => const SizedBox(height:  12),
+        itemBuilder:  (context, index) {
           final entry = reviews!.entries[index];
           return Card(
             child: ListTile(
@@ -719,7 +731,32 @@ class _SectionBody extends StatelessWidget {
       );
     }
 
-    return const SizedBox.shrink();
+    return const SizedBox. shrink();
+  }
+
+  List<ClinicalCase> _filterCasesForSection(List<ClinicalCase> list) {
+    switch (section) {
+      case logbookSectionRetinoblastoma:
+        return list
+            .where((c) => _hasKeyword(c, 'retinoblastoma'))
+            .toList();
+      case logbookSectionRop:
+        return list. where((c) => _hasKeyword(c, 'rop')).toList();
+      case logbookSectionOpdCases:
+        return list
+            .where(
+              (c) =>
+                  ! _hasKeyword(c, 'retinoblastoma') &&
+                  !_hasKeyword(c, 'rop'),
+            )
+            .toList();
+    }
+    return list;
+  }
+
+  bool _hasKeyword(ClinicalCase c, String keyword) {
+    final target = keyword.toLowerCase();
+    return c.keywords.any((k) => k.toLowerCase() == target);
   }
 }
 
@@ -740,7 +777,7 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 80, color: Colors.grey[300]),
+          Icon(icon, size:  80, color: Colors.grey[300]),
           const SizedBox(height: 16),
           Text(
             title,
@@ -774,7 +811,7 @@ class _ErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment. center,
         children: [
           Icon(
             Icons.error_outline,
@@ -790,7 +827,7 @@ class _ErrorState extends StatelessWidget {
               color: Colors.red[700],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height:  8),
           Text(
             message,
             style: const TextStyle(
@@ -815,7 +852,7 @@ class _CaseStatusBadge extends StatelessWidget {
     final normalized = status.toLowerCase();
     Color color;
     IconData icon;
-    
+
     switch (normalized) {
       case 'submitted':
         color = const Color(0xFF10B981);
@@ -829,13 +866,13 @@ class _CaseStatusBadge extends StatelessWidget {
         color = const Color(0xFF64748B);
         icon = Icons.circle;
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withOpacity(0.3)),
+        color: color. withOpacity(0.1),
+        borderRadius: BorderRadius. circular(6),
+        border: Border.all(color: color. withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -847,8 +884,8 @@ class _CaseStatusBadge extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            normalized.toUpperCase(),
-            style: TextStyle(
+            normalized. toUpperCase(),
+            style:  TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w700,
               color: color,
