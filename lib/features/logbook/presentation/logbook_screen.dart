@@ -11,8 +11,6 @@ import '../domain/elog_entry.dart';
 import '../domain/logbook_sections.dart';
 import 'widgets/entry_card.dart';
 
-final diagnosisSearchProvider = StateProvider<String>((ref) => '');
-
 class LogbookScreen extends ConsumerStatefulWidget {
   const LogbookScreen({super.key});
 
@@ -130,13 +128,6 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
                   onChanged: (value) =>
                       ref.read(logbookSectionProvider.notifier).state = value,
                 ),
-                if (isCaseSection) ...[
-                  const SizedBox(height: 16),
-                  _DiagnosisSearchBar(
-                    onChanged: (value) =>
-                        ref.read(diagnosisSearchProvider.notifier).state = value,
-                  ),
-                ],
                 if (isEntrySection) ...[
                   const SizedBox(height: 16),
                   _SearchBar(
@@ -251,7 +242,7 @@ class _SectionSelectorState extends State<_SectionSelector> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 48,
+      height: 60,
       child: PageView.builder(
         controller: _pageController,
         itemCount: logbookSections.length,
@@ -292,63 +283,84 @@ class _ModuleChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 3),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Card with shadow effect
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              height: selected ? 36 : 32,
-              margin: EdgeInsets.only(
-                top: selected ? 0 : 2,
-                bottom: 0,
-              ),
-              decoration: BoxDecoration(
-                color: selected ? const Color(0xFF0B5FFF) : Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: selected
-                        ? const Color(0xFF0B5FFF).withOpacity(0.25)
-                        : Colors.black.withOpacity(0.04),
-                    blurRadius: selected ? 8 : 3,
-                    offset: Offset(0, selected ? 2 : 1),
-                  ),
-                ],
-                border: Border.all(
-                  color: selected
-                      ? const Color(0xFF0B5FFF)
-                      : Colors.grey[300]!,
-                  width: selected ? 1.5 : 0.5,
-                ),
-              ),
-              child: AnimatedOpacity(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Card with shadow effect
+              AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
-                opacity: selected ? 1.0 : 0.4,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: selected ? 10 : 8,
-                    vertical: 6,
+                curve: Curves.easeInOut,
+                margin: EdgeInsets.only(
+                  top: selected ? 0 : 4,
+                  bottom: selected ? 0 : 4,
+                ),
+                decoration: BoxDecoration(
+                  color: selected ? const Color(0xFF0B5FFF) : Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: selected
+                          ? const Color(0xFF0B5FFF).withOpacity(0.3)
+                          : Colors.black.withOpacity(0.05),
+                      blurRadius: selected ? 12 : 4,
+                      offset: Offset(0, selected ? 4 : 2),
+                      spreadRadius: selected ? 2 : 0,
+                    ),
+                  ],
+                  border: Border.all(
+                    color: selected
+                        ? const Color(0xFF0B5FFF)
+                        : Colors.grey[300]!,
+                    width: selected ? 2 : 1,
                   ),
-                  child: Center(
-                    child: Text(
-                      label,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: selected ? Colors.white : const Color(0xFF64748B),
-                        fontSize: selected ? 11 : 10,
-                        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                ),
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 300),
+                    opacity: selected ? 1.0 : 0.4,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: selected ? 14 : 12,
+                        vertical: selected ? 10 : 8,
+                      ),
+                      child: Center(
+                        child: Text(
+                          label,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: selected ? Colors.white : const Color(0xFF64748B),
+                          fontSize: selected ? 12 : 11,
+                          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+              // Connector line for selected
+              if (selected)
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  width: 2,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        const Color(0xFF0B5FFF),
+                        const Color(0xFF0B5FFF).withOpacity(0),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -503,11 +515,6 @@ class _SectionBody extends StatelessWidget {
               subtitle: 'Tap "New Entry" to create your first case',
             );
           }
-          // For retinoblastoma, show flat list without grouping
-          if (section == logbookSectionRetinoblastoma) {
-            return _FlatCaseListView(cases: filtered);
-          }
-          return _CaseListView(cases: filtered);
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: filtered.length,
@@ -729,408 +736,6 @@ class _ErrorState extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _DiagnosisSearchBar extends StatelessWidget {
-  const _DiagnosisSearchBar({required this.onChanged});
-
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: TextField(
-        decoration: InputDecoration(
-          prefixIcon: const Icon(
-            Icons.search_rounded,
-            color: Color(0xFF94A3B8),
-            size: 22,
-          ),
-          hintText: 'Search by diagnosis...',
-          hintStyle: const TextStyle(
-            color: Color(0xFF94A3B8),
-            fontSize: 14,
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 14,
-          ),
-        ),
-        style: const TextStyle(
-          color: Color(0xFF1E293B),
-          fontSize: 14,
-        ),
-        onChanged: onChanged,
-      ),
-    );
-  }
-}
-
-class _CaseListView extends ConsumerWidget {
-  const _CaseListView({required this.cases});
-
-  final List<ClinicalCase> cases;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final searchQuery = ref.watch(diagnosisSearchProvider).toLowerCase();
-    
-    // Filter by diagnosis search
-    var filtered = cases;
-    if (searchQuery.isNotEmpty) {
-      filtered = cases
-          .where((c) => c.diagnosis.toLowerCase().contains(searchQuery))
-          .toList();
-    }
-
-    if (filtered.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32.0),
-          child: Text(
-            'No cases match your search',
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(0xFF64748B),
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Group by diagnosis
-    final grouped = <String, List<ClinicalCase>>{};
-    for (final c in filtered) {
-      grouped.putIfAbsent(c.diagnosis, () => []).add(c);
-    }
-
-    final diagnoses = grouped.keys.toList()..sort();
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: diagnoses.length,
-      itemBuilder: (context, index) {
-        final diagnosis = diagnoses[index];
-        final casesForDiagnosis = grouped[diagnosis]!;
-        
-        return _DiagnosisGroup(
-          diagnosis: diagnosis,
-          cases: casesForDiagnosis,
-          isExpanded: searchQuery.isNotEmpty || diagnoses.length <= 3,
-        );
-      },
-    );
-  }
-}
-
-class _DiagnosisGroup extends StatefulWidget {
-  const _DiagnosisGroup({
-    required this.diagnosis,
-    required this.cases,
-    this.isExpanded = false,
-  });
-
-  final String diagnosis;
-  final List<ClinicalCase> cases;
-  final bool isExpanded;
-
-  @override
-  State<_DiagnosisGroup> createState() => _DiagnosisGroupState();
-}
-
-class _DiagnosisGroupState extends State<_DiagnosisGroup> {
-  late bool _isExpanded;
-
-  @override
-  void initState() {
-    super.initState();
-    _isExpanded = widget.isExpanded;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          InkWell(
-            onTap: () => setState(() => _isExpanded = !_isExpanded),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFF0B5FFF).withOpacity(0.1),
-                    const Color(0xFF0B5FFF).withOpacity(0.05),
-                  ],
-                ),
-                borderRadius: _isExpanded
-                    ? const BorderRadius.vertical(top: Radius.circular(16))
-                    : BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0B5FFF),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.medical_information,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.diagnosis,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1E293B),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${widget.cases.length} ${widget.cases.length == 1 ? 'case' : 'cases'}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF64748B),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(
-                    _isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: const Color(0xFF64748B),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_isExpanded)
-            Column(
-              children: widget.cases.map((c) {
-                return _CaseCard(case_: c);
-              }).toList(),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CaseCard extends StatelessWidget {
-  const _CaseCard({required this.case_});
-
-  final ClinicalCase case_;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => context.push('/cases/${case_.id}'),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          border: Border(
-            top: BorderSide(color: Color(0xFFF1F5F9), width: 1),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Center(
-                child: Text(
-                  case_.patientName.isNotEmpty 
-                      ? case_.patientName[0].toUpperCase()
-                      : 'P',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF0B5FFF),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          case_.patientName,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1E293B),
-                          ),
-                        ),
-                      ),
-                      _StatusBadge(status: case_.status),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.badge_outlined,
-                        size: 14,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'UID: ${case_.uidNumber}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Icon(
-                        Icons.medical_services_outlined,
-                        size: 14,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'MR: ${case_.mrNumber}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today_outlined,
-                        size: 14,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _formatDate(case_.dateOfExamination),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      if (case_.patientAge > 0) ...[
-                        const SizedBox(width: 12),
-                        Icon(
-                          Icons.person_outline,
-                          size: 14,
-                          color: Colors.grey[600],
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${case_.patientAge} yrs',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.chevron_right,
-              color: Color(0xFF94A3B8),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.status});
-
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDraft = status == 'draft';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isDraft 
-            ? Colors.orange.withOpacity(0.1)
-            : Colors.green.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        isDraft ? 'Draft' : 'Submitted',
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: isDraft ? Colors.orange[700] : Colors.green[700],
-        ),
-      ),
-    );
-  }
-}
-
-class _FlatCaseListView extends StatelessWidget {
-  final List<ClinicalCase> cases;
-
-  const _FlatCaseListView({required this.cases});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: cases.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        return _CaseCard(case_: cases[index]);
-      },
     );
   }
 }
