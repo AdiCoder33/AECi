@@ -157,6 +157,7 @@ class _LogbookSubmissionScreenState
       case logbookSectionOpdCases:
       case logbookSectionRetinoblastoma:
       case logbookSectionRop:
+      case logbookSectionLaser:
         final casesAsync = ref.watch(submissionCasesProvider);
         return casesAsync.when(
           data: (cases) {
@@ -339,12 +340,15 @@ class _LogbookSubmissionScreenState
         return cases.where((c) => _hasKeyword(c, 'retinoblastoma')).toList();
       case logbookSectionRop:
         return cases.where((c) => _hasKeyword(c, 'rop')).toList();
+      case logbookSectionLaser:
+        return cases.where((c) => _hasKeyword(c, 'laser')).toList();
       case logbookSectionOpdCases:
         return cases
             .where(
               (c) =>
                   !_hasKeyword(c, 'retinoblastoma') &&
-                  !_hasKeyword(c, 'rop'),
+                  !_hasKeyword(c, 'rop') &&
+                  !_hasKeyword(c, 'laser'),
             )
             .toList();
     }
