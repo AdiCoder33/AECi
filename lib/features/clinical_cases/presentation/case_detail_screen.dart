@@ -175,24 +175,31 @@ class _SummaryTab extends StatelessWidget {
                 padding: const EdgeInsets.all(18),
                 child: Column(
                   children: [
+                    _InfoRow(label: 'Patient:', value: c.patientName),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
-                        Expanded(child: _InfoRow(label: 'Patient', value: c.patientName)),
-                        Expanded(child: _InfoRow(label: 'Gender', value: c.patientGender)),
+                        Expanded(
+                          child: _InfoRow(label: 'Gender:', value: c.patientGender),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _InfoRow(label: 'Age:', value: c.patientAge.toString()),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
+                    _InfoRow(label: 'UID:', value: c.uidNumber),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
-                        Expanded(child: _InfoRow(label: 'UID', value: c.uidNumber)),
-                        Expanded(child: _InfoRow(label: 'Age', value: c.patientAge.toString())),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(child: _InfoRow(label: 'MR Number', value: c.mrNumber)),
-                        Expanded(child: _InfoRow(label: 'Exam Date', value: examDate)),
+                        Expanded(
+                          child: _InfoRow(label: 'MR Number:', value: c.mrNumber),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _InfoRow(label: 'Exam Date:', value: examDate),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -1378,28 +1385,33 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 130,
+          Expanded(
+            flex: 2,
             child: Text(
-              '$label:',
+              label,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 13,
                 color: Color(0xFF64748B),
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
+          const SizedBox(width: 12),
           Expanded(
+            flex: 3,
             child: Text(
               value,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 14,
                 color: Color(0xFF1E293B),
+                fontWeight: FontWeight.w600,
               ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
             ),
           ),
         ],

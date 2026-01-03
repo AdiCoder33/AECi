@@ -357,9 +357,24 @@ class _RetinoblastomaScreeningFormScreenState
       child: DropdownButtonFormField<bool>(
         value: value,
         decoration: InputDecoration(labelText: label),
+        isExpanded: true,
         items: const [
-          DropdownMenuItem(value: true, child: Text('Yes')),
-          DropdownMenuItem(value: false, child: Text('No')),
+          DropdownMenuItem(
+            value: true,
+            child: Text(
+              'Yes',
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+          DropdownMenuItem(
+            value: false,
+            child: Text(
+              'No',
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
         ],
         validator: (v) => v == null ? 'Required' : null,
         onChanged: onChanged,
@@ -374,8 +389,16 @@ class _RetinoblastomaScreeningFormScreenState
       child: DropdownButtonFormField<String>(
         value: _group,
         decoration: const InputDecoration(labelText: 'Group'),
+        isExpanded: true,
         items: groups
-            .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+            .map((g) => DropdownMenuItem(
+                  value: g,
+                  child: Text(
+                    g,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ))
             .toList(),
         validator: (v) => v == null || v.isEmpty ? 'Required' : null,
         onChanged: (v) => setState(() => _group = v),
@@ -400,9 +423,24 @@ class _RetinoblastomaScreeningFormScreenState
       child: DropdownButtonFormField<String>(
         value: _gender,
         decoration: const InputDecoration(labelText: 'Gender'),
+        isExpanded: true,
         items: const [
-          DropdownMenuItem(value: 'male', child: Text('Male')),
-          DropdownMenuItem(value: 'female', child: Text('Female')),
+          DropdownMenuItem(
+            value: 'male',
+            child: Text(
+              'Male',
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+          DropdownMenuItem(
+            value: 'female',
+            child: Text(
+              'Female',
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
         ],
         validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
         onChanged: (v) => setState(() => _gender = v),

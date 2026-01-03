@@ -142,9 +142,13 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
               context.push('/cases/new?type=laser');
               return;
             case logbookSectionAtlas:
+              context.pushNamed('logbookNew', extra: moduleImages);
+              return;
             case logbookSectionSurgicalRecord:
+              context.pushNamed('logbookNew', extra: moduleRecords);
+              return;
             case logbookSectionLearning:
-              context.pushNamed('logbookNew', extra: module);
+              context.pushNamed('logbookNew', extra: moduleLearning);
               return;
             case logbookSectionPublications:
               context.pushNamed('pubNew');
@@ -336,81 +340,48 @@ class _ModuleChip extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Card with gradient and shadow effect
+              // Simple card without gradient or shadow
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
-                margin: EdgeInsets.only(
-                  top: selected ? 0 : 4,
-                  bottom: selected ? 0 : 4,
+                padding: EdgeInsets.symmetric(
+                  horizontal: selected ? 16 : 12,
+                  vertical: selected ? 12 : 10,
                 ),
                 decoration: BoxDecoration(
-                  gradient: selected
-                      ? const LinearGradient(
-                          colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : null,
-                  color: selected ? null : Colors.white,
+                  color: selected ? const Color(0xFF3B82F6) : Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: selected
-                          ? const Color(0xFF3B82F6).withOpacity(0.4)
-                          : Colors.black.withOpacity(0.08),
-                      blurRadius: selected ? 12 : 6,
-                      offset: Offset(0, selected ? 4 : 2),
-                      spreadRadius: selected ? 1 : 0,
-                    ),
-                  ],
                   border: Border.all(
                     color: selected
-                        ? Colors.transparent
+                        ? const Color(0xFF3B82F6)
                         : const Color(0xFFE2E8F0),
-                    width: selected ? 0 : 1,
+                    width: 1,
                   ),
                 ),
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 300),
-                    opacity: 1.0,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: selected ? 16 : 12,
-                        vertical: selected ? 12 : 10,
-                      ),
-                      child: Center(
-                        child: Text(
-                          label,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: selected ? Colors.white : const Color(0xFF64748B),
-                          fontSize: selected ? 13 : 12,
-                          fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
+                child: Center(
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: selected ? Colors.white : const Color(0xFF64748B),
+                      fontSize: selected ? 13 : 12,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ),
               ),
-              // Connector line for selected
+              // Simple underline for selected
               if (selected)
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  width: 3,
-                  height: 12,
+                Container(
+                  margin: const EdgeInsets.only(top: 4),
+                  width: 30,
+                  height: 3,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        const Color(0xFF3B82F6),
-                        const Color(0xFF3B82F6).withOpacity(0),
-                      ],
-                    ),
+                    color: const Color(0xFF3B82F6),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
             ],

@@ -710,28 +710,29 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 2),
-                                  Text(
-                                    'MRN: ${entry.mrn}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.white70,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.badge_outlined,
+                                        color: Colors.white70,
+                                        size: 13,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '# ${entry.mrn}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.white70,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
                             ),
-                            if (canEdit)
-                              IconButton(
-                                onPressed: () {
-                                  ref.read(_isEditingProvider.notifier).state = true;
-                                  _loadEntryForEditing(entry);
-                                },
-                                icon: const Icon(Icons.edit_outlined, color: Colors.white),
-                                tooltip: 'Edit',
-                              ),
                           ],
                         ),
                       ),
@@ -1027,14 +1028,17 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                       ),
                       const SizedBox(height: 12),
                       OutlinedButton.icon(
-                        onPressed: entry.status == statusDraft
+                        onPressed: (entry.status == statusDraft || 
+                                   (entry.moduleType == moduleImages && entry.status == statusSubmitted))
                             ? () async {
                                 final confirmed = await showDialog<bool>(
                                   context: context,
                                   builder: (_) => AlertDialog(
                                     title: const Text('Delete entry?'),
-                                    content: const Text(
-                                      'This will remove the entry permanently.',
+                                    content: Text(
+                                      entry.status == statusDraft
+                                          ? 'This will remove the entry permanently.'
+                                          : 'This will remove the submitted Atlas entry permanently.',
                                     ),
                                     actions: [
                                       TextButton(
@@ -1059,6 +1063,10 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                                   await ref
                                       .read(entryMutationProvider.notifier)
                                       .delete(entry.id);
+                                  
+                                  // Refresh entries list
+                                  ref.invalidate(entriesListProvider);
+                                  
                                   if (context.mounted) {
                                     context.go('/logbook');
                                   }
@@ -1066,9 +1074,9 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                               }
                             : null,
                         icon: const Icon(Icons.delete, color: Colors.red),
-                        label: const Text(
-                          'Delete Draft',
-                          style: TextStyle(
+                        label: Text(
+                          entry.status == statusDraft ? 'Delete Draft' : 'Delete Entry',
+                          style: const TextStyle(
                             color: Colors.red,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1310,20 +1318,37 @@ class _ImagesView extends ConsumerWidget {
               ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(
-                  Icons.photo_library_outlined,
+                const Icon(
+                  Icons.collections_outlined,
                   color: Colors.white,
-                  size: 22,
+                  size: 20,
                 ),
-                SizedBox(width: 12),
-                Text(
+                const SizedBox(width: 10),
+                const Text(
                   'Atlas Images',
                   style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
                     color: Colors.white,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${imagePaths.length} ${imagePaths.length == 1 ? 'image' : 'images'}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
@@ -1335,9 +1360,10 @@ class _ImagesView extends ConsumerWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
+                crossAxisCount: 3,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 1.0,
               ),
               itemCount: imagePaths.length,
               itemBuilder: (context, index) {
@@ -1345,26 +1371,80 @@ class _ImagesView extends ConsumerWidget {
                 return FutureBuilder(
                   future: signedCache.getUrl(path),
                   builder: (context, snapshot) {
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: snapshot.hasData
-                          ? Image.network(
-                              snapshot.data!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                color: const Color(0xFFF1F5F9),
-                                child: const Icon(Icons.broken_image, size: 40),
-                              ),
-                            )
-                          : Container(
-                              color: const Color(0xFFF1F5F9),
-                              child: const Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Color(0xFF10B981),
-                                ),
-                              ),
+                    return InkWell(
+                      onTap: snapshot.hasData
+                          ? () => _showImageDialog(context, snapshot.data!)
+                          : null,
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color(0xFF10B981),
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF10B981).withOpacity(0.15),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
                             ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              snapshot.hasData
+                                  ? Image.network(
+                                      snapshot.data!,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        color: const Color(0xFFF1F5F9),
+                                        child: const Center(
+                                          child: Icon(
+                                            Icons.broken_image,
+                                            size: 28,
+                                            color: Color(0xFF94A3B8),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  : Container(
+                                      color: const Color(0xFFF1F5F9),
+                                      child: const Center(
+                                        child: SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Color(0xFF10B981),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                              if (snapshot.hasData)
+                                Positioned(
+                                  bottom: 4,
+                                  right: 4,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.6),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.zoom_in,
+                                      color: Colors.white,
+                                      size: 12,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
                     );
                   },
                 );
@@ -1372,6 +1452,82 @@ class _ImagesView extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showImageDialog(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(20),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: 600,
+            maxHeight: 600,
+          ),
+          child: Stack(
+            children: [
+              InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: const Color(0xFFF1F5F9),
+                      child: const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.broken_image,
+                              size: 64,
+                              color: Color(0xFF94A3B8),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Failed to load image',
+                              style: TextStyle(
+                                color: Color(0xFF64748B),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -313,6 +313,30 @@ class ClinicalCasesRepository {
     return path;
   }
 
+  Future<void> deleteMedia(String mediaId) async {
+    final uid = _client.auth.currentUser?.id;
+    if (uid == null) throw AuthException('Not signed in');
+    
+    // Get media info to delete from storage
+    final media = await _client
+        .from('case_media')
+        .select('storage_path')
+        .eq('id', mediaId)
+        .single();
+    
+    final storagePath = media['storage_path'] as String;
+    
+    // Delete from storage (ignore errors if already deleted)
+    try {
+      await _client.storage.from('elogbook-media').remove([storagePath]);
+    } catch (e) {
+      // File might already be deleted, continue
+    }
+    
+    // Delete from database
+    await _client.from('case_media').delete().eq('id', mediaId);
+  }
+
   Future<String> getSignedUrl(String path) async {
     return _client.storage.from('elogbook-media').createSignedUrl(path, 3600);
   }
