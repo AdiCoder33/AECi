@@ -11,6 +11,10 @@ import '../domain/elog_entry.dart';
 import '../domain/logbook_sections.dart';
 import 'widgets/entry_card.dart';
 
+// Providers for OPD cases filtering
+final expandedDiagnosisProvider = StateProvider<Set<String>>((ref) => {});
+final diagnosisSearchProvider = StateProvider<String>((ref) => '');
+
 class LogbookScreen extends ConsumerStatefulWidget {
   const LogbookScreen({super.key});
 
@@ -167,7 +171,6 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 2),
           Expanded(
             child: _SectionBody(
               isEntrySection: isEntrySection,
@@ -508,6 +511,7 @@ class _SectionBody extends StatelessWidget {
       return cases!.when(
         data: (list) {
           final filtered = _filterCasesForSection(list);
+          
           if (filtered.isEmpty) {
             return _EmptyState(
               icon: Icons.medical_information_outlined,
@@ -515,33 +519,100 @@ class _SectionBody extends StatelessWidget {
               subtitle: 'Tap "New Entry" to create your first case',
             );
           }
+          
+          // For OPD cases, show diagnosis groups
+          if (section == logbookSectionOpdCases) {
+            return _OpdCasesList(cases: filtered);
+          }
+          
+          // For other case sections, show normal list
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: filtered.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final c = filtered[index];
-              return Card(
-                child: ListTile(
-                  title: Text(c.patientName),
-                  subtitle: Text('UID ${c.uidNumber} | MR ${c.mrNumber}'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    switch (section) {
-                      case logbookSectionRop:
-                        context.push('/cases/rop/${c.id}');
-                        return;
-                      case logbookSectionRetinoblastoma:
-                        context.push('/cases/retinoblastoma/${c.id}');
-                        return;
-                      case logbookSectionLaser:
-                        context.push('/cases/laser/${c.id}');
-                        return;
-                      default:
-                        context.push('/cases/${c.id}');
-                        return;
-                    }
-                  },
+              return Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      switch (section) {
+                        case logbookSectionRop:
+                          context.push('/cases/rop/${c.id}');
+                          return;
+                        case logbookSectionRetinoblastoma:
+                          context.push('/cases/retinoblastoma/${c.id}');
+                          return;
+                        case logbookSectionLaser:
+                          context.push('/cases/laser/${c.id}');
+                          return;
+                        default:
+                          context.push('/cases/${c.id}');
+                          return;
+                      }
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0B5FFF).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.medical_information_outlined,
+                              color: Color(0xFF0B5FFF),
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  c.patientName,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'UID ${c.uidNumber} | MR ${c.mrNumber}',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Color(0xFF94A3B8),
+                            size: 24,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               );
             },
@@ -696,6 +767,258 @@ class _EmptyState extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _OpdCasesList extends ConsumerWidget {
+  const _OpdCasesList({required this.cases});
+
+  final List<ClinicalCase> cases;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final searchQuery = ref.watch(diagnosisSearchProvider);
+    final expandedDiagnoses = ref.watch(expandedDiagnosisProvider);
+
+    // Group cases by diagnosis
+    final diagnosisMap = <String, List<ClinicalCase>>{};
+    for (final c in cases) {
+      diagnosisMap.putIfAbsent(c.diagnosis, () => []).add(c);
+    }
+
+    // Sort diagnoses alphabetically
+    final sortedDiagnoses = diagnosisMap.keys.toList()..sort();
+
+    // Filter by search query
+    final filteredDiagnoses = searchQuery.isEmpty
+        ? sortedDiagnoses
+        : sortedDiagnoses
+            .where((d) => d.toLowerCase().contains(searchQuery.toLowerCase()))
+            .toList();
+
+    return Column(
+      children: [
+        // Search bar
+        Container(
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: TextField(
+            decoration: const InputDecoration(
+              prefixIcon: Icon(
+                Icons.search_rounded,
+                color: Color(0xFF94A3B8),
+                size: 22,
+              ),
+              hintText: 'Search diagnosis...',
+              hintStyle: TextStyle(
+                color: Color(0xFF94A3B8),
+                fontSize: 14,
+              ),
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+            ),
+            style: const TextStyle(
+              color: Color(0xFF1E293B),
+              fontSize: 14,
+            ),
+            onChanged: (value) =>
+                ref.read(diagnosisSearchProvider.notifier).state = value,
+          ),
+        ),
+        // Diagnosis list
+        Expanded(
+          child: filteredDiagnoses.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No diagnosis found',
+                    style: TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 14,
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  itemCount: filteredDiagnoses.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final diagnosis = filteredDiagnoses[index];
+                    final diagnosisCases = diagnosisMap[diagnosis]!;
+                    final isExpanded = expandedDiagnoses.contains(diagnosis);
+
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          // Diagnosis header
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () {
+                                final updated = Set<String>.from(expandedDiagnoses);
+                                if (isExpanded) {
+                                  updated.remove(diagnosis);
+                                } else {
+                                  updated.add(diagnosis);
+                                }
+                                ref.read(expandedDiagnosisProvider.notifier).state = updated;
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF10B981).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.local_hospital_outlined,
+                                        color: Color(0xFF10B981),
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            diagnosis,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w700,
+                                              color: Color(0xFF1E293B),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '${diagnosisCases.length} ${diagnosisCases.length == 1 ? 'case' : 'cases'}',
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              color: Color(0xFF64748B),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(
+                                      isExpanded
+                                          ? Icons.expand_less_rounded
+                                          : Icons.expand_more_rounded,
+                                      color: const Color(0xFF94A3B8),
+                                      size: 28,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Cases list (when expanded)
+                          if (isExpanded) ...[
+                            const Divider(height: 1),
+                            ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding: const EdgeInsets.all(12),
+                              itemCount: diagnosisCases.length,
+                              separatorBuilder: (_, __) => const SizedBox(height: 8),
+                              itemBuilder: (context, caseIndex) {
+                                final c = diagnosisCases[caseIndex];
+                                return Container(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF8FAFC),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(0xFFE2E8F0),
+                                    ),
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(12),
+                                      onTap: () => context.push('/cases/${c.id}'),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(12),
+                                        child: Row(
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF0B5FFF).withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: const Icon(
+                                                Icons.person_outline,
+                                                color: Color(0xFF0B5FFF),
+                                                size: 20,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    c.patientName,
+                                                    style: const TextStyle(
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: Color(0xFF1E293B),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    'UID ${c.uidNumber} | MR ${c.mrNumber}',
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      color: Color(0xFF64748B),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const Icon(
+                                              Icons.chevron_right_rounded,
+                                              color: Color(0xFF94A3B8),
+                                              size: 20,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 }
