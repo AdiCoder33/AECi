@@ -335,15 +335,27 @@ class ClinicalCasesRepository {
     final path = followupId == null
         ? '$uid/cases/$caseId/${p.basename(file.path)}'
         : '$uid/cases/$caseId/followups/$followupId/${p.basename(file.path)}';
-    await _client.storage.from('elogbook-media').upload(path, file);
-    await _client.from('case_media').insert({
-      'case_id': caseId,
-      'followup_id': followupId,
-      'category': category,
-      'media_type': mediaType,
-      'storage_path': path,
-      'note': note,
-    });
+    final existing = await _client
+        .from('case_media')
+        .select('id')
+        .eq('case_id', caseId)
+        .eq('storage_path', path)
+        .limit(1);
+    await _client.storage.from('elogbook-media').upload(
+          path,
+          file,
+          fileOptions: const FileOptions(upsert: true),
+        );
+    if ((existing as List).isEmpty) {
+      await _client.from('case_media').insert({
+        'case_id': caseId,
+        'followup_id': followupId,
+        'category': category,
+        'media_type': mediaType,
+        'storage_path': path,
+        'note': note,
+      });
+    }
     return path;
   }
 
