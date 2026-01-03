@@ -22,6 +22,8 @@ class ClinicalCase {
     required this.systemicHistory,
     required this.keywords,
     required this.diagnosis,
+    this.diagnosisRe,
+    this.diagnosisLe,
     required this.status,
     this.bcvaRe,
     this.bcvaLe,
@@ -49,6 +51,8 @@ class ClinicalCase {
   final List<dynamic> systemicHistory;
   final List<String> keywords;
   final String diagnosis;
+  final String? diagnosisRe;
+  final String? diagnosisLe;
   final String status;
   final String? bcvaRe;
   final String? bcvaLe;
@@ -76,6 +80,8 @@ class ClinicalCase {
     systemicHistory: (map['systemic_history'] as List?) ?? const [],
     keywords: (map['keywords'] as List).cast<String>(),
     diagnosis: map['diagnosis'] as String,
+    diagnosisRe: map['diagnosis_re'] as String?,
+    diagnosisLe: map['diagnosis_le'] as String?,
     status: map['status'] as String? ?? 'draft',
     bcvaRe: map['bcva_re'] as String?,
     bcvaLe: map['bcva_le'] as String?,

@@ -117,6 +117,12 @@ class RopScreeningDetailScreen extends ConsumerWidget {
                       label: 'Post conceptional age',
                       value: ropMeta['post_conceptional_age']?.toString() ?? '-',
                     ),
+                    _InfoRow(
+                      label: 'Birth weight',
+                      value: ropMeta['birth_weight'] != null 
+                          ? '${ropMeta['birth_weight']} grams'
+                          : '-',
+                    ),
                     const SizedBox(height: 8),
                     _EyePairRow(
                       label: 'Zone',
@@ -137,7 +143,7 @@ class RopScreeningDetailScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     _EyePairRow(
-                      label: 'AGROP',
+                      label: 'A-ROP',
                       right: _boolLabel(_eyeMapBool(ropMeta['agrop'], 'RE')),
                       left: _boolLabel(_eyeMapBool(ropMeta['agrop'], 'LE')),
                     ),
