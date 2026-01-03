@@ -712,11 +712,9 @@ class _SubmissionCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
-                // Submit Button
+                // Submit Button (always active for now)
                 ElevatedButton(
-                  onPressed: isSubmissionDay
-                      ? () => context.go('/submit')
-                      : null,
+                  onPressed: () => context.go('/submit'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: const Color(0xFF10B981),

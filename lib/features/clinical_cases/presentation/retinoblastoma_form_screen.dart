@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../application/clinical_cases_controller.dart';
 import '../data/clinical_cases_repository.dart';
@@ -40,6 +43,7 @@ class _RetinoblastomaScreeningFormScreenState
   bool? _retinalDetachment;
   String? _group;
   final Set<String> _treatmentGiven = {};
+  bool _uploadingImage = false;
 
   static const _treatmentOptions = [
     'TTT',
@@ -223,12 +227,16 @@ class _RetinoblastomaScreeningFormScreenState
                   ),
                 ),
               OutlinedButton.icon(
-                onPressed: widget.caseId == null
+                onPressed: widget.caseId == null || _uploadingImage
                     ? null
-                    : () => context.push('/cases/${widget.caseId}/media'),
+                    : _pickAndUploadImage,
                 icon: const Icon(Icons.image_outlined),
-                label: const Text('Upload Images'),
+                label: Text(_uploadingImage ? 'Uploading...' : 'Upload Images'),
               ),
+              if (widget.caseId != null) ...[
+                const SizedBox(height: 8),
+                _buildInlineImagesPreview(),
+              ],
               const SizedBox(height: 12),
               const Text(
                 'Retinoblastoma details',
@@ -500,6 +508,132 @@ class _RetinoblastomaScreeningFormScreenState
       return 'Enter a valid number';
     }
     return null;
+  }
+
+  Widget _buildInlineImagesPreview() {
+    if (widget.caseId == null) {
+      return const SizedBox.shrink();
+    }
+
+    final mediaAsync = ref.watch(caseMediaProvider(widget.caseId!));
+    return mediaAsync.when(
+      data: (list) {
+        final images =
+            list.where((m) => m.mediaType.toLowerCase() == 'image').toList();
+        if (images.isEmpty) {
+          return const Text(
+            'No images uploaded yet.',
+            style: TextStyle(fontSize: 12, color: Colors.black54),
+          );
+        }
+
+        final repo = ref.watch(clinicalCasesRepositoryProvider);
+        return SizedBox(
+          height: 80,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: images.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final item = images[index];
+              return AspectRatio(
+                aspectRatio: 1,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: FutureBuilder<String>(
+                    future: repo.getSignedUrl(item.storagePath),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return Container(
+                          color: Colors.red.shade50,
+                          child: const Icon(
+                            Icons.broken_image,
+                            color: Colors.red,
+                          ),
+                        );
+                      }
+                      if (!snapshot.hasData) {
+                        return const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        );
+                      }
+                      return Image.network(
+                        snapshot.data!,
+                        fit: BoxFit.cover,
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+      loading: () => const LinearProgressIndicator(),
+      error: (e, _) => Text(
+        'Failed to load images: $e',
+        style: const TextStyle(fontSize: 12, color: Colors.redAccent),
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    if (widget.caseId == null) return;
+
+    final picker = ImagePicker();
+    XFile? picked;
+    try {
+      picked = await picker.pickImage(source: ImageSource.gallery);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to pick image: $e')),
+      );
+      return;
+    }
+
+    if (picked == null) return;
+
+    final file = File(picked.path);
+    if (!await file.exists()) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selected file not found.')),
+      );
+      return;
+    }
+
+    setState(() => _uploadingImage = true);
+    try {
+      final repo = ref.read(clinicalCasesRepositoryProvider);
+      await repo.uploadMedia(
+        caseId: widget.caseId!,
+        followupId: null,
+        category: 'FUNDUS',
+        mediaType: 'image',
+        file: file,
+        note: null,
+      );
+
+      if (!mounted) return;
+      ref.invalidate(caseMediaProvider(widget.caseId!));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Image uploaded successfully.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to upload image: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _uploadingImage = false);
+      }
+    }
   }
 
   Future<void> _save() async {

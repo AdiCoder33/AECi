@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/elog_entry.dart';
+import '../../../../core/cache/signed_url_cache.dart';
 
 class EntryCard extends ConsumerWidget {
   const EntryCard({super.key, required this.entry, this.onTap});
@@ -23,6 +24,15 @@ class EntryCard extends ConsumerWidget {
           ]
         : <String>[];
     final fileNames = filePaths.map(_fileNameFromPath).toList();
+    final imagePaths = filePaths.where(_isImagePath).toList();
+    final imageNames = imagePaths.map(_fileNameFromPath).toList();
+    final videoPaths = filePaths.where((path) {
+      final ext = _fileNameFromPath(path).split('.').last.toLowerCase();
+      return ['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp', 'm4v']
+          .contains(ext);
+    }).toList();
+    final videoNames = videoPaths.map(_fileNameFromPath).toList();
+    final signedCache = ref.watch(signedUrlCacheProvider.notifier);
 
     return Container(
       decoration: BoxDecoration(
@@ -297,7 +307,7 @@ class EntryCard extends ConsumerWidget {
                       ],
                     ),
                     // Attachments preview for Atlas entries
-                    if (fileNames.isNotEmpty) ...[
+                    if (fileNames.isNotEmpty && entry.moduleType == moduleImages) ...[
                       const SizedBox(height: 12),
                       if (entry.payload['briefDescription'] != null &&
                           entry.payload['briefDescription'].toString().isNotEmpty) ...[
@@ -346,7 +356,23 @@ class EntryCard extends ConsumerWidget {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'Files (${fileNames.length})',
+                            () {
+                              final parts = <String>[];
+                              if (imageNames.isNotEmpty) {
+                                parts.add(
+                                  '${imageNames.length} image${imageNames.length == 1 ? '' : 's'}',
+                                );
+                              }
+                              if (videoNames.isNotEmpty) {
+                                parts.add(
+                                  '${videoNames.length} video${videoNames.length == 1 ? '' : 's'}',
+                                );
+                              }
+                              final label = parts.isEmpty
+                                  ? 'Files (${fileNames.length})'
+                                  : parts.join(' • ');
+                              return label;
+                            }(),
                             style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF475569),
@@ -355,43 +381,73 @@ class EntryCard extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
-                      ...fileNames.take(2).map(
-                        (name) => Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Row(
-                            children: [
-                              Icon(
-                                _fileIconForName(name),
-                                size: 14,
-                                color: const Color(0xFF10B981),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF475569),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
+                      if (imagePaths.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        SizedBox(
+                          height: 64,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: imagePaths.length.clamp(0, 5),
+                            separatorBuilder: (_, __) => const SizedBox(width: 6),
+                            itemBuilder: (context, index) {
+                              final path = imagePaths[index];
+                              return FutureBuilder<String>(
+                                future: signedCache.getUrl(path),
+                                builder: (context, snapshot) {
+                                  if (!snapshot.hasData) {
+                                    return Container(
+                                      width: 64,
+                                      height: 64,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF1F5F9),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Center(
+                                        child: SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  return ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.network(
+                                      snapshot.data!,
+                                      width: 64,
+                                      height: 64,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        width: 64,
+                                        height: 64,
+                                        color: const Color(0xFFF1F5F9),
+                                        child: const Icon(
+                                          Icons.broken_image,
+                                          size: 20,
+                                          color: Color(0xFF94A3B8),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
                           ),
                         ),
-                      ),
-                      if (fileNames.length > 2)
-                        Text(
-                          '+${fileNames.length - 2} more files',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Color(0xFF10B981),
-                            fontWeight: FontWeight.w700,
+                        if (imagePaths.length > 5)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              '+${imagePaths.length - 5} more image(s)',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF10B981),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
-                        ),
+                      ],
                     ],
                   ],
                 ),
@@ -452,6 +508,11 @@ class EntryCard extends ConsumerWidget {
     final normalized = path.replaceAll('\\', '/');
     final parts = normalized.split('/');
     return parts.isNotEmpty ? parts.last : path;
+  }
+
+  bool _isImagePath(String path) {
+    final ext = _fileNameFromPath(path).split('.').last.toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic'].contains(ext);
   }
 
   IconData _fileIconForName(String fileName) {

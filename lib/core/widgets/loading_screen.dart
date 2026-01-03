@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -14,7 +15,27 @@ class _LoadingScreenState extends State<LoadingScreen> {
   @override
   void initState() {
     super.initState();
-    // Show 'Loading your RetiNotes...' after 3 seconds
+    _initLaunchFlow();
+  }
+
+  Future<void> _initLaunchFlow() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasShown = prefs.getBool('launch_animation_shown') ?? false;
+
+    if (hasShown) {
+      if (!mounted) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          // Skip GIF and go straight into the normal auth/home flow.
+          GoRouter.of(context).go('/auth');
+        }
+      });
+      return;
+    }
+
+    await prefs.setBool('launch_animation_shown', true);
+
+    // First-ever launch: show loading text after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         setState(() {
@@ -22,7 +43,8 @@ class _LoadingScreenState extends State<LoadingScreen> {
         });
       }
     });
-    // Navigate after 4 seconds
+
+    // And navigate after 5 seconds on first launch only
     Future.delayed(const Duration(seconds: 5), () {
       if (mounted) {
         GoRouter.of(context).go('/auth');
