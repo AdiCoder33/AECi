@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../application/clinical_cases_controller.dart';
+import '../data/clinical_cases_repository.dart';
 
 class ClinicalCaseListScreen extends ConsumerWidget {
   const ClinicalCaseListScreen({super.key});
@@ -86,7 +87,7 @@ class ClinicalCaseListScreen extends ConsumerWidget {
                 elevation: 2,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(18),
-                  onTap: () => context.push('/cases/${c.id}'),
+                  onTap: () => context.push(_caseRoute(c)),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
                     child: Row(
@@ -206,6 +207,20 @@ class ClinicalCaseListScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _caseRoute(ClinicalCase c) {
+  final keywords = c.keywords.map((k) => k.toLowerCase()).toList();
+  if (keywords.any((k) => k.contains('retinoblastoma'))) {
+    return '/cases/retinoblastoma/${c.id}';
+  }
+  if (keywords.any((k) => k == 'rop')) {
+    return '/cases/rop/${c.id}';
+  }
+  if (keywords.any((k) => k == 'laser')) {
+    return '/cases/laser/${c.id}';
+  }
+  return '/cases/${c.id}';
 }
 
 class _StatusBadge extends StatelessWidget {

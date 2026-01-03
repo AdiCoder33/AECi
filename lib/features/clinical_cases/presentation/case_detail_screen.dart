@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/widgets/shimmer_loading.dart';
 import '../application/clinical_cases_controller.dart';
 import '../application/assessment_controller.dart';
 import '../domain/constants/anterior_segment_options.dart';
@@ -134,84 +135,244 @@ class _SummaryTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final examDate = c.dateOfExamination.toIso8601String().split('T').first;
-    final laserSection = _buildLaserSection(c.anteriorSegment);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
+        Card(
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
           ),
+          margin: const EdgeInsets.only(bottom: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Patient Information
-              const Text(
-                'Patient Information',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1E293B),
+              Container(
+                decoration: BoxDecoration(
+                  color: Color(0xFF3B82F6),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(18),
+                    topRight: Radius.circular(18),
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                child: Row(
+                  children: [
+                    const Icon(Icons.person_outline, color: Colors.white, size: 26),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Patient Information',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              _InfoRow(label: 'Patient', value: c.patientName),
-              _InfoRow(label: 'UID', value: c.uidNumber),
-              _InfoRow(label: 'MR Number', value: c.mrNumber),
-              _InfoRow(label: 'Gender', value: c.patientGender),
-              _InfoRow(label: 'Age', value: c.patientAge.toString()),
-              _InfoRow(label: 'Exam Date', value: examDate),
-              _InfoRow(label: 'Status', value: c.status),
-              ..._ropMetaRows(c.fundus),
-              
-              const Divider(height: 32, color: Color(0xFFE2E8F0)),
-              
-              // Complaints
-              const Text(
-                'Complaints',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1E293B),
+              Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(child: _InfoRow(label: 'Patient', value: c.patientName)),
+                        Expanded(child: _InfoRow(label: 'Gender', value: c.patientGender)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: _InfoRow(label: 'UID', value: c.uidNumber)),
+                        Expanded(child: _InfoRow(label: 'Age', value: c.patientAge.toString())),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: _InfoRow(label: 'MR Number', value: c.mrNumber)),
+                        Expanded(child: _InfoRow(label: 'Exam Date', value: examDate)),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.check_circle_outline, color: Color(0xFF047857), size: 20),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Status:',
+                            style: TextStyle(
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Color(0xFF10B981), Color(0xFF34D399)],
+                              ),
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Color(0xFF10B981).withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              c.status,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ..._ropMetaRows(c.fundus),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              _InfoRow(label: 'Chief Complaint', value: c.chiefComplaint),
-              _InfoRow(
-                label: 'Duration',
-                value: '${c.complaintDurationValue} ${c.complaintDurationUnit}',
-              ),
-              
-              const Divider(height: 32, color: Color(0xFFE2E8F0)),
-              
-              // Systemic History
-              const Text(
-                'Systemic History',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1E293B),
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Chief Complaints Card
+        Card(
+          elevation: 3,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          margin: EdgeInsets.zero,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF10B981), Color(0xFF34D399)],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.medical_information_outlined,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Chief Complaints',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                _formatSystemic(c.systemicHistory),
-                style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _InfoRow(label: 'Complaint', value: c.chiefComplaint),
+                    const SizedBox(height: 8),
+                    _InfoRow(
+                      label: 'Duration',
+                      value: '${c.complaintDurationValue} ${c.complaintDurationUnit}',
+                    ),
+                  ],
+                ),
               ),
-              
-              const Divider(height: 32, color: Color(0xFFE2E8F0)),
-              
-              // Vision & IOP
-              const Text(
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Systemic History Card
+        Card(
+          elevation: 3,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          margin: EdgeInsets.zero,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF10B981), Color(0xFF34D399)],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.health_and_safety_outlined,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Systemic History',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  _formatSystemic(c.systemicHistory),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF475569),
+                    height: 1.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Vision & IOP
+        const Text(
                 'Vision (BCVA) & IOP',
                 style: TextStyle(
                   fontSize: 16,
@@ -219,71 +380,176 @@ class _SummaryTab extends StatelessWidget {
                   color: Color(0xFF1E293B),
                 ),
               ),
-              const SizedBox(height: 12),
-              _EyePairRow(
-                label: 'BCVA',
-                right: c.bcvaRe ?? '-',
-                left: c.bcvaLe ?? '-',
-              ),
-              const SizedBox(height: 8),
-              _EyePairRow(
-                label: 'IOP',
-                right: c.iopRe?.toString() ?? '-',
-                left: c.iopLe?.toString() ?? '-',
-              ),
-              
-              const Divider(height: 32, color: Color(0xFFE2E8F0)),
-              
-              // Anterior Segment
-              const Text(
-                'Anterior Segment',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1E293B),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Table(
+                  columnWidths: const {
+                    0: FixedColumnWidth(60),
+                    1: FlexColumnWidth(),
+                    2: FlexColumnWidth(),
+                  },
+                  border: TableBorder.all(color: Color(0xFFE2E8F0)),
+                  children: [
+                    TableRow(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+                        ),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          topRight: Radius.circular(12),
+                        ),
+                      ),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text('eye', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15)),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text('RE', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15)),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text('LE', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15)),
+                        ),
+                      ],
+                    ),
+                    TableRow(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text('BCVA', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(c.bcvaRe ?? '-'),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(c.bcvaLe ?? '-'),
+                        ),
+                      ],
+                    ),
+                    TableRow(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text('IOP', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(c.iopRe?.toString() ?? '-'),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(c.iopLe?.toString() ?? '-'),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                _formatAnterior(c.anteriorSegment),
-                style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
+        
+        const Divider(height: 32, color: Color(0xFFE2E8F0)),
+        
+        // Anterior Segment
+        Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFDCFCE7), Color(0xFFBBF7D0)],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.remove_red_eye_outlined,
+                      color: Color(0xFF10B981),
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Anterior Segment Examination',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              
-              const Divider(height: 32, color: Color(0xFFE2E8F0)),
-              
-              // Fundus Examination
-              const Text(
-                'Fundus Examination',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1E293B),
-                ),
+        const SizedBox(height: 16),
+        _buildAnteriorSegmentCards(c.anteriorSegment),
+        
+        const Divider(height: 32, color: Color(0xFFE2E8F0)),
+        
+        // Fundus Examination
+        Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFEF3C7), Color(0xFFFDE68A)],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.preview_outlined,
+                      color: Color(0xFFF59E0B),
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Fundus Examination',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                _formatFundus(c.fundus),
-                style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-              ),
-              
-              if (_hasRopMeta(c.fundus)) ...[
-                const Divider(height: 32, color: Color(0xFFE2E8F0)),
-                const Text(
-                  'ROP Assessment',
+        const SizedBox(height: 16),
+        _buildFundusCards(c.fundus),
+        
+        if (_hasRopMeta(c.fundus)) ...[
+          const Divider(height: 32, color: Color(0xFFE2E8F0)),
+          const Text(
+            'ROP Assessment',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF1E293B),
                   ),
                 ),
-                const SizedBox(height: 12),
-                ..._buildRopMetaRows(c.fundus),
-              ],
-              
-              const Divider(height: 32, color: Color(0xFFE2E8F0)),
-              
-              // Diagnosis
-              const Text(
+          const SizedBox(height: 12),
+          ..._buildRopMetaRows(c.fundus),
+        ],
+        
+        const Divider(height: 32, color: Color(0xFFE2E8F0)),
+        
+        // Diagnosis
+        const Text(
                 'Diagnosis',
                 style: TextStyle(
                   fontSize: 16,
@@ -291,181 +557,85 @@ class _SummaryTab extends StatelessWidget {
                   color: Color(0xFF1E293B),
                 ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                c.diagnosisOther == null || c.diagnosisOther!.isEmpty
+        const SizedBox(height: 12),
+        Text(
+          c.diagnosisOther == null || c.diagnosisOther!.isEmpty
                     ? c.diagnosis
                     : '${c.diagnosis} (${c.diagnosisOther})',
-                style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-              ),
-              
-              if (c.management != null && c.management!.isNotEmpty) ...[
-                const Divider(height: 32, color: Color(0xFFE2E8F0)),
-                const Text(
-                  'Management',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E293B),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  c.management!,
-                  style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-                ),
-              ],
-              
-              if (c.learningPoint != null && c.learningPoint!.isNotEmpty) ...[
-                const Divider(height: 32, color: Color(0xFFE2E8F0)),
-                const Text(
-                  'Learning Point',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E293B),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  c.learningPoint!,
-                  style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-                ),
-              ],
-              
-              if (c.keywords.isNotEmpty) ...[
-                const Divider(height: 32, color: Color(0xFFE2E8F0)),
-                const Text(
-                  'Keywords',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E293B),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: c.keywords
-                      .map(
-                        (k) => Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: Text(
-                            k,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF475569),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ],
-            ],
-          ),
+          style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
         ),
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Anterior Segment',
-          child: Text(
-            _formatAnterior(c.anteriorSegment),
-            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Fundus Examination',
-          child: Text(
-            _formatFundus(c.fundus),
-            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
-        ),
-        if (laserSection != null) ...[
-          const SizedBox(height: 12),
-          laserSection,
-        ],
-        if (_hasRopMeta(c.fundus)) ...[
-          const SizedBox(height: 12),
-          _Section(
-            title: 'ROP Assessment',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: _buildRopMetaRows(c.fundus),
-            ),
-          ),
-        ],
-        const SizedBox(height: 12),
-        _Section(
-          title: 'Diagnosis',
-          child: Text(
-            c.diagnosisOther == null || c.diagnosisOther!.isEmpty
-                ? c.diagnosis
-                : '${c.diagnosis} (${c.diagnosisOther})',
-            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-          ),
-        ),
+        
         if (c.management != null && c.management!.isNotEmpty) ...[
+          const Divider(height: 32, color: Color(0xFFE2E8F0)),
+          const Text(
+            'Management',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
           const SizedBox(height: 12),
-          _Section(
-            title: 'Management',
-            child: Text(
-              c.management!,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-            ),
+          Text(
+            c.management!,
+            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
           ),
         ],
+        
         if (c.learningPoint != null && c.learningPoint!.isNotEmpty) ...[
+          const Divider(height: 32, color: Color(0xFFE2E8F0)),
+          const Text(
+            'Learning Point',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
           const SizedBox(height: 12),
-          _Section(
-            title: 'Learning Point',
-            child: Text(
-              c.learningPoint!,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
-            ),
+          Text(
+            c.learningPoint!,
+            style: const TextStyle(fontSize: 14, color: Color(0xFF475569)),
           ),
         ],
+        
         if (c.keywords.isNotEmpty) ...[
+          const Divider(height: 32, color: Color(0xFFE2E8F0)),
+          const Text(
+            'Keywords',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
           const SizedBox(height: 12),
-          _Section(
-            title: 'Keywords',
-            child: Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: c.keywords
-                  .map(
-                    (k) => Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: Text(
-                        k,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF475569),
-                          fontWeight: FontWeight.w500,
-                        ),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: c.keywords
+                .map(
+                  (k) => Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Text(
+                      k,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF475569),
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  )
-                  .toList(),
-            ),
+                  ),
+                )
+                .toList(),
           ),
         ],
       ],
@@ -475,6 +645,438 @@ class _SummaryTab extends StatelessWidget {
   String _formatSystemic(List<dynamic> items) {
     if (items.isEmpty) return 'Nil';
     return items.map((e) => e.toString()).join(', ');
+  }
+
+  Widget _buildAnteriorSegmentCards(Map<String, dynamic>? anterior) {
+    if (anterior == null || anterior.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: const Center(
+          child: Text(
+            'No anterior segment data',
+            style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
+          ),
+        ),
+      );
+    }
+
+    final reData = Map<String, dynamic>.from(anterior['RE'] as Map? ?? {});
+    final leData = Map<String, dynamic>.from(anterior['LE'] as Map? ?? {});
+
+    // List of findings to display (use your actual keys or section names)
+    final findings = reData.keys.toSet().union(leData.keys.toSet()).toList();
+
+    String getSelectedValue(Map<String, dynamic> data, String key) {
+      final value = data[key];
+      if (value is Map && value.containsKey('selected')) {
+        final selected = value['selected'];
+        if (selected is List && selected.isNotEmpty) {
+          return selected.join(', ');
+        } else if (selected is String && selected.isNotEmpty) {
+          return selected;
+        }
+      }
+      return '-';
+    }
+
+    String formatFinding(String finding) {
+      // Replace underscores with spaces and capitalize first letter
+      String formatted = finding.replaceAll('_', ' ');
+      if (formatted.isNotEmpty) {
+        formatted = formatted[0].toUpperCase() + formatted.substring(1);
+      }
+      return formatted;
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Table(
+        columnWidths: const {
+          0: FixedColumnWidth(120),
+          1: FlexColumnWidth(),
+          2: FlexColumnWidth(),
+        },
+        border: TableBorder.all(color: Color(0xFFE2E8F0)),
+        children: [
+          TableRow(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF10B981), Color(0xFF34D399)],
+              ),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Text('Finding', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15)),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Text('RE', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15)),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Text('LE', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15)),
+              ),
+            ],
+          ),
+          ...findings.asMap().entries.map((entry) {
+            final index = entry.key;
+            final finding = entry.value;
+            return TableRow(
+              decoration: BoxDecoration(
+                color: index.isEven ? Colors.white : Color(0xFFF0FDF4),
+              ),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Text(
+                    formatFinding(finding),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: Color(0xFF334155),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Text(
+                    getSelectedValue(reData, finding),
+                    style: TextStyle(
+                      color: Color(0xFF059669),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Text(
+                    getSelectedValue(leData, finding),
+                    style: TextStyle(
+                      color: Color(0xFF059669),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFundusCards(Map<String, dynamic>? fundus) {
+    if (fundus == null || fundus.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8FAFC),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: const Center(
+          child: Text(
+            'No fundus examination data',
+            style: TextStyle(color: Color(0xFF64748B), fontSize: 14),
+          ),
+        ),
+      );
+    }
+
+    final reData = Map<String, dynamic>.from(fundus['RE'] as Map? ?? {});
+    final leData = Map<String, dynamic>.from(fundus['LE'] as Map? ?? {});
+
+    final findings = reData.keys.toSet().union(leData.keys.toSet()).toList();
+
+    String getSelectedValue(Map<String, dynamic> data, String key) {
+      final value = data[key];
+      if (value is Map && value.containsKey('selected')) {
+        final selected = value['selected'];
+        if (selected is List && selected.isNotEmpty) {
+          return selected.join(', ');
+        } else if (selected is String && selected.isNotEmpty) {
+          return selected;
+        }
+      }
+      return '-';
+    }
+
+    String formatFinding(String finding) {
+      String formatted = finding.replaceAll('_', ' ');
+      if (formatted.isNotEmpty) {
+        formatted = formatted[0].toUpperCase() + formatted.substring(1);
+      }
+      return formatted;
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Table(
+        columnWidths: const {
+          0: FixedColumnWidth(120),
+          1: FlexColumnWidth(),
+          2: FlexColumnWidth(),
+        },
+        border: TableBorder.all(color: Color(0xFFE2E8F0)),
+        children: [
+          TableRow(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
+              ),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+            ),
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Text('Finding', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15)),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Text('RE', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15)),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Text('LE', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 15)),
+              ),
+            ],
+          ),
+          ...findings.asMap().entries.map((entry) {
+            final index = entry.key;
+            final finding = entry.value;
+            return TableRow(
+              decoration: BoxDecoration(
+                color: index.isEven ? Colors.white : Color(0xFFFFFBEB),
+              ),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Text(
+                    formatFinding(finding),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: Color(0xFF334155),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Text(
+                    getSelectedValue(reData, finding),
+                    style: TextStyle(
+                      color: Color(0xFFD97706),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Text(
+                    getSelectedValue(leData, finding),
+                    style: TextStyle(
+                      color: Color(0xFFD97706),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildEyeFindings(Map<String, dynamic> eyeData, bool isAnterior) {
+    final findings = <Widget>[];
+    
+    if (isAnterior) {
+      for (final section in anteriorSegmentSections) {
+        final sectionData = _coerceSection(eyeData[section.key]);
+        final summary = _formatSection(sectionData);
+        
+        if (summary.isNotEmpty) {
+          // Check if finding is normal
+          final isNormal = summary.toLowerCase().contains('normal') || 
+                          summary.toLowerCase() == 'clear' ||
+                          summary.toLowerCase().contains('full and free');
+          
+          findings.add(
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      section.label,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      summary,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isNormal ? const Color(0xFF10B981) : const Color(0xFF1E293B),
+                        fontWeight: isNormal ? FontWeight.w500 : FontWeight.w600,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      }
+    } else {
+      for (final section in fundusSections) {
+        final sectionData = _coerceSection(eyeData[section.key]);
+        final summary = _formatSection(sectionData);
+        
+        if (summary.isNotEmpty) {
+          // Check if finding is normal
+          final isNormal = summary.toLowerCase().contains('normal') || 
+                          summary.toLowerCase() == 'clear' ||
+                          summary.toLowerCase().contains('full and free');
+          
+          findings.add(
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      section.label,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      summary,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isNormal ? const Color(0xFF10B981) : const Color(0xFF1E293B),
+                        fontWeight: isNormal ? FontWeight.w500 : FontWeight.w600,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      }
+    }
+    
+    final remarks = (eyeData['remarks'] as String?) ?? '';
+    if (remarks.trim().isNotEmpty) {
+      findings.add(
+        Container(
+          padding: const EdgeInsets.all(8),
+          margin: const EdgeInsets.only(top: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFEF3C7).withOpacity(0.5),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.3)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.note_outlined,
+                size: 14,
+                color: Color(0xFFF59E0B),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  remarks,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF92400E),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    if (findings.isEmpty) {
+      findings.add(
+        const Center(
+          child: Padding(
+            padding: EdgeInsets.all(8),
+            child: Text(
+              'No findings recorded',
+              style: TextStyle(
+                fontSize: 12,
+                color: Color(0xFF94A3B8),
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    
+    return findings;
   }
 
   String _formatAnterior(Map<String, dynamic>? anterior) {
@@ -967,22 +1569,141 @@ class _MediaTab extends ConsumerWidget {
             onAction: () => context.push('/cases/$caseId/media'),
           );
         }
+        
+        // Group by category/eye based on naming convention
+        // Categories might include "fundus_re", "anterior_re", etc.
+        final reMedia = list.where((m) => 
+          m.category.toLowerCase().contains('_re') || 
+          m.category.toLowerCase().endsWith('re')
+        ).toList();
+        final leMedia = list.where((m) => 
+          m.category.toLowerCase().contains('_le') || 
+          m.category.toLowerCase().endsWith('le')
+        ).toList();
+        final otherMedia = list.where((m) => 
+          !m.category.toLowerCase().contains('_re') && 
+          !m.category.toLowerCase().endsWith('re') &&
+          !m.category.toLowerCase().contains('_le') && 
+          !m.category.toLowerCase().endsWith('le')
+        ).toList();
+        
         return Column(
           children: [
             Expanded(
-              child: GridView.builder(
+              child: ListView(
                 padding: const EdgeInsets.all(16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.85,
-                ),
-                itemCount: list.length,
-                itemBuilder: (context, index) {
-                  final item = list[index];
-                  return _MediaTile(item: item);
-                },
+                children: [
+                  if (reMedia.isNotEmpty) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.visibility_outlined, color: Colors.white, size: 18),
+                          SizedBox(width: 8),
+                          Text(
+                            'RIGHT EYE',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 0.85,
+                      ),
+                      itemCount: reMedia.length,
+                      itemBuilder: (context, index) => _MediaTile(item: reMedia[index]),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                  if (leMedia.isNotEmpty) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3B82F6),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.visibility_outlined, color: Colors.white, size: 18),
+                          SizedBox(width: 8),
+                          Text(
+                            'LEFT EYE',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 0.85,
+                      ),
+                      itemCount: leMedia.length,
+                      itemBuilder: (context, index) => _MediaTile(item: leMedia[index]),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                  if (otherMedia.isNotEmpty) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF64748B),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.photo_library_outlined, color: Colors.white, size: 18),
+                          SizedBox(width: 8),
+                          Text(
+                            'OTHER MEDIA',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 0.85,
+                      ),
+                      itemCount: otherMedia.length,
+                      itemBuilder: (context, index) => _MediaTile(item: otherMedia[index]),
+                    ),
+                  ],
+                ],
               ),
             ),
             Padding(
