@@ -65,18 +65,44 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
       backgroundColor: const Color(0xFFF7F9FC),
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
-        title: const Text(
-          'Logbook',
-          style: TextStyle(
-            color: Color(0xFF1E293B),
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.library_books_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Logbook',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: Color(0xFF64748B)),
+            icon: const Icon(Icons.search_rounded, color: Colors.white),
             onPressed: () => context.push('/search'),
           ),
           const SizedBox(width: 4),
@@ -110,14 +136,27 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
               return;
           }
         },
-        backgroundColor: const Color(0xFF0B5FFF),
-        elevation: 3,
-        icon: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: const Color(0xFF3B82F6),
+        elevation: 4,
+        icon: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.25),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(
+            Icons.add_rounded,
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
         label: const Text(
           'New Entry',
           style: TextStyle(
             color: Colors.white,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
+            letterSpacing: 0.3,
           ),
         ),
       ),
@@ -295,7 +334,7 @@ class _ModuleChip extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Card with shadow effect
+              // Card with gradient and shadow effect
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
@@ -304,32 +343,39 @@ class _ModuleChip extends StatelessWidget {
                   bottom: selected ? 0 : 4,
                 ),
                 decoration: BoxDecoration(
-                  color: selected ? const Color(0xFF0B5FFF) : Colors.white,
+                  gradient: selected
+                      ? const LinearGradient(
+                          colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : null,
+                  color: selected ? null : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
                       color: selected
-                          ? const Color(0xFF0B5FFF).withOpacity(0.3)
-                          : Colors.black.withOpacity(0.05),
-                      blurRadius: selected ? 12 : 4,
+                          ? const Color(0xFF3B82F6).withOpacity(0.4)
+                          : Colors.black.withOpacity(0.08),
+                      blurRadius: selected ? 12 : 6,
                       offset: Offset(0, selected ? 4 : 2),
-                      spreadRadius: selected ? 2 : 0,
+                      spreadRadius: selected ? 1 : 0,
                     ),
                   ],
                   border: Border.all(
                     color: selected
-                        ? const Color(0xFF0B5FFF)
-                        : Colors.grey[300]!,
-                    width: selected ? 2 : 1,
+                        ? Colors.transparent
+                        : const Color(0xFFE2E8F0),
+                    width: selected ? 0 : 1,
                   ),
                 ),
                   child: AnimatedOpacity(
                     duration: const Duration(milliseconds: 300),
-                    opacity: selected ? 1.0 : 0.4,
+                    opacity: 1.0,
                     child: Padding(
                       padding: EdgeInsets.symmetric(
-                        horizontal: selected ? 14 : 12,
-                        vertical: selected ? 10 : 8,
+                        horizontal: selected ? 16 : 12,
+                        vertical: selected ? 12 : 10,
                       ),
                       child: Center(
                         child: Text(
@@ -339,8 +385,9 @@ class _ModuleChip extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: selected ? Colors.white : const Color(0xFF64748B),
-                          fontSize: selected ? 12 : 11,
-                          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                          fontSize: selected ? 13 : 12,
+                          fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                          letterSpacing: 0.3,
                         ),
                       ),
                     ),
@@ -351,15 +398,15 @@ class _ModuleChip extends StatelessWidget {
               if (selected)
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
-                  width: 2,
+                  width: 3,
                   height: 12,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        const Color(0xFF0B5FFF),
-                        const Color(0xFF0B5FFF).withOpacity(0),
+                        const Color(0xFF3B82F6),
+                        const Color(0xFF3B82F6).withOpacity(0),
                       ],
                     ),
                   ),
@@ -389,22 +436,25 @@ class _FilterChip extends StatelessWidget {
       label: Text(label),
       selected: selected,
       onSelected: onSelected,
-      backgroundColor: Colors.grey[100],
-      selectedColor: const Color(0xFF0B5FFF).withOpacity(0.1),
-      checkmarkColor: const Color(0xFF0B5FFF),
+      backgroundColor: const Color(0xFFF8FAFC),
+      selectedColor: const Color(0xFF3B82F6).withOpacity(0.15),
+      checkmarkColor: const Color(0xFF3B82F6),
       labelStyle: TextStyle(
-        color: selected ? const Color(0xFF0B5FFF) : const Color(0xFF64748B),
+        color: selected ? const Color(0xFF3B82F6) : const Color(0xFF64748B),
         fontSize: 13,
-        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+        fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+        letterSpacing: 0.2,
       ),
       side: BorderSide(
-        color: selected ? const Color(0xFF0B5FFF) : Colors.grey[300]!,
-        width: 1.5,
+        color: selected ? const Color(0xFF3B82F6) : const Color(0xFFE2E8F0),
+        width: selected ? 2 : 1,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      elevation: selected ? 2 : 0,
+      shadowColor: selected ? const Color(0xFF3B82F6).withOpacity(0.3) : null,
     );
   }
 }
@@ -536,9 +586,10 @@ class _SectionBody extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                      spreadRadius: 1,
                     ),
                   ],
                 ),
@@ -562,53 +613,138 @@ class _SectionBody extends StatelessWidget {
                           return;
                       }
                     },
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0B5FFF).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
+                    child: Column(
+                      children: [
+                        // Gradient Header
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF10B981), Color(0xFF34D399)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                            child: const Icon(
-                              Icons.medical_information_outlined,
-                              color: Color(0xFF0B5FFF),
-                              size: 24,
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(16),
+                              topRight: Radius.circular(16),
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.medical_information_outlined,
+                                  color: Color(0xFF10B981),
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
                                   c.patientName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF1E293B),
+                                    color: Colors.white,
+                                    letterSpacing: 0.3,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'UID ${c.uidNumber} | MR ${c.mrNumber}',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Color(0xFF64748B),
-                                  ),
+                              ),
+                              const Icon(
+                                Icons.chevron_right_rounded,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Content
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF3B82F6).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: const Color(0xFF3B82F6).withOpacity(0.2),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.fingerprint,
+                                            size: 14,
+                                            color: Color(0xFF3B82F6),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'UID ${c.uidNumber}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFF3B82F6),
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF1F5F9),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: const Color(0xFFE2E8F0),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.badge_outlined,
+                                            size: 14,
+                                            color: Color(0xFF64748B),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'MR ${c.mrNumber}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFF64748B),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          const Icon(
-                            Icons.chevron_right_rounded,
-                            color: Color(0xFF94A3B8),
-                            size: 24,
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -737,29 +873,49 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 80, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF64748B),
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFF1F5F9), Color(0xFFE2E8F0)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 64,
+                color: const Color(0xFF94A3B8),
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF94A3B8),
+            const SizedBox(height: 24),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF475569),
+                letterSpacing: 0.3,
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+            const SizedBox(height: 12),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF94A3B8),
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -854,19 +1010,23 @@ class _OpdCasesList extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                            spreadRadius: 1,
                           ),
                         ],
                       ),
                       child: Column(
                         children: [
-                          // Diagnosis header
+                          // Diagnosis header with gradient
                           Material(
                             color: Colors.transparent,
                             child: InkWell(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
+                              ),
                               onTap: () {
                                 final updated = Set<String>.from(expandedDiagnoses);
                                 if (isExpanded) {
@@ -876,19 +1036,45 @@ class _OpdCasesList extends ConsumerWidget {
                                 }
                                 ref.read(expandedDiagnosisProvider.notifier).state = updated;
                               },
-                              child: Padding(
+                              child: Container(
                                 padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: isExpanded
+                                        ? [const Color(0xFF10B981), const Color(0xFF34D399)]
+                                        : [const Color(0xFFF8FAFC), const Color(0xFFF1F5F9)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: const Radius.circular(16),
+                                    topRight: const Radius.circular(16),
+                                    bottomLeft: isExpanded ? Radius.zero : const Radius.circular(16),
+                                    bottomRight: isExpanded ? Radius.zero : const Radius.circular(16),
+                                  ),
+                                ),
                                 child: Row(
                                   children: [
                                     Container(
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF10B981).withOpacity(0.1),
+                                        color: isExpanded
+                                            ? Colors.white
+                                            : const Color(0xFF10B981).withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(12),
+                                        boxShadow: isExpanded
+                                            ? [
+                                                BoxShadow(
+                                                  color: Colors.black.withOpacity(0.1),
+                                                  blurRadius: 4,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ]
+                                            : null,
                                       ),
-                                      child: const Icon(
-                                        Icons.local_hospital_outlined,
-                                        color: Color(0xFF10B981),
+                                      child: Icon(
+                                        Icons.local_hospital_rounded,
+                                        color: const Color(0xFF10B981),
                                         size: 24,
                                       ),
                                     ),
@@ -901,18 +1087,32 @@ class _OpdCasesList extends ConsumerWidget {
                                             diagnosis,
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w700,
-                                              color: Color(0xFF1E293B),
+                                              color: isExpanded ? Colors.white : const Color(0xFF1E293B),
+                                              letterSpacing: 0.3,
                                             ),
                                           ),
                                           const SizedBox(height: 4),
-                                          Text(
-                                            '${diagnosisCases.length} ${diagnosisCases.length == 1 ? 'case' : 'cases'}',
-                                            style: const TextStyle(
-                                              fontSize: 13,
-                                              color: Color(0xFF64748B),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: isExpanded
+                                                  ? Colors.white.withOpacity(0.25)
+                                                  : const Color(0xFF10B981).withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              '${diagnosisCases.length} ${diagnosisCases.length == 1 ? 'case' : 'cases'}',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w700,
+                                                color: isExpanded ? Colors.white : const Color(0xFF10B981),
+                                              ),
                                             ),
                                           ),
                                         ],
@@ -922,7 +1122,7 @@ class _OpdCasesList extends ConsumerWidget {
                                       isExpanded
                                           ? Icons.expand_less_rounded
                                           : Icons.expand_more_rounded,
-                                      color: const Color(0xFF94A3B8),
+                                      color: isExpanded ? Colors.white : const Color(0xFF94A3B8),
                                       size: 28,
                                     ),
                                   ],
@@ -932,7 +1132,7 @@ class _OpdCasesList extends ConsumerWidget {
                           ),
                           // Cases list (when expanded)
                           if (isExpanded) ...[
-                            const Divider(height: 1),
+                            const Divider(height: 1, color: Color(0xFFE2E8F0)),
                             ListView.separated(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
@@ -943,11 +1143,23 @@ class _OpdCasesList extends ConsumerWidget {
                                 final c = diagnosisCases[caseIndex];
                                 return Container(
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF8FAFC),
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFFF8FAFC), Color(0xFFFFFFFF)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: const Color(0xFFE2E8F0),
+                                      width: 1.5,
                                     ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.04),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
                                   ),
                                   child: Material(
                                     color: Colors.transparent,
@@ -959,14 +1171,25 @@ class _OpdCasesList extends ConsumerWidget {
                                         child: Row(
                                           children: [
                                             Container(
-                                              padding: const EdgeInsets.all(8),
+                                              padding: const EdgeInsets.all(10),
                                               decoration: BoxDecoration(
-                                                color: const Color(0xFF0B5FFF).withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(8),
+                                                gradient: const LinearGradient(
+                                                  colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                ),
+                                                borderRadius: BorderRadius.circular(10),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: const Color(0xFF3B82F6).withOpacity(0.3),
+                                                    blurRadius: 4,
+                                                    offset: const Offset(0, 2),
+                                                  ),
+                                                ],
                                               ),
                                               child: const Icon(
-                                                Icons.person_outline,
-                                                color: Color(0xFF0B5FFF),
+                                                Icons.person_rounded,
+                                                color: Colors.white,
                                                 size: 20,
                                               ),
                                             ),
@@ -981,30 +1204,96 @@ class _OpdCasesList extends ConsumerWidget {
                                                     overflow: TextOverflow.ellipsis,
                                                     style: const TextStyle(
                                                       fontSize: 14,
-                                                      fontWeight: FontWeight.w600,
+                                                      fontWeight: FontWeight.w700,
                                                       color: Color(0xFF1E293B),
                                                     ),
                                                   ),
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    'UID ${c.uidNumber} | MR ${c.mrNumber}',
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                    style: const TextStyle(
-                                                      fontSize: 11,
-                                                      color: Color(0xFF64748B),
-                                                    ),
+                                                  const SizedBox(height: 6),
+                                                  Row(
+                                                    children: [
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 4,
+                                                        ),
+                                                        decoration: BoxDecoration(
+                                                          color: const Color(0xFF3B82F6).withOpacity(0.1),
+                                                          borderRadius: BorderRadius.circular(6),
+                                                          border: Border.all(
+                                                            color: const Color(0xFF3B82F6).withOpacity(0.2),
+                                                          ),
+                                                        ),
+                                                        child: Row(
+                                                          mainAxisSize: MainAxisSize.min,
+                                                          children: [
+                                                            const Icon(
+                                                              Icons.fingerprint,
+                                                              size: 12,
+                                                              color: Color(0xFF3B82F6),
+                                                            ),
+                                                            const SizedBox(width: 3),
+                                                            Text(
+                                                              c.uidNumber,
+                                                              style: const TextStyle(
+                                                                fontSize: 11,
+                                                                color: Color(0xFF3B82F6),
+                                                                fontWeight: FontWeight.w700,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 6),
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 4,
+                                                        ),
+                                                        decoration: BoxDecoration(
+                                                          color: const Color(0xFFF1F5F9),
+                                                          borderRadius: BorderRadius.circular(6),
+                                                          border: Border.all(
+                                                            color: const Color(0xFFE2E8F0),
+                                                          ),
+                                                        ),
+                                                        child: Row(
+                                                          mainAxisSize: MainAxisSize.min,
+                                                          children: [
+                                                            const Icon(
+                                                              Icons.badge_outlined,
+                                                              size: 12,
+                                                              color: Color(0xFF64748B),
+                                                            ),
+                                                            const SizedBox(width: 3),
+                                                            Text(
+                                                              c.mrNumber,
+                                                              style: const TextStyle(
+                                                                fontSize: 11,
+                                                                color: Color(0xFF64748B),
+                                                                fontWeight: FontWeight.w600,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                  const SizedBox(height: 8),
                                                   // Eye information side by side
                                                   // ...existing code...
                                                 ],
                                               ),
                                             ),
-                                            const Icon(
-                                              Icons.chevron_right_rounded,
-                                              color: Color(0xFF94A3B8),
-                                              size: 20,
+                                            Container(
+                                              padding: const EdgeInsets.all(6),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF10B981).withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: const Icon(
+                                                Icons.chevron_right_rounded,
+                                                color: Color(0xFF10B981),
+                                                size: 20,
+                                              ),
                                             ),
                                           ],
                                         ),
@@ -1034,33 +1323,63 @@ class _ErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 60,
-            color: Colors.red[300],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Failed to load',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.red[700],
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFFEF4444).withOpacity(0.1),
+                    const Color(0xFFFEE2E2),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline_rounded,
+                size: 64,
+                color: Colors.red[400],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF64748B),
+            const SizedBox(height: 24),
+            Text(
+              'Failed to load',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Colors.red[700],
+                letterSpacing: 0.3,
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.red[200]!,
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF64748B),
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
