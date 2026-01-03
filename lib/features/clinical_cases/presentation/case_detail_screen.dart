@@ -42,23 +42,20 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
             data: (c) {
               final authId = authState.session?.user.id;
               final designation = profileState.profile?.designation;
-              final canScore = designation == 'Consultant' &&
+              final canScore =
+                  designation == 'Consultant' &&
                   authId != null &&
                   authId != c.createdBy;
-              final canEdit = !readOnly &&
-                  (c.status == 'draft' || c.status == 'submitted');
+              final canEdit =
+                  !readOnly && (c.status == 'draft' || c.status == 'submitted');
               final isRetinoblastoma = c.keywords.any(
                 (k) => k.toLowerCase().contains('retinoblastoma'),
               );
-              final isRop = c.keywords.any(
-                (k) => k.toLowerCase() == 'rop',
-              );
-              final isLaser = c.keywords.any(
-                (k) => k.toLowerCase() == 'laser',
-              );
-              final isUvea = c.keywords.any(
-                (k) => k.toLowerCase() == 'uvea',
-              );
+              final isRop = c.keywords.any((k) => k.toLowerCase() == 'rop');
+              final isLaser = c.keywords.any((k) => k.toLowerCase() == 'laser');
+              final isUvea = c.keywords.any((k) => k.toLowerCase() == 'uvea');
+              final canDelete =
+                  !readOnly && authId != null && authId == c.createdBy;
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -82,13 +79,20 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
                         isRetinoblastoma
                             ? '/cases/${c.id}/edit?type=retinoblastoma'
                             : isRop
-                                ? '/cases/${c.id}/edit?type=rop'
-                                : isLaser
-                                    ? '/cases/${c.id}/edit?type=laser'
-                                    : isUvea
-                                        ? '/cases/${c.id}/edit?type=uvea'
-                                        : '/cases/${c.id}/edit',
+                            ? '/cases/${c.id}/edit?type=rop'
+                            : isLaser
+                            ? '/cases/${c.id}/edit?type=laser'
+                            : isUvea
+                            ? '/cases/${c.id}/edit?type=uvea'
+                            : '/cases/${c.id}/edit',
                       ),
+                    ),
+                  if (canDelete)
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      onPressed: () =>
+                          _showDeleteConfirmation(context, ref, c.id),
+                      tooltip: 'Delete Case',
                     ),
                 ],
               );
@@ -99,9 +103,7 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
       ),
       body: caseAsync.when(
         data: (c) {
-          final isUvea = c.keywords.any(
-            (k) => k.toLowerCase() == 'uvea',
-          );
+          final isUvea = c.keywords.any((k) => k.toLowerCase() == 'uvea');
           return DefaultTabController(
             length: 4,
             child: Column(
@@ -131,19 +133,18 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
                       _SummaryTab(
                         c: c,
                         isUvea: isUvea,
-                        useRetinoblastomaLayout: readOnly &&
+                        useRetinoblastomaLayout:
+                            readOnly &&
                             (profileState.profile?.designation ==
                                 'Consultant') &&
                             c.keywords.any(
-                              (k) =>
-                                  k.toLowerCase().contains('retinoblastoma'),
+                              (k) => k.toLowerCase().contains('retinoblastoma'),
                             ),
-                        useRopLayout: readOnly &&
+                        useRopLayout:
+                            readOnly &&
                             (profileState.profile?.designation ==
                                 'Consultant') &&
-                            c.keywords.any(
-                              (k) => k.toLowerCase() == 'rop',
-                            ),
+                            c.keywords.any((k) => k.toLowerCase() == 'rop'),
                       ),
                       _FollowupsTab(caseId: caseId, readOnly: readOnly),
                       _MediaTab(caseId: caseId, readOnly: readOnly),
@@ -248,9 +249,8 @@ class _SummaryTab extends StatelessWidget {
                 padding: const EdgeInsets.all(18),
                 child: Column(
                   children: [
-                    _InfoRow(label: 'Patient:', value: c.patientName),
-                    const SizedBox(height: 12),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: _InfoRow(
@@ -258,6 +258,7 @@ class _SummaryTab extends StatelessWidget {
                             value: c.patientName,
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: _InfoRow(
                             label: 'Gender',
@@ -266,12 +267,14 @@ class _SummaryTab extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: _InfoRow(label: 'UID', value: c.uidNumber),
                         ),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: _InfoRow(
                             label: 'Age',
@@ -281,9 +284,8 @@ class _SummaryTab extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    _InfoRow(label: 'UID:', value: c.uidNumber),
-                    const SizedBox(height: 12),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: _InfoRow(
@@ -291,6 +293,7 @@ class _SummaryTab extends StatelessWidget {
                             value: c.mrNumber,
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: _InfoRow(label: 'Exam Date', value: examDate),
                         ),
@@ -1327,7 +1330,8 @@ class _SummaryTab extends StatelessWidget {
     final paramsByEye = params.containsKey('RE') || params.containsKey('LE');
 
     String paramVal(String key) {
-      final value = params[key] ??
+      final value =
+          params[key] ??
           (key == 'power_mw' ? params['power'] : null) ??
           (key == 'duration_ms' ? params['duration'] : null) ??
           (key == 'spot_size_um' ? params['spot_size'] : null);
@@ -1338,7 +1342,8 @@ class _SummaryTab extends StatelessWidget {
 
     String paramEyeVal(String eye, String key) {
       final eyeMap = Map<String, dynamic>.from(params[eye] as Map? ?? {});
-      final value = eyeMap[key] ??
+      final value =
+          eyeMap[key] ??
           (key == 'power_mw' ? eyeMap['power'] : null) ??
           (key == 'duration_ms' ? eyeMap['duration'] : null) ??
           (key == 'spot_size_um' ? eyeMap['spot_size'] : null);
@@ -1351,12 +1356,14 @@ class _SummaryTab extends StatelessWidget {
         ? (() {
             final re = Map<String, dynamic>.from(params['RE'] as Map? ?? {});
             final le = Map<String, dynamic>.from(params['LE'] as Map? ?? {});
-            return re.values.any((v) => v != null && v.toString().trim().isNotEmpty) ||
-                le.values.any((v) => v != null && v.toString().trim().isNotEmpty);
+            return re.values.any(
+                  (v) => v != null && v.toString().trim().isNotEmpty,
+                ) ||
+                le.values.any(
+                  (v) => v != null && v.toString().trim().isNotEmpty,
+                );
           })()
-        : params.values.any(
-            (v) => v != null && v.toString().trim().isNotEmpty,
-          );
+        : params.values.any((v) => v != null && v.toString().trim().isNotEmpty);
 
     return _Section(
       title: 'Laser Details',
@@ -1422,7 +1429,10 @@ class _SummaryTab extends StatelessWidget {
               _InfoRow(label: 'Power (mW)', value: paramVal('power_mw')),
               _InfoRow(label: 'Duration (ms)', value: paramVal('duration_ms')),
               _InfoRow(label: 'Interval', value: paramVal('interval')),
-              _InfoRow(label: 'Spot size (um)', value: paramVal('spot_size_um')),
+              _InfoRow(
+                label: 'Spot size (um)',
+                value: paramVal('spot_size_um'),
+              ),
               _InfoRow(label: 'Pattern', value: paramVal('pattern')),
               _InfoRow(label: 'Spot spacing', value: paramVal('spot_spacing')),
               _InfoRow(
@@ -1436,10 +1446,7 @@ class _SummaryTab extends StatelessWidget {
     );
   }
 
-  String _formatFundus(
-    Map<String, dynamic>? fundus, {
-    bool isUvea = false,
-  }) {
+  String _formatFundus(Map<String, dynamic>? fundus, {bool isUvea = false}) {
     if (isUvea) {
       return _formatUveaFundus(fundus);
     }
@@ -1485,8 +1492,10 @@ class _SummaryTab extends StatelessWidget {
     for (final eyeKey in ['RE', 'LE']) {
       final eye = Map<String, dynamic>.from(uvea[eyeKey] as Map? ?? {});
       if (eye.isEmpty) continue;
-      final conjunctiva =
-          _formatOtherValue(eye['conjunctiva'], eye['conjunctiva_other']);
+      final conjunctiva = _formatOtherValue(
+        eye['conjunctiva'],
+        eye['conjunctiva_other'],
+      );
       if (conjunctiva.isNotEmpty) {
         lines.add('$eyeKey Conjunctiva: $conjunctiva');
       }
@@ -1526,8 +1535,10 @@ class _SummaryTab extends StatelessWidget {
         lines.add('$eyeKey Hypopyon: $hypopyon$suffix');
       }
       final irisParts = <String>[];
-      final nodules =
-          _formatOtherValue(eye['iris_nodules'], eye['iris_nodules_other']);
+      final nodules = _formatOtherValue(
+        eye['iris_nodules'],
+        eye['iris_nodules_other'],
+      );
       if (nodules.isNotEmpty) {
         irisParts.add('Nodules: $nodules');
       }
@@ -1542,8 +1553,10 @@ class _SummaryTab extends StatelessWidget {
       if (irisParts.isNotEmpty) {
         lines.add('$eyeKey Iris: ${irisParts.join('; ')}');
       }
-      final glaucoma =
-          _formatOtherValue(eye['glaucoma'], eye['glaucoma_other']);
+      final glaucoma = _formatOtherValue(
+        eye['glaucoma'],
+        eye['glaucoma_other'],
+      );
       if (glaucoma.isNotEmpty) {
         lines.add('$eyeKey Glaucoma: $glaucoma');
       }
@@ -1644,8 +1657,9 @@ class _SummaryTab extends StatelessWidget {
 
   String _formatUveaLocation(Map<String, dynamic>? fundus) {
     if (fundus == null || fundus.isEmpty) return '-';
-    final locations =
-        Map<String, dynamic>.from(fundus['uvea_location'] as Map? ?? {});
+    final locations = Map<String, dynamic>.from(
+      fundus['uvea_location'] as Map? ?? {},
+    );
     if (locations.isEmpty) return '-';
     final lines = <String>[];
     for (final eyeKey in ['RE', 'LE']) {
@@ -1956,8 +1970,9 @@ class _RetinoblastomaSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final anterior = c.anteriorSegment ?? const <String, dynamic>{};
     final fundus = c.fundus ?? const <String, dynamic>{};
-    final rb =
-        Map<String, dynamic>.from(anterior['retinoblastoma'] as Map? ?? {});
+    final rb = Map<String, dynamic>.from(
+      anterior['retinoblastoma'] as Map? ?? {},
+    );
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -1971,7 +1986,10 @@ class _RetinoblastomaSummary extends StatelessWidget {
               _InfoRow(label: 'UID', value: c.uidNumber),
               _InfoRow(label: 'MRN', value: c.mrNumber),
               _InfoRow(label: 'Gender', value: c.patientGender),
-              _InfoRow(label: 'Exam Date', value: _formatExamDate(c.dateOfExamination)),
+              _InfoRow(
+                label: 'Exam Date',
+                value: _formatExamDate(c.dateOfExamination),
+              ),
             ],
           ),
         ),
@@ -2038,10 +2056,7 @@ class _RetinoblastomaSummary extends StatelessWidget {
                 label: 'Retinal detachment',
                 value: _boolLabel(rb['retinal_detachment'] as bool?),
               ),
-              _InfoRow(
-                label: 'Group',
-                value: rb['group']?.toString() ?? '-',
-              ),
+              _InfoRow(label: 'Group', value: rb['group']?.toString() ?? '-'),
               _InfoRow(
                 label: 'Regression pattern',
                 value: rb['regression_pattern']?.toString() ?? '-',
@@ -2101,7 +2116,10 @@ class _RopSummary extends StatelessWidget {
               _InfoRow(label: 'UID', value: c.uidNumber),
               _InfoRow(label: 'MRN', value: c.mrNumber),
               _InfoRow(label: 'Gender', value: c.patientGender),
-              _InfoRow(label: 'Exam Date', value: _formatExamDate(c.dateOfExamination)),
+              _InfoRow(
+                label: 'Exam Date',
+                value: _formatExamDate(c.dateOfExamination),
+              ),
             ],
           ),
         ),
@@ -2228,11 +2246,7 @@ class _RopSummary extends StatelessWidget {
 String _formatExamDate(DateTime date) =>
     '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
-String _selectedValue(
-  Map<String, dynamic> payload,
-  String eye,
-  String key,
-) {
+String _selectedValue(Map<String, dynamic> payload, String eye, String key) {
   final eyeMap = Map<String, dynamic>.from(payload[eye] as Map? ?? {});
   final section = Map<String, dynamic>.from(eyeMap[key] as Map? ?? {});
   final selected = (section['selected'] as List?)?.cast<String>() ?? const [];
@@ -2253,7 +2267,10 @@ String _boolLabel(bool? value) {
 
 String _joinList(dynamic value) {
   if (value is List) {
-    final items = value.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+    final items = value
+        .map((e) => e.toString())
+        .where((e) => e.isNotEmpty)
+        .toList();
     if (items.isEmpty) return '-';
     return items.join(', ');
   }
@@ -2292,9 +2309,9 @@ class _CaseSectionCard extends StatelessWidget {
           children: [
             Text(
               title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
             child,
@@ -2306,10 +2323,7 @@ class _CaseSectionCard extends StatelessWidget {
 }
 
 class _FollowupsTab extends ConsumerWidget {
-  const _FollowupsTab({
-    required this.caseId,
-    required this.readOnly,
-  });
+  const _FollowupsTab({required this.caseId, required this.readOnly});
   final String caseId;
   final bool readOnly;
 
@@ -2318,16 +2332,17 @@ class _FollowupsTab extends ConsumerWidget {
     final followupsAsync = ref.watch(caseFollowupsProvider(caseId));
     return followupsAsync.when(
       data: (list) {
-          if (list.isEmpty) {
-            return _EmptyState(
-              icon: Icons.event_note_outlined,
-              title: 'No Follow-ups Yet',
-              subtitle: 'Track patient follow-up visits here',
-              actionLabel: readOnly ? null : 'Add Follow-up',
-              onAction:
-                  readOnly ? null : () => context.push('/cases/$caseId/followup'),
-            );
-          }
+        if (list.isEmpty) {
+          return _EmptyState(
+            icon: Icons.event_note_outlined,
+            title: 'No Follow-ups Yet',
+            subtitle: 'Track patient follow-up visits here',
+            actionLabel: readOnly ? null : 'Add Follow-up',
+            onAction: readOnly
+                ? null
+                : () => context.push('/cases/$caseId/followup'),
+          );
+        }
         return Column(
           children: [
             Expanded(
@@ -2367,49 +2382,46 @@ class _FollowupsTab extends ConsumerWidget {
                             Text('Management: ${f.management}'),
                           ],
                           const SizedBox(height: 8),
-                            if (!readOnly)
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton(
-                                  onPressed: () => context.push(
-                                    '/cases/$caseId/followup/${f.id}',
-                                  ),
-                                  child: const Text('Edit'),
+                          if (!readOnly)
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: () => context.push(
+                                  '/cases/$caseId/followup/${f.id}',
                                 ),
+                                child: const Text('Edit'),
                               ),
-                          ],
-                        ),
+                            ),
+                        ],
                       ),
-                    );
-                  },
-                ),
-              ),
-              if (!readOnly)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => context.push('/cases/$caseId/followup'),
-                      icon: const Icon(Icons.add, color: Colors.white),
-                      label: const Text('Add Follow-up'),
                     ),
+                  );
+                },
+              ),
+            ),
+            if (!readOnly)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => context.push('/cases/$caseId/followup'),
+                    icon: const Icon(Icons.add, color: Colors.white),
+                    label: const Text('Add Follow-up'),
                   ),
                 ),
-            ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
+              ),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Failed to load follow-ups: $e')),
     );
   }
 }
 
 class _MediaTab extends ConsumerWidget {
-  const _MediaTab({
-    required this.caseId,
-    required this.readOnly,
-  });
+  const _MediaTab({required this.caseId, required this.readOnly});
   final String caseId;
   final bool readOnly;
 
@@ -2742,20 +2754,20 @@ class _EmptyState extends StatelessWidget {
               ),
             ),
           ),
-            if (actionLabel != null && onAction != null)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: onAction,
-                  icon: const Icon(Icons.add, color: Colors.white),
-                  label: Text(actionLabel!),
-                ),
+          if (actionLabel != null && onAction != null)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.add, color: Colors.white),
+                label: Text(actionLabel!),
               ),
-          ],
-        ),
-      );
-    }
+            ),
+        ],
+      ),
+    );
   }
+}
 
 class _AssessmentTab extends ConsumerStatefulWidget {
   const _AssessmentTab({
@@ -2786,18 +2798,18 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
 
   @override
   Widget build(BuildContext context) {
-      final mutation = ref.watch(assessmentMutationProvider);
-      final authState = ref.watch(authControllerProvider);
-      final profileState = ref.watch(profileControllerProvider);
-      final myAssessmentAsync =
-          ref.watch(reviewerCaseAssessmentProvider(widget.caseId));
-      final doctorsAsync = ref.watch(assessmentDoctorsProvider);
-      final authId = authState.session?.user.id;
-      final isOwner = authId != null && authId == widget.caseOwnerId;
-      final designation = profileState.profile?.designation;
-      final isConsultant = designation == 'Consultant';
-      final hasReviewerAccess =
-          designation == 'Reviewer' || isConsultant;
+    final mutation = ref.watch(assessmentMutationProvider);
+    final authState = ref.watch(authControllerProvider);
+    final profileState = ref.watch(profileControllerProvider);
+    final myAssessmentAsync = ref.watch(
+      reviewerCaseAssessmentProvider(widget.caseId),
+    );
+    final doctorsAsync = ref.watch(assessmentDoctorsProvider);
+    final authId = authState.session?.user.id;
+    final isOwner = authId != null && authId == widget.caseOwnerId;
+    final designation = profileState.profile?.designation;
+    final isConsultant = designation == 'Consultant';
+    final hasReviewerAccess = designation == 'Reviewer' || isConsultant;
 
     if (!_seededSelection && widget.recipients.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2810,13 +2822,12 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
       });
     }
 
-      final isAssignedReviewer = widget.recipients.any(
-        (r) => r.recipientId == authId && r.canReview,
-      );
-      final canScore = (isConsultant &&
-              authId != null &&
-              authId != widget.caseOwnerId) ||
-          (designation == 'Reviewer' && isAssignedReviewer);
+    final isAssignedReviewer = widget.recipients.any(
+      (r) => r.recipientId == authId && r.canReview,
+    );
+    final canScore =
+        (isConsultant && authId != null && authId != widget.caseOwnerId) ||
+        (designation == 'Reviewer' && isAssignedReviewer);
 
     return Container(
       color: const Color(0xFFF7F9FC),
@@ -3003,13 +3014,11 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
               ),
             ),
           ],
-            if (!isOwner &&
-                widget.recipients.isNotEmpty &&
-                !canScore) ...[
-              const SizedBox(height: 12),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
+          if (!isOwner && widget.recipients.isNotEmpty && !canScore) ...[
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -3028,43 +3037,43 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
               ),
             ),
           ],
-            if (hasReviewerAccess && canScore) ...[
-              const SizedBox(height: 12),
-              myAssessmentAsync.when(
-                data: (assessment) {
-                  final score = assessment?.score ?? 0;
-                  final remarks = assessment?.remarks ?? '';
-                  final hasScore = assessment?.score != null;
-                  return _ReviewerScoreCard(
-                    score: score,
-                    remarks: remarks,
-                    onEdit: () => _showCaseScoreSheet(
-                      context: context,
-                      ref: ref,
-                      caseId: widget.caseId,
-                      traineeId: widget.caseOwnerId,
-                      initialRating: score,
-                      initialRemarks: remarks,
-                    ),
-                    hasScore: hasScore,
-                  );
-                },
-                loading: () => const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                error: (e, _) => Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text('Failed to load score: $e'),
+          if (hasReviewerAccess && canScore) ...[
+            const SizedBox(height: 12),
+            myAssessmentAsync.when(
+              data: (assessment) {
+                final score = assessment?.score ?? 0;
+                final remarks = assessment?.remarks ?? '';
+                final hasScore = assessment?.score != null;
+                return _ReviewerScoreCard(
+                  score: score,
+                  remarks: remarks,
+                  onEdit: () => _showCaseScoreSheet(
+                    context: context,
+                    ref: ref,
+                    caseId: widget.caseId,
+                    traineeId: widget.caseOwnerId,
+                    initialRating: score,
+                    initialRemarks: remarks,
                   ),
+                  hasScore: hasScore,
+                );
+              },
+              loading: () => const Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              error: (e, _) => Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text('Failed to load score: $e'),
                 ),
               ),
-            ],
+            ),
           ],
-        ),
-      );
-    }
+        ],
+      ),
+    );
   }
+}
 
 class _StatusPill extends StatelessWidget {
   const _StatusPill({required this.status});
@@ -3105,6 +3114,7 @@ class _StatusPill extends StatelessWidget {
     );
   }
 }
+
 // --------------------------------------------------
 // Delete Case Confirmation Dialog
 // --------------------------------------------------
@@ -3117,23 +3127,14 @@ void _showDeleteConfirmation(
     context: context,
     builder: (BuildContext dialogContext) {
       return AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: const [
-            Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.orange,
-              size: 28,
-            ),
+            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
             SizedBox(width: 12),
             Text(
               'Delete Case',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -3191,17 +3192,11 @@ void _showDeleteConfirmation(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
             child: const Text(
               'Yes, Delete',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -3254,10 +3249,7 @@ class _ReviewerScoreCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 remarks,
-                style: const TextStyle(
-                  color: Color(0xFF475569),
-                  height: 1.4,
-                ),
+                style: const TextStyle(color: Color(0xFF475569), height: 1.4),
               ),
             ],
             if (!hasScore)
@@ -3265,10 +3257,7 @@ class _ReviewerScoreCard extends StatelessWidget {
                 padding: EdgeInsets.only(top: 8),
                 child: Text(
                   'No score submitted yet.',
-                  style: TextStyle(
-                    color: Color(0xFF64748B),
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
                 ),
               ),
           ],
@@ -3369,7 +3358,9 @@ class _CaseScoreSheetState extends ConsumerState<_CaseScoreSheet> {
   Future<void> _submit() async {
     setState(() => _isSaving = true);
     try {
-      await ref.read(reviewerMutationProvider.notifier).submitClinicalCase(
+      await ref
+          .read(reviewerMutationProvider.notifier)
+          .submitClinicalCase(
             caseId: widget.caseId,
             traineeId: widget.traineeId,
             score: _rating,
@@ -3381,15 +3372,15 @@ class _CaseScoreSheetState extends ConsumerState<_CaseScoreSheet> {
       Navigator.pop(context);
       ref.invalidate(reviewerCaseAssessmentProvider(widget.caseId));
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Score submitted')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Score submitted')));
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to submit score: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to submit score: $e')));
     }
   }
 
@@ -3406,10 +3397,9 @@ class _CaseScoreSheetState extends ConsumerState<_CaseScoreSheet> {
           children: [
             Text(
               'Score Case',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w700),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
             const Text(
@@ -3430,8 +3420,9 @@ class _CaseScoreSheetState extends ConsumerState<_CaseScoreSheet> {
                   );
                 }),
                 TextButton(
-                  onPressed:
-                      _rating == 0 ? null : () => setState(() => _rating = 0),
+                  onPressed: _rating == 0
+                      ? null
+                      : () => setState(() => _rating = 0),
                   child: const Text('Clear'),
                 ),
               ],
@@ -3450,8 +3441,7 @@ class _CaseScoreSheetState extends ConsumerState<_CaseScoreSheet> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed:
-                        _isSaving ? null : () => Navigator.pop(context),
+                    onPressed: _isSaving ? null : () => Navigator.pop(context),
                     child: const Text('Cancel'),
                   ),
                 ),

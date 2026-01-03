@@ -611,6 +611,7 @@ class _SubmissionCard extends StatelessWidget {
         children: [
           // Calendar Display - Three boxes in a row
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Day Box
               Container(
@@ -728,19 +729,19 @@ class _SubmissionCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.send,
-                        size: 16,
-                      ),
-                      SizedBox(width: 6),
-                      Text(
-                        'Submit Now',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
+                      const Icon(Icons.send, size: 14),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: const Text(
+                          'Submit Now',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -772,6 +773,7 @@ class _SubmissionCard extends StatelessWidget {
     return months[month - 1];
   }
 }
+
 // ------------------------------
 // Horizontal Card Component
 // ------------------------------
@@ -802,10 +804,7 @@ class _HorizontalCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFFF8FAFC),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.grey.withOpacity(0.2),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.grey.withOpacity(0.2), width: 1),
           ),
           child: Row(
             children: [
@@ -845,21 +844,14 @@ class _HorizontalCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                     ),
                   ],
                 ),
               ),
 
               // Arrow
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: Colors.grey[400],
-              ),
+              Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
             ],
           ),
         ),
@@ -917,11 +909,8 @@ class _SmallCard extends StatelessWidget {
                   child: Image.asset(
                     assetPath,
                     fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => Icon(
-                      Icons.image_outlined,
-                      color: iconColor,
-                      size: 24,
-                    ),
+                    errorBuilder: (_, __, ___) =>
+                        Icon(Icons.image_outlined, color: iconColor, size: 24),
                   ),
                 ),
               ),
@@ -942,21 +931,20 @@ class _SmallCard extends StatelessWidget {
 
               // Description + Arrow
               Row(
+                mainAxisSize: MainAxisSize.max,
                 children: [
                   Expanded(
                     child: Text(
                       description,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[700],
-                      ),
+                      style: TextStyle(fontSize: 11, color: Colors.grey[700]),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 6),
                   Icon(
                     Icons.arrow_forward_ios,
-                    size: 12,
+                    size: 10,
                     color: Colors.grey[600],
                   ),
                 ],
@@ -980,10 +968,9 @@ class _AssessmentsCard extends ConsumerWidget {
     final statsAsync = ref.watch(consultantDashboardProvider);
 
     final pendingText = statsAsync.when(
-      data: (stats) =>
-          stats.pending == 0
-              ? 'No pending submissions'
-              : '${stats.pending} pending submissions',
+      data: (stats) => stats.pending == 0
+          ? 'No pending submissions'
+          : '${stats.pending} pending submissions',
       loading: () => 'Loading pending submissions...',
       error: (_, __) => 'Review submitted logbooks',
     );
@@ -1067,20 +1054,14 @@ class _AssessmentsCard extends ConsumerWidget {
               backgroundColor: Colors.white,
               foregroundColor: const Color(0xFF2563EB),
               elevation: 0,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
             child: const Text(
               'Open',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
             ),
           ),
         ],
