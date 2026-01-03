@@ -429,16 +429,39 @@ class _SummaryTab extends StatelessWidget {
       return text.isEmpty ? '-' : text;
     }
 
+    final paramsByEye = params.containsKey('RE') || params.containsKey('LE');
+
     String paramVal(String key) {
-      final value = params[key];
+      final value = params[key] ??
+          (key == 'power_mw' ? params['power'] : null) ??
+          (key == 'duration_ms' ? params['duration'] : null) ??
+          (key == 'spot_size_um' ? params['spot_size'] : null);
       if (value == null) return '-';
       final text = value.toString().trim();
       return text.isEmpty ? '-' : text;
     }
 
-    final hasParams = params.values.any(
-      (v) => v != null && v.toString().trim().isNotEmpty,
-    );
+    String paramEyeVal(String eye, String key) {
+      final eyeMap = Map<String, dynamic>.from(params[eye] as Map? ?? {});
+      final value = eyeMap[key] ??
+          (key == 'power_mw' ? eyeMap['power'] : null) ??
+          (key == 'duration_ms' ? eyeMap['duration'] : null) ??
+          (key == 'spot_size_um' ? eyeMap['spot_size'] : null);
+      if (value == null) return '-';
+      final text = value.toString().trim();
+      return text.isEmpty ? '-' : text;
+    }
+
+    final hasParams = paramsByEye
+        ? (() {
+            final re = Map<String, dynamic>.from(params['RE'] as Map? ?? {});
+            final le = Map<String, dynamic>.from(params['LE'] as Map? ?? {});
+            return re.values.any((v) => v != null && v.toString().trim().isNotEmpty) ||
+                le.values.any((v) => v != null && v.toString().trim().isNotEmpty);
+          })()
+        : params.values.any(
+            (v) => v != null && v.toString().trim().isNotEmpty,
+          );
 
     return _Section(
       title: 'Laser Details',
@@ -464,16 +487,54 @@ class _SummaryTab extends StatelessWidget {
           ),
           if (hasParams) ...[
             const SizedBox(height: 8),
-            _InfoRow(label: 'Power (mW)', value: paramVal('power_mw')),
-            _InfoRow(label: 'Duration (ms)', value: paramVal('duration_ms')),
-            _InfoRow(label: 'Interval', value: paramVal('interval')),
-            _InfoRow(label: 'Spot size (um)', value: paramVal('spot_size_um')),
-            _InfoRow(label: 'Pattern', value: paramVal('pattern')),
-            _InfoRow(label: 'Spot spacing', value: paramVal('spot_spacing')),
-            _InfoRow(
-              label: 'Burn intensity',
-              value: paramVal('burn_intensity'),
-            ),
+            if (paramsByEye) ...[
+              _EyePairRow(
+                label: 'Power (mW)',
+                right: paramEyeVal('RE', 'power_mw'),
+                left: paramEyeVal('LE', 'power_mw'),
+              ),
+              _EyePairRow(
+                label: 'Duration (ms)',
+                right: paramEyeVal('RE', 'duration_ms'),
+                left: paramEyeVal('LE', 'duration_ms'),
+              ),
+              _EyePairRow(
+                label: 'Interval',
+                right: paramEyeVal('RE', 'interval'),
+                left: paramEyeVal('LE', 'interval'),
+              ),
+              _EyePairRow(
+                label: 'Spot size (um)',
+                right: paramEyeVal('RE', 'spot_size_um'),
+                left: paramEyeVal('LE', 'spot_size_um'),
+              ),
+              _EyePairRow(
+                label: 'Pattern',
+                right: paramEyeVal('RE', 'pattern'),
+                left: paramEyeVal('LE', 'pattern'),
+              ),
+              _EyePairRow(
+                label: 'Spot spacing',
+                right: paramEyeVal('RE', 'spot_spacing'),
+                left: paramEyeVal('LE', 'spot_spacing'),
+              ),
+              _EyePairRow(
+                label: 'Burn intensity',
+                right: paramEyeVal('RE', 'burn_intensity'),
+                left: paramEyeVal('LE', 'burn_intensity'),
+              ),
+            ] else ...[
+              _InfoRow(label: 'Power (mW)', value: paramVal('power_mw')),
+              _InfoRow(label: 'Duration (ms)', value: paramVal('duration_ms')),
+              _InfoRow(label: 'Interval', value: paramVal('interval')),
+              _InfoRow(label: 'Spot size (um)', value: paramVal('spot_size_um')),
+              _InfoRow(label: 'Pattern', value: paramVal('pattern')),
+              _InfoRow(label: 'Spot spacing', value: paramVal('spot_spacing')),
+              _InfoRow(
+                label: 'Burn intensity',
+                value: paramVal('burn_intensity'),
+              ),
+            ],
           ],
         ],
       ),

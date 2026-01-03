@@ -78,8 +78,8 @@ class _CaseFollowupFormScreenState
                 _intervalDays = existing.intervalDays;
                 _ucvaRe.text = existing.ucvaRe ?? '';
                 _ucvaLe.text = existing.ucvaLe ?? '';
-                _bcvaRe = existing.bcvaRe ?? '';
-                _bcvaLe = existing.bcvaLe ?? '';
+                _bcvaRe = _normalizeBcva(existing.bcvaRe ?? '');
+                _bcvaLe = _normalizeBcva(existing.bcvaLe ?? '');
                 _iopRe.text = existing.iopRe?.toString() ?? '';
                 _iopLe.text = existing.iopLe?.toString() ?? '';
                 _anterior.text = existing.anteriorSegmentFindings ?? '';
@@ -97,6 +97,11 @@ class _CaseFollowupFormScreenState
                 _formatAnterior(caseData.anteriorSegment);
             final prevFundus =
                 lastFollowup?.fundusFindings ?? _formatFundus(caseData.fundus);
+            final laser =
+                Map<String, dynamic>.from(caseData.anteriorSegment?['laser'] as Map? ?? {});
+            final bcvaPre =
+                Map<String, dynamic>.from(laser['bcva_pre'] as Map? ?? {});
+            final isLaser = laser.isNotEmpty;
 
             return Scaffold(
               appBar: AppBar(
@@ -152,26 +157,33 @@ class _CaseFollowupFormScreenState
                             : _friendlyInterval(_intervalDays),
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: _EyeTextField(
-                              label: 'RE',
-                              fieldLabel: 'UCVA',
-                              controller: _ucvaRe,
+                      if (isLaser)
+                        _EyeReadonlyRow(
+                          label: 'Pre-laser BCVA',
+                          right: _eyeValue(bcvaPre, 'RE'),
+                          left: _eyeValue(bcvaPre, 'LE'),
+                        )
+                      else
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _EyeTextField(
+                                label: 'RE',
+                                fieldLabel: 'UCVA',
+                                controller: _ucvaRe,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _EyeTextField(
-                              label: 'LE',
-                              fieldLabel: 'UCVA',
-                              controller: _ucvaLe,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _EyeTextField(
+                                label: 'LE',
+                                fieldLabel: 'UCVA',
+                                controller: _ucvaLe,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
                       const SizedBox(height: 12),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,6 +403,35 @@ class _CaseFollowupFormScreenState
     return lines.join('\n');
   }
 
+  String _eyeValue(Map<String, dynamic> map, String eye) {
+    final value = map[eye];
+    if (value == null) return '-';
+    final text = value.toString().trim();
+    return text.isEmpty ? '-' : text;
+  }
+
+  String _normalizeBcva(String raw) {
+    var value = raw.trim();
+    if (value.isEmpty) return '';
+    value = value.replaceAll('\\', '/');
+    final lower = value.toLowerCase();
+    for (final option in bcvaOptions) {
+      if (option.toLowerCase() == lower) {
+        return option;
+      }
+    }
+    final digitsOnly = RegExp(r'^\d+$');
+    if (digitsOnly.hasMatch(value)) {
+      final candidate = '6/$value';
+      for (final option in bcvaOptions) {
+        if (option.toLowerCase() == candidate.toLowerCase()) {
+          return option;
+        }
+      }
+    }
+    return '';
+  }
+
   String _formatFundus(Map<String, dynamic>? fundus) {
     if (fundus == null || fundus.isEmpty) return '-';
     if (fundus.containsKey('RE') || fundus.containsKey('LE')) {
@@ -556,12 +597,64 @@ class _EyeDropdown extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          value: value.isEmpty ? null : value,
+          value: bcvaOptions.contains(value) ? value : null,
           items: bcvaOptions
               .map((o) => DropdownMenuItem(value: o, child: Text(o)))
               .toList(),
           decoration: InputDecoration(labelText: fieldLabel),
           onChanged: (v) => onChanged(v ?? ''),
+        ),
+      ],
+    );
+  }
+}
+
+class _EyeReadonlyRow extends StatelessWidget {
+  const _EyeReadonlyRow({
+    required this.label,
+    required this.right,
+    required this.left,
+  });
+
+  final String label;
+  final String right;
+  final String left;
+
+  @override
+  Widget build(BuildContext context) {
+    final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        );
+    final valueStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onSurface,
+        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: labelStyle),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('RE', style: labelStyle),
+                  Text(right, style: valueStyle),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('LE', style: labelStyle),
+                  Text(left, style: valueStyle),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );

@@ -35,6 +35,8 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
                 ? ref.watch(clinicalCaseListByKeywordProvider('rop'))
                 : section == logbookSectionLaser
                     ? ref.watch(clinicalCaseListByKeywordProvider('laser'))
+                    : section == logbookSectionUvea
+                        ? ref.watch(clinicalCaseListByKeywordProvider('uvea'))
                 : ref.watch(clinicalCaseListProvider))
         : null;
     final publications =
@@ -90,6 +92,9 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
               return;
             case logbookSectionLaser:
               context.push('/cases/new?type=laser');
+              return;
+            case logbookSectionUvea:
+              context.push('/cases/new?type=uvea');
               return;
             case logbookSectionAtlas:
             case logbookSectionSurgicalRecord:
@@ -537,6 +542,9 @@ class _SectionBody extends StatelessWidget {
                       case logbookSectionLaser:
                         context.push('/cases/laser/${c.id}');
                         return;
+                      case logbookSectionUvea:
+                        context.push('/cases/uvea/${c.id}');
+                        return;
                       default:
                         context.push('/cases/${c.id}');
                         return;
@@ -639,13 +647,16 @@ class _SectionBody extends StatelessWidget {
         return list.where((c) => _hasKeyword(c, 'rop')).toList();
       case logbookSectionLaser:
         return list.where((c) => _hasKeyword(c, 'laser')).toList();
+      case logbookSectionUvea:
+        return list.where((c) => _hasKeyword(c, 'uvea')).toList();
       case logbookSectionOpdCases:
         return list
             .where(
               (c) =>
                   !_hasKeyword(c, 'retinoblastoma') &&
                   !_hasKeyword(c, 'rop') &&
-                  !_hasKeyword(c, 'laser'),
+                  !_hasKeyword(c, 'laser') &&
+                  !_hasKeyword(c, 'uvea'),
             )
             .toList();
     }

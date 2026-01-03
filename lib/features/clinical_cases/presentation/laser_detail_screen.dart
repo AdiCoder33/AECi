@@ -38,6 +38,9 @@ class LaserDetailScreen extends ConsumerWidget {
               Map<String, dynamic>.from(laser['laser_type'] as Map? ?? {});
           final params =
               Map<String, dynamic>.from(laser['parameters'] as Map? ?? {});
+          final paramsByEye = params.containsKey('RE') || params.containsKey('LE');
+
+          final followupsAsync = ref.watch(caseFollowupsProvider(caseId));
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -81,17 +84,161 @@ class LaserDetailScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 12),
+              if (_hasParams(params))
+                _SectionCard(
+                  title: 'Laser Parameters',
+                  child: Column(
+                    children: [
+                      if (paramsByEye) ...[
+                        _EyePairRow(
+                          label: 'Power (mW)',
+                          right: _paramEye(params, 'RE', 'power_mw'),
+                          left: _paramEye(params, 'LE', 'power_mw'),
+                        ),
+                        _EyePairRow(
+                          label: 'Duration (ms)',
+                          right: _paramEye(params, 'RE', 'duration_ms'),
+                          left: _paramEye(params, 'LE', 'duration_ms'),
+                        ),
+                        _EyePairRow(
+                          label: 'Interval',
+                          right: _paramEye(params, 'RE', 'interval'),
+                          left: _paramEye(params, 'LE', 'interval'),
+                        ),
+                        _EyePairRow(
+                          label: 'Spot size (um)',
+                          right: _paramEye(params, 'RE', 'spot_size_um'),
+                          left: _paramEye(params, 'LE', 'spot_size_um'),
+                        ),
+                        _EyePairRow(
+                          label: 'Pattern',
+                          right: _paramEye(params, 'RE', 'pattern'),
+                          left: _paramEye(params, 'LE', 'pattern'),
+                        ),
+                        _EyePairRow(
+                          label: 'Spot spacing',
+                          right: _paramEye(params, 'RE', 'spot_spacing'),
+                          left: _paramEye(params, 'LE', 'spot_spacing'),
+                        ),
+                        _EyePairRow(
+                          label: 'Burn intensity',
+                          right: _paramEye(params, 'RE', 'burn_intensity'),
+                          left: _paramEye(params, 'LE', 'burn_intensity'),
+                        ),
+                      ] else ...[
+                        _InfoRow(label: 'Power (mW)', value: _param(params, 'power_mw')),
+                        _InfoRow(label: 'Duration (ms)', value: _param(params, 'duration_ms')),
+                        _InfoRow(label: 'Interval', value: _param(params, 'interval')),
+                        _InfoRow(label: 'Spot size (um)', value: _param(params, 'spot_size_um')),
+                        _InfoRow(label: 'Pattern', value: _param(params, 'pattern')),
+                        _InfoRow(label: 'Spot spacing', value: _param(params, 'spot_spacing')),
+                        _InfoRow(label: 'Burn intensity', value: _param(params, 'burn_intensity')),
+                      ],
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 12),
               _SectionCard(
-                title: 'Laser Parameters',
+                title: 'Laser Follow-ups',
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _InfoRow(label: 'Power (mW)', value: _param(params, 'power')),
-                    _InfoRow(label: 'Duration (ms)', value: _param(params, 'duration')),
-                    _InfoRow(label: 'Interval', value: _param(params, 'interval')),
-                    _InfoRow(label: 'Spot size (um)', value: _param(params, 'spot_size')),
-                    _InfoRow(label: 'Pattern', value: _param(params, 'pattern')),
-                    _InfoRow(label: 'Spot spacing', value: _param(params, 'spot_spacing')),
-                    _InfoRow(label: 'Burn intensity', value: _param(params, 'burn_intensity')),
+                    _EyePairRow(
+                      label: 'Pre-laser BCVA',
+                      right: _mapEyeValue(bcva, 'RE'),
+                      left: _mapEyeValue(bcva, 'LE'),
+                    ),
+                    const SizedBox(height: 12),
+                    followupsAsync.when(
+                      data: (list) {
+                        if (list.isEmpty) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('No follow-ups yet.'),
+                              const SizedBox(height: 8),
+                              ElevatedButton.icon(
+                                onPressed: () =>
+                                    context.push('/cases/$caseId/followup'),
+                                icon: const Icon(Icons.add, color: Colors.white),
+                                label: const Text('Add Follow-up'),
+                              ),
+                            ],
+                          );
+                        }
+                        return Column(
+                          children: [
+                            ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: list.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 12),
+                              itemBuilder: (context, index) {
+                                final f = list[index];
+                                final date = _fmtDate(f.dateOfExamination);
+                                final interval = f.intervalDays <= 0
+                                    ? 'Same day'
+                                    : _friendlyInterval(f.intervalDays);
+                                return Card(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Text(
+                                              'Follow-up ${f.followupIndex}',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                            const Spacer(),
+                                            Text(date),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text('Interval: $interval'),
+                                        const SizedBox(height: 8),
+                                        _EyePairRow(
+                                          label: 'BCVA',
+                                          right: _safeText(f.bcvaRe),
+                                          left: _safeText(f.bcvaLe),
+                                        ),
+                                        Align(
+                                          alignment: Alignment.centerRight,
+                                          child: TextButton(
+                                            onPressed: () => context.push(
+                                              '/cases/$caseId/followup/${f.id}',
+                                            ),
+                                            child: const Text('Edit'),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: () =>
+                                    context.push('/cases/$caseId/followup'),
+                                icon: const Icon(Icons.add, color: Colors.white),
+                                label: const Text('Add Follow-up'),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (e, _) => Text('Failed to load follow-ups: $e'),
+                    ),
                   ],
                 ),
               ),
@@ -108,14 +255,56 @@ class LaserDetailScreen extends ConsumerWidget {
 String _fmtDate(DateTime date) =>
     '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
+String _safeText(String? value) {
+  if (value == null) return '-';
+  final text = value.trim();
+  return text.isEmpty ? '-' : text;
+}
+
+String _friendlyInterval(int days) {
+  if (days % 30 == 0) {
+    final months = days ~/ 30;
+    return '$months month${months == 1 ? '' : 's'}';
+  }
+  if (days % 7 == 0) {
+    final weeks = days ~/ 7;
+    return '$weeks week${weeks == 1 ? '' : 's'}';
+  }
+  return '$days days';
+}
+
 String _mapEyeValue(Map<String, dynamic> map, String eye) {
   final value = map[eye];
   if (value == null || value.toString().trim().isEmpty) return '-';
   return value.toString();
 }
 
+bool _hasParams(Map<String, dynamic> params) {
+  if (params.isEmpty) return false;
+  if (params.containsKey('RE') || params.containsKey('LE')) {
+    final re = Map<String, dynamic>.from(params['RE'] as Map? ?? {});
+    final le = Map<String, dynamic>.from(params['LE'] as Map? ?? {});
+    return re.values.any((v) => v != null && v.toString().trim().isNotEmpty) ||
+        le.values.any((v) => v != null && v.toString().trim().isNotEmpty);
+  }
+  return params.values.any((v) => v != null && v.toString().trim().isNotEmpty);
+}
+
+String _paramEye(Map<String, dynamic> params, String eye, String key) {
+  final eyeMap = Map<String, dynamic>.from(params[eye] as Map? ?? {});
+  final value = eyeMap[key] ??
+      (key == 'power_mw' ? eyeMap['power'] : null) ??
+      (key == 'duration_ms' ? eyeMap['duration'] : null) ??
+      (key == 'spot_size_um' ? eyeMap['spot_size'] : null);
+  if (value == null || value.toString().trim().isEmpty) return '-';
+  return value.toString();
+}
+
 String _param(Map<String, dynamic> params, String key) {
-  final value = params[key];
+  final value = params[key] ??
+      (key == 'power_mw' ? params['power'] : null) ??
+      (key == 'duration_ms' ? params['duration'] : null) ??
+      (key == 'spot_size_um' ? params['spot_size'] : null);
   if (value == null || value.toString().trim().isEmpty) return '-';
   return value.toString();
 }

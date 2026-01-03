@@ -75,7 +75,7 @@ class _EyeField extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          value: value.isEmpty ? null : value,
+          value: bcvaOptions.contains(value) ? value : null,
           items: bcvaOptions
               .map((o) => DropdownMenuItem(value: o, child: Text(o)))
               .toList(),
