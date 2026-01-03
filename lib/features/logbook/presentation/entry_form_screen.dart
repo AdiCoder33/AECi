@@ -1156,7 +1156,12 @@ class _ImagePickerSection extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
             TextButton.icon(
               onPressed: !enabled
                   ? null
@@ -1245,7 +1250,12 @@ class _VideoPickerSection extends ConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Videos', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Expanded(
+              child: Text(
+                'Videos',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
             TextButton.icon(
               onPressed: !enabled
                   ? null
