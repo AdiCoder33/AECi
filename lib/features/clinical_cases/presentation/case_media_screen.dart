@@ -11,9 +11,10 @@ import '../data/clinical_case_constants.dart';
 import '../data/clinical_cases_repository.dart';
 
 class CaseMediaScreen extends ConsumerStatefulWidget {
-  const CaseMediaScreen({super.key, required this.caseId});
+  const CaseMediaScreen({super.key, required this.caseId, this.readOnly = false});
 
   final String caseId;
+  final bool readOnly;
 
   @override
   ConsumerState<CaseMediaScreen> createState() => _CaseMediaScreenState();
@@ -51,6 +52,7 @@ class _CaseMediaScreenState extends ConsumerState<CaseMediaScreen> {
   Widget build(BuildContext context) {
     final followupsAsync = ref.watch(caseFollowupsProvider(widget.caseId));
     final mediaAsync = ref.watch(caseMediaProvider(widget.caseId));
+    final isReadOnly = widget.readOnly;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
@@ -76,13 +78,14 @@ class _CaseMediaScreenState extends ConsumerState<CaseMediaScreen> {
       ),
       body: Column(
         children: [
-          // Upload Section
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          if (!isReadOnly) ...[
+            // Upload Section
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 // Eye Selection and Category Row
                 Row(
                   children: [
@@ -352,17 +355,17 @@ class _CaseMediaScreenState extends ConsumerState<CaseMediaScreen> {
                     ),
                   ],
                 ),
-              ],
+                ],
+              ),
             ),
-          ),
-          // Pending Media Preview
-          if (_pendingMedia.isNotEmpty) ...[
-            Container(
-              color: const Color(0xFFFEF3C7),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+            // Pending Media Preview
+            if (_pendingMedia.isNotEmpty) ...[
+              Container(
+                color: const Color(0xFFFEF3C7),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   Row(
                     children: [
                       Container(
@@ -512,16 +515,23 @@ class _CaseMediaScreenState extends ConsumerState<CaseMediaScreen> {
                       ),
                     ),
                   ),
-                ],
+                  ],
+                ),
               ),
-            ),
+            ],
+            const Divider(height: 0),
           ],
-          const Divider(height: 0),
           // Existing Media
           Expanded(
             child: mediaAsync.when(
               data: (list) {
-                if (list.isEmpty && _pendingMedia.isEmpty) {
+                if (list.isEmpty) {
+                  if (_pendingMedia.isNotEmpty && !isReadOnly) {
+                    return const SizedBox.shrink();
+                  }
+                  final emptySubtitle = isReadOnly
+                      ? 'No media available for this case'
+                      : 'Select an eye and tap Add Image or Add Video to get started';
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(32),
@@ -550,10 +560,10 @@ class _CaseMediaScreenState extends ConsumerState<CaseMediaScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          const Text(
-                            'Select an eye and tap Add Image or Add Video to get started',
+                          Text(
+                            emptySubtitle,
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 12,
                               color: Color(0xFF94A3B8),
                             ),
@@ -562,11 +572,6 @@ class _CaseMediaScreenState extends ConsumerState<CaseMediaScreen> {
                       ),
                     ),
                   );
-                }
-                
-                if (list.isEmpty) {
-                  // Media is pending upload, show nothing here
-                  return const SizedBox.shrink();
                 }
 
                 // Group by eye - extract from note
@@ -596,19 +601,39 @@ class _CaseMediaScreenState extends ConsumerState<CaseMediaScreen> {
                   padding: const EdgeInsets.all(16),
                   children: [
                     if (reMedia.isNotEmpty) ...[
-                      _buildMediaSection('RIGHT EYE', reMedia, const Color(0xFF10B981)),
+                      _buildMediaSection(
+                        'RIGHT EYE',
+                        reMedia,
+                        const Color(0xFF10B981),
+                        readOnly: isReadOnly,
+                      ),
                       const SizedBox(height: 16),
                     ],
                     if (leMedia.isNotEmpty) ...[
-                      _buildMediaSection('LEFT EYE', leMedia, const Color(0xFF3B82F6)),
+                      _buildMediaSection(
+                        'LEFT EYE',
+                        leMedia,
+                        const Color(0xFF3B82F6),
+                        readOnly: isReadOnly,
+                      ),
                       const SizedBox(height: 16),
                     ],
                     if (bothMedia.isNotEmpty) ...[
-                      _buildMediaSection('BOTH EYES', bothMedia, const Color(0xFF8B5CF6)),
+                      _buildMediaSection(
+                        'BOTH EYES',
+                        bothMedia,
+                        const Color(0xFF8B5CF6),
+                        readOnly: isReadOnly,
+                      ),
                       const SizedBox(height: 16),
                     ],
                     if (otherMedia.isNotEmpty)
-                      _buildMediaSection('OTHER MEDIA', otherMedia, const Color(0xFF64748B)),
+                      _buildMediaSection(
+                        'OTHER MEDIA',
+                        otherMedia,
+                        const Color(0xFF64748B),
+                        readOnly: isReadOnly,
+                      ),
                   ],
                 );
               },
@@ -621,7 +646,12 @@ class _CaseMediaScreenState extends ConsumerState<CaseMediaScreen> {
     );
   }
 
-  Widget _buildMediaSection(String title, List<CaseMediaItem> items, Color color) {
+  Widget _buildMediaSection(
+    String title,
+    List<CaseMediaItem> items,
+    Color color, {
+    required bool readOnly,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -680,7 +710,8 @@ class _CaseMediaScreenState extends ConsumerState<CaseMediaScreen> {
                 childAspectRatio: 0.85,
               ),
               itemCount: items.length,
-              itemBuilder: (context, index) => _MediaTile(item: items[index]),
+              itemBuilder: (context, index) =>
+                  _MediaTile(item: items[index], readOnly: readOnly),
             );
           },
         ),
@@ -839,9 +870,10 @@ class _CaseMediaScreenState extends ConsumerState<CaseMediaScreen> {
 }
 
 class _MediaTile extends ConsumerStatefulWidget {
-  const _MediaTile({required this.item});
+  const _MediaTile({required this.item, this.readOnly = false});
 
   final CaseMediaItem item;
+  final bool readOnly;
 
   @override
   ConsumerState<_MediaTile> createState() => _MediaTileState();

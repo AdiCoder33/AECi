@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../application/clinical_cases_controller.dart';
+import '../data/clinical_cases_repository.dart';
 
 class LaserDetailScreen extends ConsumerWidget {
   const LaserDetailScreen({super.key, required this.caseId});
@@ -12,6 +14,7 @@ class LaserDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final caseAsync = ref.watch(clinicalCaseDetailProvider(caseId));
+    final mediaAsync = ref.watch(caseMediaProvider(caseId));
 
     return Scaffold(
       appBar: AppBar(
@@ -135,8 +138,74 @@ class LaserDetailScreen extends ConsumerWidget {
                         _InfoRow(label: 'Burn intensity', value: _param(params, 'burn_intensity')),
                       ],
                     ],
-                  ),
+                    ),
                 ),
+              const SizedBox(height: 12),
+              _SectionCard(
+                title: 'Media',
+                child: mediaAsync.when(
+                  data: (list) {
+                    if (list.isEmpty) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('No media uploaded yet.'),
+                          const SizedBox(height: 8),
+                          TextButton.icon(
+                            onPressed: () =>
+                                context.push('/cases/$caseId/media'),
+                            icon: const Icon(Icons.add_photo_alternate_outlined),
+                            label: const Text('Add Media'),
+                          ),
+                        ],
+                      );
+                    }
+
+                    final preview = list.take(4).toList();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 0.9,
+                          ),
+                          itemCount: preview.length,
+                          itemBuilder: (context, index) =>
+                              _LaserMediaTile(item: preview[index]),
+                        ),
+                        if (list.length > preview.length) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            '+${list.length - preview.length} more',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton(
+                            onPressed: () =>
+                                context.push('/cases/$caseId/media'),
+                            child: const Text('View all media'),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => Text('Failed to load media: $e'),
+                ),
+              ),
               const SizedBox(height: 12),
               _SectionCard(
                 title: 'Laser Follow-ups',
@@ -247,6 +316,76 @@ class LaserDetailScreen extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
+      ),
+    );
+  }
+}
+
+class _LaserMediaTile extends ConsumerWidget {
+  const _LaserMediaTile({required this.item});
+
+  final CaseMediaItem item;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.watch(clinicalCasesRepositoryProvider);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: FutureBuilder<String>(
+                future: repo.getSignedUrl(item.storagePath),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    );
+                  }
+                  final url = snapshot.data!;
+                  if (item.mediaType == 'video') {
+                    return InkWell(
+                      onTap: () => launchUrl(Uri.parse(url)),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Center(
+                          child: Icon(Icons.play_circle_fill, size: 48),
+                        ),
+                      ),
+                    );
+                  }
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      url,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              item.category.replaceAll('_', ' '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+            if (item.note != null && item.note!.isNotEmpty)
+              Text(
+                item.note!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -657,9 +657,7 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
         ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
-          onPressed: widget.caseId == null || uploading
-              ? null
-              : () => _pickLaserImage(eye),
+          onPressed: uploading ? null : () => _pickLaserImage(eye),
           icon: uploading
               ? const SizedBox(
                   width: 16,
@@ -685,9 +683,7 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
         ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
-          onPressed: widget.caseId == null || uploading
-              ? null
-              : () => _pickLaserVideo(eye),
+          onPressed: uploading ? null : () => _pickLaserVideo(eye),
           icon: uploading
               ? const SizedBox(
                   width: 16,
@@ -711,9 +707,9 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
     if (file == null) return;
 
     final ext = p.extension(file.path).toLowerCase();
-    const allowedImages = ['.jpg', '.jpeg', '.png'];
+    const allowedImages = ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'];
     if (!allowedImages.contains(ext)) {
-      _showError('Only JPEG or PNG images are allowed.');
+      _showError('Only JPG, PNG, WEBP, or HEIC images are allowed.');
       return;
     }
 
@@ -734,6 +730,9 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
             note: 'Laser $eye',
           );
       ref.invalidate(caseMediaProvider(widget.caseId!));
+      if (mounted) {
+        _showSuccess('Image uploaded for $eye.');
+      }
     } catch (e) {
       _showError('Upload failed: $e');
     } finally {
@@ -759,9 +758,9 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
     if (file == null) return;
 
     final ext = p.extension(file.path).toLowerCase();
-    const allowedVideos = ['.mp4', '.avi'];
+    const allowedVideos = ['.mp4', '.mov', '.m4v', '.avi', '.mkv', '.webm', '.3gp'];
     if (!allowedVideos.contains(ext)) {
-      _showError('Only MP4 or AVI videos are allowed.');
+      _showError('Only MP4, MOV, M4V, AVI, MKV, WEBM, or 3GP videos are allowed.');
       return;
     }
 
@@ -782,6 +781,9 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
             note: 'Laser $eye',
           );
       ref.invalidate(caseMediaProvider(widget.caseId!));
+      if (mounted) {
+        _showSuccess('Video uploaded for $eye.');
+      }
     } catch (e) {
       _showError('Upload failed: $e');
     } finally {
@@ -800,6 +802,23 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+    );
+  }
+
+  void _showSuccess(String message) {
+    final caseId = widget.caseId;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFF10B981),
+        action: caseId == null
+            ? null
+            : SnackBarAction(
+                label: 'View',
+                textColor: Colors.white,
+                onPressed: () => context.push('/cases/$caseId/media'),
+              ),
+      ),
     );
   }
 

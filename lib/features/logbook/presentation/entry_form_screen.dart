@@ -152,8 +152,10 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
           _recordAssistedByController.text =
               payload['assistedBy'] ?? payload['surgeonOrAssistant'] ?? '';
           _recordDurationController.text = payload['duration'] ?? '';
-          _recordRightEye = payload['rightEye'] as String?;
-          _recordLeftEye = payload['leftEye'] as String?;
+          _recordRightEye =
+              _normalizeEyeStatus(payload['rightEye'] as String?);
+          _recordLeftEye =
+              _normalizeEyeStatus(payload['leftEye'] as String?);
           _recordSurgicalNotesController.text = payload['surgicalNotes'] ?? '';
           _recordComplicationsController.text = payload['complications'] ?? '';
           _existingVideoPaths = List<String>.from(payload['videoPaths'] ?? []);
@@ -764,9 +766,10 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     required String? value,
     required ValueChanged<String?>? onChanged,
   }) {
-    const options = ['Operated', 'Not Operated'];
+    const options = _eyeStatusOptions;
+    final normalizedValue = _normalizeEyeStatus(value);
     return DropdownButtonFormField<String>(
-      value: value,
+      value: normalizedValue,
       isExpanded: true,
       decoration: InputDecoration(labelText: label),
       items: options
@@ -783,6 +786,20 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
       onChanged: onChanged,
     );
   }
+
+  String? _normalizeEyeStatus(String? raw) {
+    if (raw == null) return null;
+    final cleaned = raw.trim();
+    if (cleaned.isEmpty) return null;
+    for (final option in _eyeStatusOptions) {
+      if (option.toLowerCase() == cleaned.toLowerCase()) {
+        return option;
+      }
+    }
+    return null;
+  }
+
+  static const _eyeStatusOptions = ['Operated', 'Not Operated'];
 
   Widget _buildLearningSurgeryDropdown() {
     final options = List<String>.from(_surgeryOptions);
