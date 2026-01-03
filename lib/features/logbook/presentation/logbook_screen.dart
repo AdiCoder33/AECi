@@ -7,6 +7,7 @@ import '../../../core/widgets/shimmer_loading.dart';
 import '../../clinical_cases/application/clinical_cases_controller.dart';
 import '../../clinical_cases/data/clinical_cases_repository.dart';
 import '../../portfolio/application/portfolio_controller.dart';
+import '../../portfolio/data/portfolio_repository.dart';
 import '../../review/application/review_controller.dart';
 import '../application/logbook_providers.dart';
 import '../domain/elog_entry.dart';
@@ -59,9 +60,11 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
                 : section == logbookSectionLaser
                     ? ref.watch(clinicalCaseListByKeywordProvider('laser'))
                     : section == logbookSectionUvea
-                        ? ref.watch(clinicalCaseListByKeywordProvider('uvea'))
-                : ref.watch(clinicalCaseListProvider))
+                      ? ref.watch(clinicalCaseListByKeywordProvider('uvea'))
+                    : ref.watch(clinicalCaseListProvider))
         : null;
+                    final AsyncValue<List<PublicationItem>>? publications =
+                  isPublications ? ref.watch(publicationListProvider) : null;
     final reviews = isReviews ? ref.watch(reviewControllerProvider) : null;
     final showMine = ref.watch(showMineProvider);
     final showDrafts = ref.watch(showDraftsProvider);
@@ -487,7 +490,7 @@ class _SectionBody extends StatelessWidget {
   final bool isReviews;
   final AsyncValue<List<ElogEntry>>? entries;
   final AsyncValue<List<ClinicalCase>>? cases;
-  final AsyncValue<List<dynamic>>? publications;
+  final AsyncValue<List<PublicationItem>>? publications;
   final ReviewQueueState? reviews;
   final String section;
 
@@ -549,188 +552,181 @@ class _SectionBody extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final c = filtered[index];
-return Container(
-  decoration: BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(16),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withOpacity(0.08),
-        blurRadius: 12,
-        offset: const Offset(0, 4),
-        spreadRadius: 1,
-      ),
-    ],
-  ),
-  child: Material(
-    color: Colors.transparent,
-    child: InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: () {
-        switch (section) {
-          case logbookSectionRop:
-            context.push('/cases/rop/${c.id}');
-            return;
-          case logbookSectionRetinoblastoma:
-            context.push('/cases/retinoblastoma/${c.id}');
-            return;
-          case logbookSectionLaser:
-            context.push('/cases/laser/${c.id}');
-            return;
-          case logbookSectionUvea:
-            context.push('/cases/uvea/${c.id}');
-            return;
-          default:
-            context.push('/cases/${c.id}');
-            return;
-        }
-      },
-      child: Column(
-        children: [
-          // --------------------------------------------------
-          // Gradient Header
-          // --------------------------------------------------
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.medical_information_outlined,
-                    color: Color(0xFF3B82F6),
-                    size: 24,
-                  ),
+              return Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                      spreadRadius: 1,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    c.patientName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: 0.3,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () {
+                      switch (section) {
+                        case logbookSectionRop:
+                          context.push('/cases/rop/${c.id}');
+                          return;
+                        case logbookSectionRetinoblastoma:
+                          context.push('/cases/retinoblastoma/${c.id}');
+                          return;
+                        case logbookSectionLaser:
+                          context.push('/cases/laser/${c.id}');
+                          return;
+                        case logbookSectionUvea:
+                          context.push('/cases/uvea/${c.id}');
+                          return;
+                        default:
+                          context.push('/cases/${c.id}');
+                          return;
+                      }
+                    },
+                    child: Column(
+                      children: [
+                        // Header
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(16),
+                              topRight: Radius.circular(16),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.medical_information_outlined,
+                                  color: Color(0xFF3B82F6),
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  c.patientName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ),
+                              const Icon(
+                                Icons.chevron_right_rounded,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Content
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    // UID Badge
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF3B82F6).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: const Color(0xFF3B82F6).withOpacity(0.2),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.fingerprint,
+                                            size: 14,
+                                            color: Color(0xFF3B82F6),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'UID ${c.uidNumber}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFF3B82F6),
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+
+                                    const SizedBox(width: 8),
+
+                                    // MR Badge
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF1F5F9),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: const Color(0xFFE2E8F0),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.badge_outlined,
+                                            size: 14,
+                                            color: Color(0xFF64748B),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            'MR ${c.mrNumber}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFF64748B),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: Colors.white,
-                  size: 28,
-                ),
-              ],
-            ),
-          ),
-
-          // --------------------------------------------------
-          // Content
-          // --------------------------------------------------
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      // UID Badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF3B82F6).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: const Color(0xFF3B82F6).withOpacity(0.2),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.fingerprint,
-                              size: 14,
-                              color: Color(0xFF3B82F6),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'UID ${c.uidNumber}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF3B82F6),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(width: 8),
-
-                      // MR Badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: const Color(0xFFE2E8F0),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.badge_outlined,
-                              size: 14,
-                              color: Color(0xFF64748B),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'MR ${c.mrNumber}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF64748B),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ),
-  ),
-);
-
                 ),
               );
             },

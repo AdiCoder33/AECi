@@ -1088,8 +1088,3 @@ class _AssessmentsCard extends ConsumerWidget {
     );
   }
 }
-
-      ),
-    );
-  }
-}

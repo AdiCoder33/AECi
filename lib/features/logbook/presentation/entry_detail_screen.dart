@@ -1040,12 +1040,9 @@ if (canScore) ...[
 // --------------------------------------------------
 // Other module types
 // --------------------------------------------------
-if (entry.moduleType != moduleImages &&
-    entry.moduleType != moduleRecords &&
-    entry.moduleType != moduleLearning) ...[
-  // existing content continues here
-],
-
+                if (entry.moduleType != moduleImages &&
+                    entry.moduleType != moduleRecords &&
+                    entry.moduleType != moduleLearning) ...[
                   _AuthorInfo(author: entry.authorProfile),
                   const SizedBox(height: 12),
                   _PayloadView(entry: entry),
@@ -1056,11 +1053,14 @@ if (entry.moduleType != moduleImages &&
                   const SizedBox(height: 12),
                   _SimilarEntries(entry: entry),
                   const SizedBox(height: 16),
-                ] else if (entry.moduleType == moduleImages) ...[
+                ],
+                if (entry.moduleType == moduleImages) ...[
                   _ImagesView(entry: entry),
-                ] else if (entry.moduleType == moduleRecords) ...[
+                ],
+                if (entry.moduleType == moduleRecords) ...[
                   _RecordImagesView(entry: entry),
-                ] else if (entry.moduleType == moduleLearning) ...[
+                ],
+                if (entry.moduleType == moduleLearning) ...[
                   _LearningVideosView(entry: entry),
                 ],
                 const SizedBox(height: 16),
