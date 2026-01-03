@@ -466,7 +466,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
       title: '4. Visual Parameters (RE / LE)',
       child: Column(
         children: [
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildDropdown(
@@ -488,7 +488,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
               ),
             ),
           ),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildTextField(
@@ -526,7 +526,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildDropdown(
@@ -550,7 +550,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
           ),
           if (_anteriorRe.conjunctiva == 'Other' ||
               _anteriorLe.conjunctiva == 'Other')
-            _buildTwoColumn(
+            _buildEyeTwoColumn(
               left: _buildEyeField(
                 eye: 'RE',
                 child: _buildTextField(
@@ -576,7 +576,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildYesNo(
@@ -596,7 +596,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
               ),
             ),
           ),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildDropdown(
@@ -618,7 +618,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
               ),
             ),
           ),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildDropdown(
@@ -646,7 +646,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildDropdown(
@@ -668,7 +668,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
               ),
             ),
           ),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildDropdown(
@@ -690,7 +690,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
               ),
             ),
           ),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildYesNo(
@@ -708,7 +708,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
               ),
             ),
           ),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildYesNo(
@@ -730,7 +730,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
           ),
           if (_anteriorRe.hypopyon == true ||
               _anteriorLe.hypopyon == true)
-            _buildTwoColumn(
+            _buildEyeTwoColumn(
               left: _buildEyeField(
                 eye: 'RE',
                 child: _buildTextField(
@@ -762,7 +762,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildDropdown(
@@ -786,7 +786,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
           ),
           if (_anteriorRe.irisNodules == 'Other' ||
               _anteriorLe.irisNodules == 'Other')
-            _buildTwoColumn(
+            _buildEyeTwoColumn(
               left: _buildEyeField(
                 eye: 'RE',
                 child: _buildTextField(
@@ -806,7 +806,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
                 ),
               ),
             ),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildDropdown(
@@ -828,7 +828,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
               ),
             ),
           ),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildYesNo(
@@ -854,7 +854,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildDropdown(
@@ -878,7 +878,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
           ),
           if (_anteriorRe.glaucoma == 'Other' ||
               _anteriorLe.glaucoma == 'Other')
-            _buildTwoColumn(
+            _buildEyeTwoColumn(
               left: _buildEyeField(
                 eye: 'RE',
                 child: _buildTextField(
@@ -904,7 +904,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildDropdown(
@@ -942,7 +942,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildTextField(
@@ -958,7 +958,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
               ),
             ),
           ),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildPresenceDropdown(
@@ -984,7 +984,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildDropdown(
@@ -1012,7 +1012,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildDropdown(
@@ -1036,7 +1036,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
           ),
           if (_fundusRe.vessels == 'Vasculitis' ||
               _fundusLe.vessels == 'Vasculitis')
-            _buildTwoColumn(
+            _buildEyeTwoColumn(
               left: _buildEyeField(
                 eye: 'RE',
                 child: _buildDropdown(
@@ -1064,7 +1064,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildDropdown(
@@ -1086,7 +1086,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
               ),
             ),
           ),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildDropdown(
@@ -1108,7 +1108,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
               ),
             ),
           ),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildYesNo(
@@ -1128,7 +1128,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
               ),
             ),
           ),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildYesNo(
@@ -1148,7 +1148,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
               ),
             ),
           ),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildTextField(
@@ -1170,7 +1170,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildYesNo(
@@ -1190,7 +1190,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
               ),
             ),
           ),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildYesNo(
@@ -1210,7 +1210,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
               ),
             ),
           ),
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildTextField(
@@ -1236,7 +1236,7 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
       title: '7. Location of Uveitis (RE / LE)',
       child: Column(
         children: [
-          _buildTwoColumn(
+          _buildEyeTwoColumn(
             left: _buildEyeField(
               eye: 'RE',
               child: _buildDropdown(
@@ -1494,6 +1494,20 @@ class _UveaFormScreenState extends ConsumerState<UveaFormScreen> {
           }
         },
       ),
+    );
+  }
+
+  Widget _buildEyeTwoColumn({
+    required Widget left,
+    required Widget right,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: left),
+        const SizedBox(width: 12),
+        Expanded(child: right),
+      ],
     );
   }
 
