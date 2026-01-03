@@ -1,18 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/elog_entry.dart';
+import '../../application/logbook_providers.dart';
 
-class EntryCard extends StatelessWidget {
+class EntryCard extends ConsumerWidget {
   const EntryCard({super.key, required this.entry, this.onTap});
 
   final ElogEntry entry;
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final summary = _summaryText(entry);
     final keywordChips = entry.keywords.take(3).toList();
     final extra = entry.keywords.length - keywordChips.length;
+    final signedCache = ref.read(signedUrlCacheProvider.notifier);
+    
+    // Get image paths for atlas entries
+    final imagePaths = entry.moduleType == moduleImages
+        ? List<String>.from(entry.payload['uploadImagePaths'] ?? [])
+        : <String>[];
 
     return Container(
       decoration: BoxDecoration(
@@ -241,6 +249,79 @@ class EntryCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    // Image Preview for Atlas Entries
+                    if (imagePaths.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        height: 80,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: imagePaths.length > 3 ? 3 : imagePaths.length,
+                          itemBuilder: (context, index) {
+                            final path = imagePaths[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: FutureBuilder(
+                                future: signedCache.getUrl(path),
+                                builder: (context, snapshot) {
+                                  return ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      width: 80,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: const Color(0xFF10B981),
+                                          width: 2,
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: snapshot.hasData
+                                          ? Image.network(
+                                              snapshot.data!,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, __, ___) => Container(
+                                                color: const Color(0xFFF1F5F9),
+                                                child: const Icon(
+                                                  Icons.broken_image,
+                                                  size: 32,
+                                                  color: Color(0xFF94A3B8),
+                                                ),
+                                              ),
+                                            )
+                                          : Container(
+                                              color: const Color(0xFFF1F5F9),
+                                              child: const Center(
+                                                child: SizedBox(
+                                                  width: 16,
+                                                  height: 16,
+                                                  child: CircularProgressIndicator(
+                                                    strokeWidth: 2,
+                                                    color: Color(0xFF10B981),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      if (imagePaths.length > 3)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            '+${imagePaths.length - 3} more images',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Color(0xFF10B981),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
                   ],
                 ),
               ),
