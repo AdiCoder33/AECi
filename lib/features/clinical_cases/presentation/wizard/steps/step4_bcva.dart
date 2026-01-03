@@ -34,7 +34,7 @@ class Step4Bcva extends StatelessWidget {
               letterSpacing: 0.3,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 14),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -117,11 +117,7 @@ class _EyeField extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  icon,
-                  size: 24,
-                  color: Colors.white,
-                ),
+                Icon(icon, size: 24, color: Colors.white),
                 const SizedBox(width: 10),
                 Text(
                   label,
@@ -140,18 +136,23 @@ class _EyeField extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: DropdownButtonFormField<String>(
               value: value.isEmpty ? null : value,
+              isExpanded: true,
+              menuMaxHeight: 300,
+              borderRadius: BorderRadius.circular(16),
               items: bcvaOptions
-                  .map((o) => DropdownMenuItem(
-                        value: o,
-                        child: Text(
-                          o,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1E293B),
-                          ),
+                  .map(
+                    (o) => DropdownMenuItem(
+                      value: o,
+                      child: Text(
+                        o,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1E293B),
                         ),
-                      ))
+                      ),
+                    ),
+                  )
                   .toList(),
               decoration: InputDecoration(
                 labelText: 'Select BCVA',
@@ -161,21 +162,21 @@ class _EyeField extends StatelessWidget {
                   color: Color(0xFF64748B),
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   borderSide: const BorderSide(
                     color: Color(0xFFE2E8F0),
                     width: 2,
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   borderSide: const BorderSide(
                     color: Color(0xFFE2E8F0),
                     width: 2,
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   borderSide: const BorderSide(
                     color: Color(0xFF10B981),
                     width: 2,
@@ -186,7 +187,8 @@ class _EyeField extends StatelessWidget {
                   vertical: 14,
                 ),
               ),
-              validator: (val) => (val == null || val.isEmpty) ? 'Required' : null,
+              validator: (val) =>
+                  (val == null || val.isEmpty) ? 'Required' : null,
               onChanged: (val) => onChanged(val ?? ''),
             ),
           ),

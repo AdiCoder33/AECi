@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../application/clinical_case_wizard_controller.dart';
+import '../../application/clinical_cases_controller.dart';
 import '../../data/clinical_case_constants.dart';
 import '../../domain/constants/anterior_segment_options.dart';
 import '../../domain/constants/fundus_options.dart';
@@ -53,12 +54,13 @@ class _ClinicalCaseWizardScreenState
     super.initState();
     _bindControllers();
     if (widget.caseType != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        ref.read(clinicalCaseWizardProvider.notifier).setCaseType(
-              widget.caseType,
-            );
-      });
+WidgetsBinding.instance.addPostFrameCallback((_) {
+  if (!mounted) return;
+  ref
+      .read(clinicalCaseWizardProvider.notifier)
+      .setCaseType(widget.caseType);
+});
+
       if (widget.caseId == null) {
         _keywordsController.text = widget.caseType!;
       }
@@ -129,8 +131,7 @@ class _ClinicalCaseWizardScreenState
     _mrController.text = state.mrNumber;
     _ageController.text = state.patientAge?.toString() ?? '';
     _chiefController.text = state.chiefComplaint;
-    _durationController.text =
-        state.complaintDurationValue?.toString() ?? '';
+    _durationController.text = state.complaintDurationValue?.toString() ?? '';
     _systemicOtherController.text = state.systemicOther;
     _iopReController.text = state.iopRe;
     _iopLeController.text = state.iopLe;
@@ -142,17 +143,17 @@ class _ClinicalCaseWizardScreenState
   Widget build(BuildContext context) {
     final wizard = ref.watch(clinicalCaseWizardProvider);
     final notifier = ref.read(clinicalCaseWizardProvider.notifier);
-    ref.listen<ClinicalCaseWizardState>(clinicalCaseWizardProvider,
-        (previous, next) {
+    ref.listen<ClinicalCaseWizardState>(clinicalCaseWizardProvider, (
+      previous,
+      next,
+    ) {
       if (next.caseId != null && !_prefilled && !next.isLoading) {
         _prefillFromState(next);
       }
     });
 
     if (wizard.isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final isUvea =
@@ -201,8 +202,7 @@ class _ClinicalCaseWizardScreenState
         mrController: _mrController,
         ageController: _ageController,
         gender: wizard.patientGender,
-        onGenderChanged: (value) =>
-            notifier.update(patientGender: value),
+        onGenderChanged: (value) => notifier.update(patientGender: value),
       ),
       Step2Complaints(
         formKey: _formKeys[1],
@@ -217,8 +217,7 @@ class _ClinicalCaseWizardScreenState
         child: Step3Systemic(
           selected: wizard.systemicHistory,
           otherController: _systemicOtherController,
-          onSelectionChanged: (next) =>
-              notifier.update(systemicHistory: next),
+          onSelectionChanged: (next) => notifier.update(systemicHistory: next),
         ),
       ),
       Step4Bcva(
@@ -233,87 +232,102 @@ class _ClinicalCaseWizardScreenState
         iopReController: _iopReController,
         iopLeController: _iopLeController,
       ),
-      if (isUvea)
-        Step6UveaAnterior(
-          formKey: _formKeys[5],
-          uveaAnterior: _uveaMap(wizard.anteriorSegment),
-          onChanged: (eye, field, value) =>
-              notifier.setUveaAnteriorField(
-                eye: eye,
-                field: field,
-                value: value,
-              ),
-        )
-      else
-        Step6Anterior(
-          formKey: _formKeys[5],
-          anterior: wizard.anteriorSegment,
-          onSelectionChanged: (eye, sectionKey, selected) =>
-              notifier.setAnteriorSegmentSelection(
-                eye: eye,
-                sectionKey: sectionKey,
-                selectedList: selected,
-              ),
-          onDescriptionChanged: (eye, sectionKey, option, description) =>
-              notifier.setAnteriorSegmentDescription(
-                eye: eye,
-                sectionKey: sectionKey,
-                option: option,
-                description: description,
-              ),
-          onOtherChanged: (eye, sectionKey, other) =>
-              notifier.setAnteriorSegmentOther(
-                eye: eye,
-                sectionKey: sectionKey,
-                otherText: other,
-              ),
-          onRemarksChanged: (eye, remarks) =>
-              notifier.setAnteriorSegmentRemarks(eye: eye, remarks: remarks),
+// ---------------- Step 6 ----------------
+if (isUvea)
+  Step6UveaAnterior(
+    formKey: _formKeys[5],
+    uveaAnterior: _uveaMap(wizard.anteriorSegment),
+    onChanged: (eye, field, value) =>
+        notifier.setUveaAnteriorField(
+          eye: eye,
+          field: field,
+          value: value,
         ),
-      if (isUvea)
-        Step7UveaFundus(
-          formKey: _formKeys[6],
-          uveaFundus: _uveaMap(wizard.fundus),
-          onChanged: (eye, field, value) =>
-              notifier.setUveaFundusField(
-                eye: eye,
-                field: field,
-                value: value,
-              ),
-        )
-      else
-        Step7Fundus(
-          formKey: _formKeys[6],
-          fundus: wizard.fundus,
-          onSelectionChanged: (eye, sectionKey, selected) =>
-              notifier.setFundusSelection(
-                eye: eye,
-                sectionKey: sectionKey,
-                selectedList: selected,
-              ),
-          onDescriptionChanged: (eye, sectionKey, option, description) =>
-              notifier.setFundusDescription(
-                eye: eye,
-                sectionKey: sectionKey,
-                option: option,
-                description: description,
-              ),
-          onOtherChanged: (eye, sectionKey, other) =>
-              notifier.setFundusOther(
-                eye: eye,
-                sectionKey: sectionKey,
-                otherText: other,
-              ),
-          onRemarksChanged: (eye, remarks) =>
-              notifier.setFundusRemarks(eye: eye, remarks: remarks),
+  )
+else
+  Step6Anterior(
+    formKey: _formKeys[5],
+    anterior: wizard.anteriorSegment,
+    onSelectionChanged: (eye, sectionKey, selected) =>
+        notifier.setAnteriorSegmentSelection(
+          eye: eye,
+          sectionKey: sectionKey,
+          selectedList: selected,
         ),
-      if (isUvea)
-        Step8UveaLocation(
-          formKey: _formKeys[7],
-          locations: _uveaLocationMap(wizard.fundus),
-          onChanged: (eye, value) =>
-              notifier.setUveaLocation(eye: eye, location: value),
+    onDescriptionChanged: (eye, sectionKey, option, description) =>
+        notifier.setAnteriorSegmentDescription(
+          eye: eye,
+          sectionKey: sectionKey,
+          option: option,
+          description: description,
         ),
+    onOtherChanged: (eye, sectionKey, other) =>
+        notifier.setAnteriorSegmentOther(
+          eye: eye,
+          sectionKey: sectionKey,
+          otherText: other,
+        ),
+    onRemarksChanged: (eye, remarks) =>
+        notifier.setAnteriorSegmentRemarks(
+          eye: eye,
+          remarks: remarks,
+        ),
+  ),
+
+// ---------------- Step 7 ----------------
+if (isUvea)
+  Step7UveaFundus(
+    formKey: _formKeys[6],
+    uveaFundus: _uveaMap(wizard.fundus),
+    onChanged: (eye, field, value) =>
+        notifier.setUveaFundusField(
+          eye: eye,
+          field: field,
+          value: value,
+        ),
+  )
+else
+  Step7Fundus(
+    formKey: _formKeys[6],
+    fundus: wizard.fundus,
+    onSelectionChanged: (eye, sectionKey, selected) =>
+        notifier.setFundusSelection(
+          eye: eye,
+          sectionKey: sectionKey,
+          selectedList: selected,
+        ),
+    onDescriptionChanged: (eye, sectionKey, option, description) =>
+        notifier.setFundusDescription(
+          eye: eye,
+          sectionKey: sectionKey,
+          option: option,
+          description: description,
+        ),
+    onOtherChanged: (eye, sectionKey, other) =>
+        notifier.setFundusOther(
+          eye: eye,
+          sectionKey: sectionKey,
+          otherText: other,
+        ),
+    onRemarksChanged: (eye, remarks) =>
+        notifier.setFundusRemarks(
+          eye: eye,
+          remarks: remarks,
+        ),
+  ),
+
+// ---------------- Step 8 (Uvea only) ----------------
+if (isUvea)
+  Step8UveaLocation(
+    formKey: _formKeys[7],
+    locations: _uveaLocationMap(wizard.fundus),
+    onChanged: (eye, value) =>
+        notifier.setUveaLocation(
+          eye: eye,
+          location: value,
+        ),
+  ),
+
       Step8DiagnosisKeywords(
         formKey: _formKeys[isUvea ? 8 : 7],
         diagnosisController: _diagnosisController,
@@ -377,12 +391,20 @@ class _ClinicalCaseWizardScreenState
             step: _stepIndex + 1,
             total: steps.length,
             title: titles[_stepIndex],
+            patientInfo: _stepIndex > 0 && wizard.patientName.isNotEmpty
+                ? PatientInfoSummary(
+                    patientName: wizard.patientName,
+                    uidNumber: wizard.uidNumber,
+                    mrNumber: wizard.mrNumber,
+                    age: wizard.patientAge?.toString() ?? '',
+                    gender: wizard.patientGender,
+                    examDate:
+                        '${wizard.dateOfExamination.day.toString().padLeft(2, '0')}-${wizard.dateOfExamination.month.toString().padLeft(2, '0')}-${wizard.dateOfExamination.year}',
+                  )
+                : null,
           ),
           Expanded(
-            child: IndexedStack(
-              index: _stepIndex,
-              children: steps,
-            ),
+            child: IndexedStack(index: _stepIndex, children: steps),
           ),
           WizardFooter(
             isFirst: _stepIndex == 0,
@@ -422,7 +444,10 @@ class _ClinicalCaseWizardScreenState
     return _isStepComplete(wizard);
   }
 
-  bool _validateStep({ClinicalCaseWizardState? wizard, bool showErrors = false}) {
+  bool _validateStep({
+    ClinicalCaseWizardState? wizard,
+    bool showErrors = false,
+  }) {
     final ClinicalCaseWizardState state =
         wizard ?? ref.read(clinicalCaseWizardProvider);
     final isUvea =
@@ -575,12 +600,14 @@ class _ClinicalCaseWizardScreenState
     for (final eyeKey in ['RE', 'LE']) {
       final eye = Map<String, dynamic>.from(anterior[eyeKey] as Map? ?? {});
       for (final section in anteriorSegmentSections) {
-        final sectionData =
-            Map<String, dynamic>.from(eye[section.key] as Map? ?? {});
+        final sectionData = Map<String, dynamic>.from(
+          eye[section.key] as Map? ?? {},
+        );
         final selected =
             (sectionData['selected'] as List?)?.cast<String>() ?? <String>[];
-        final descriptions =
-            Map<String, dynamic>.from(sectionData['descriptions'] as Map? ?? {});
+        final descriptions = Map<String, dynamic>.from(
+          sectionData['descriptions'] as Map? ?? {},
+        );
         final other = (sectionData['other'] as String?) ?? '';
         final normalOption = _normalOptionForAnterior(section);
         if (selected.isEmpty) {
@@ -632,12 +659,14 @@ class _ClinicalCaseWizardScreenState
     for (final eyeKey in ['RE', 'LE']) {
       final eye = Map<String, dynamic>.from(fundus[eyeKey] as Map? ?? {});
       for (final section in fundusSections) {
-        final sectionData =
-            Map<String, dynamic>.from(eye[section.key] as Map? ?? {});
+        final sectionData = Map<String, dynamic>.from(
+          eye[section.key] as Map? ?? {},
+        );
         final selected =
             (sectionData['selected'] as List?)?.cast<String>() ?? <String>[];
-        final descriptions =
-            Map<String, dynamic>.from(sectionData['descriptions'] as Map? ?? {});
+        final descriptions = Map<String, dynamic>.from(
+          sectionData['descriptions'] as Map? ?? {},
+        );
         final other = (sectionData['other'] as String?) ?? '';
         final normalOption = _normalOptionForFundus(section);
         if (selected.isEmpty) {
@@ -800,6 +829,9 @@ class _ClinicalCaseWizardScreenState
       final id = await ref
           .read(clinicalCaseWizardProvider.notifier)
           .save(status: status);
+      // Invalidate providers to refresh the list
+      ref.invalidate(clinicalCaseListProvider);
+      ref.invalidate(clinicalCaseListByKeywordProvider);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -824,10 +856,7 @@ class _ClinicalCaseWizardScreenState
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.redAccent,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
     );
   }
 
@@ -837,8 +866,9 @@ class _ClinicalCaseWizardScreenState
     for (final part in parts) {
       final cleaned = part.trim();
       if (cleaned.isEmpty) continue;
-      final exists =
-          normalized.any((e) => e.toLowerCase() == cleaned.toLowerCase());
+      final exists = normalized.any(
+        (e) => e.toLowerCase() == cleaned.toLowerCase(),
+      );
       if (!exists) normalized.add(cleaned);
     }
     return normalized;

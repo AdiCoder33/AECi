@@ -48,7 +48,7 @@ class Step2Complaints extends StatelessWidget {
                 height: 1.5,
               ),
               decoration: InputDecoration(
-                labelText: 'Chief Complaint',
+                labelText: 'Tap & Enter Chief Complaint',
                 labelStyle: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -108,7 +108,7 @@ class Step2Complaints extends StatelessWidget {
           const SizedBox(height: 24),
           // Duration Section
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [

@@ -59,31 +59,31 @@ class ClinicalCaseWizardState {
   final String status;
 
   factory ClinicalCaseWizardState.initial() => ClinicalCaseWizardState(
-        caseId: null,
-        isLoading: false,
-        errorMessage: null,
-        caseType: null,
-        dateOfExamination: DateTime.now(),
-        patientName: '',
-        uidNumber: '',
-        mrNumber: '',
-        patientGender: 'male',
-        patientAge: null,
-        chiefComplaint: '',
-        complaintDurationValue: null,
-        complaintDurationUnit: complaintUnits.first,
-        systemicHistory: const [],
-        systemicOther: '',
-        bcvaRe: '',
-        bcvaLe: '',
-        iopRe: '',
-        iopLe: '',
-        anteriorSegment: _initialAnterior(),
-        fundus: _initialFundus(),
-        diagnosis: '',
-        keywords: const [],
-        status: 'draft',
-      );
+    caseId: null,
+    isLoading: false,
+    errorMessage: null,
+    caseType: null,
+    dateOfExamination: DateTime.now(),
+    patientName: '',
+    uidNumber: '',
+    mrNumber: '',
+    patientGender: 'male',
+    patientAge: null,
+    chiefComplaint: '',
+    complaintDurationValue: null,
+    complaintDurationUnit: complaintUnits.first,
+    systemicHistory: const [],
+    systemicOther: '',
+    bcvaRe: '',
+    bcvaLe: '',
+    iopRe: '',
+    iopLe: '',
+    anteriorSegment: _initialAnterior(),
+    fundus: _initialFundus(),
+    diagnosis: '',
+    keywords: const [],
+    status: 'draft',
+  );
 
   ClinicalCaseWizardState copyWith({
     String? caseId,
@@ -125,7 +125,8 @@ class ClinicalCaseWizardState {
       chiefComplaint: chiefComplaint ?? this.chiefComplaint,
       complaintDurationValue:
           complaintDurationValue ?? this.complaintDurationValue,
-      complaintDurationUnit: complaintDurationUnit ?? this.complaintDurationUnit,
+      complaintDurationUnit:
+          complaintDurationUnit ?? this.complaintDurationUnit,
       systemicHistory: systemicHistory ?? this.systemicHistory,
       systemicOther: systemicOther ?? this.systemicOther,
       bcvaRe: bcvaRe ?? this.bcvaRe,
@@ -174,7 +175,7 @@ class ClinicalCaseWizardState {
 class ClinicalCaseWizardController
     extends StateNotifier<ClinicalCaseWizardState> {
   ClinicalCaseWizardController(this._repo)
-      : super(ClinicalCaseWizardState.initial());
+    : super(ClinicalCaseWizardState.initial());
 
   final ClinicalCasesRepository _repo;
 
@@ -212,8 +213,9 @@ class ClinicalCaseWizardController
         bcvaLe: data.bcvaLe ?? '',
         iopRe: data.iopRe?.toString() ?? '',
         iopLe: data.iopLe?.toString() ?? '',
-        anteriorSegment:
-            _normalizeAnterior(data.anteriorSegment ?? _initialAnterior()),
+        anteriorSegment: _normalizeAnterior(
+          data.anteriorSegment ?? _initialAnterior(),
+        ),
         fundus: _normalizeFundus(data.fundus ?? _initialFundus()),
         diagnosis: data.diagnosis,
         keywords: _applyCaseTypeKeywords(
@@ -225,10 +227,7 @@ class ClinicalCaseWizardController
         isLoading: false,
       );
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }
   }
 
@@ -291,8 +290,10 @@ class ClinicalCaseWizardController
   }
 
   Future<String> save({required String status}) async {
-    final effectiveKeywords =
-        _applyCaseTypeKeywords(state.keywords, state.caseType);
+    final effectiveKeywords = _applyCaseTypeKeywords(
+      state.keywords,
+      state.caseType,
+    );
     state = state.copyWith(keywords: effectiveKeywords);
     final data = state.toMap(status);
     if (state.caseId == null) {
@@ -305,10 +306,7 @@ class ClinicalCaseWizardController
     return state.caseId!;
   }
 
-  void setLidsFindings({
-    required String eye,
-    required List<String> findings,
-  }) {
+  void setLidsFindings({required String eye, required List<String> findings}) {
     setAnteriorSegmentSelection(
       eye: eye,
       sectionKey: 'lids',
@@ -316,15 +314,8 @@ class ClinicalCaseWizardController
     );
   }
 
-  void setLidsOtherNotes({
-    required String eye,
-    required String notes,
-  }) {
-    setAnteriorSegmentOther(
-      eye: eye,
-      sectionKey: 'lids',
-      otherText: notes,
-    );
+  void setLidsOtherNotes({required String eye, required String notes}) {
+    setAnteriorSegmentOther(eye: eye, sectionKey: 'lids', otherText: notes);
   }
 
   void setAnteriorSegmentSelection({
@@ -334,16 +325,16 @@ class ClinicalCaseWizardController
   }) {
     final next = _copyAnterior(state.anteriorSegment);
     final eyeMap = Map<String, dynamic>.from(next[eye] as Map? ?? {});
-    final section =
-        Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
+    final section = Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
     final normalOption = _normalOptionForAnteriorSection(sectionKey);
     var normalized = _normalizeSelection(selectedList);
     if (normalized.contains(normalOption) && normalized.length > 1) {
       normalized = [normalOption];
     }
     section['selected'] = normalized;
-    final descriptions =
-        Map<String, dynamic>.from(section['descriptions'] as Map? ?? {});
+    final descriptions = Map<String, dynamic>.from(
+      section['descriptions'] as Map? ?? {},
+    );
     descriptions.removeWhere((key, _) => !normalized.contains(key));
     section['descriptions'] = descriptions;
     if (!normalized.contains('Other')) {
@@ -362,10 +353,10 @@ class ClinicalCaseWizardController
   }) {
     final next = _copyAnterior(state.anteriorSegment);
     final eyeMap = Map<String, dynamic>.from(next[eye] as Map? ?? {});
-    final section =
-        Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
-    final descriptions =
-        Map<String, dynamic>.from(section['descriptions'] as Map? ?? {});
+    final section = Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
+    final descriptions = Map<String, dynamic>.from(
+      section['descriptions'] as Map? ?? {},
+    );
     descriptions[option] = description;
     section['descriptions'] = descriptions;
     eyeMap[sectionKey] = section;
@@ -380,8 +371,7 @@ class ClinicalCaseWizardController
   }) {
     final next = _copyAnterior(state.anteriorSegment);
     final eyeMap = Map<String, dynamic>.from(next[eye] as Map? ?? {});
-    final section =
-        Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
+    final section = Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
     section['other'] = otherText;
     eyeMap[sectionKey] = section;
     next[eye] = eyeMap;
@@ -407,16 +397,16 @@ class ClinicalCaseWizardController
     final targetEye = eye ?? 'RE';
     final next = _copyFundus(state.fundus);
     final eyeMap = Map<String, dynamic>.from(next[targetEye] as Map? ?? {});
-    final section =
-        Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
+    final section = Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
     final normalOption = _normalOptionForFundusSection(sectionKey);
     var normalized = _normalizeSelection(selectedList);
     if (normalized.contains(normalOption) && normalized.length > 1) {
       normalized = [normalOption];
     }
     section['selected'] = normalized;
-    final descriptions =
-        Map<String, dynamic>.from(section['descriptions'] as Map? ?? {});
+    final descriptions = Map<String, dynamic>.from(
+      section['descriptions'] as Map? ?? {},
+    );
     descriptions.removeWhere((key, _) => !normalized.contains(key));
     section['descriptions'] = descriptions;
     if (!normalized.contains('Other')) {
@@ -436,10 +426,10 @@ class ClinicalCaseWizardController
     final targetEye = eye ?? 'RE';
     final next = _copyFundus(state.fundus);
     final eyeMap = Map<String, dynamic>.from(next[targetEye] as Map? ?? {});
-    final section =
-        Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
-    final descriptions =
-        Map<String, dynamic>.from(section['descriptions'] as Map? ?? {});
+    final section = Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
+    final descriptions = Map<String, dynamic>.from(
+      section['descriptions'] as Map? ?? {},
+    );
     descriptions[option] = description;
     section['descriptions'] = descriptions;
     eyeMap[sectionKey] = section;
@@ -455,18 +445,14 @@ class ClinicalCaseWizardController
     final targetEye = eye ?? 'RE';
     final next = _copyFundus(state.fundus);
     final eyeMap = Map<String, dynamic>.from(next[targetEye] as Map? ?? {});
-    final section =
-        Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
+    final section = Map<String, dynamic>.from(eyeMap[sectionKey] as Map? ?? {});
     section['other'] = otherText;
     eyeMap[sectionKey] = section;
     next[targetEye] = eyeMap;
     state = state.copyWith(fundus: next);
   }
 
-  void setFundusRemarks({
-    required String remarks,
-    String? eye,
-  }) {
+  void setFundusRemarks({required String remarks, String? eye}) {
     final targetEye = eye ?? 'RE';
     final next = _copyFundus(state.fundus);
     final eyeMap = Map<String, dynamic>.from(next[targetEye] as Map? ?? {});
@@ -528,12 +514,15 @@ class ClinicalCaseWizardController
   }
 }
 
-final clinicalCaseWizardProvider = StateNotifierProvider.autoDispose<
-    ClinicalCaseWizardController, ClinicalCaseWizardState>((ref) {
-  return ClinicalCaseWizardController(
-    ref.watch(clinicalCasesRepositoryProvider),
-  );
-});
+final clinicalCaseWizardProvider =
+    StateNotifierProvider.autoDispose<
+      ClinicalCaseWizardController,
+      ClinicalCaseWizardState
+    >((ref) {
+      return ClinicalCaseWizardController(
+        ref.watch(clinicalCasesRepositoryProvider),
+      );
+    });
 
 Map<String, dynamic> _initialAnterior() {
   final re = <String, dynamic>{};
@@ -624,10 +613,7 @@ Map<String, dynamic> _copyAnterior(Map<String, dynamic> source) {
 }
 
 Map<String, dynamic> _initialFundus() {
-  return {
-    'RE': _emptyFundusEye(),
-    'LE': _emptyFundusEye(),
-  };
+  return {'RE': _emptyFundusEye(), 'LE': _emptyFundusEye()};
 }
 
 Map<String, dynamic> _emptyFundusEye() {
@@ -715,9 +701,11 @@ Map<String, dynamic> _emptyFundusSection() {
 
 Map<String, dynamic> _normalizeSection(Map raw) {
   final selected = (raw['selected'] as List?)?.cast<String>() ?? <String>[];
-  final descriptions =
-      Map<String, String>.from(raw['descriptions'] as Map? ?? {});
+  final descriptions = Map<String, String>.from(
+    raw['descriptions'] as Map? ?? {},
+  );
   final other = (raw['other'] as String?) ?? '';
+
   return {
     'selected': _normalizeSelection(selected),
     'descriptions': descriptions,
@@ -778,17 +766,12 @@ String? _detectCaseType(List<String> keywords) {
   return null;
 }
 
-List<String> _applyCaseTypeKeywords(
-  List<String> keywords,
-  String? caseType,
-) {
+List<String> _applyCaseTypeKeywords(List<String> keywords, String? caseType) {
   final deduped = <String>[];
   for (final keyword in keywords) {
     final cleaned = keyword.trim();
     if (cleaned.isEmpty) continue;
-    final exists = deduped.any(
-      (e) => e.toLowerCase() == cleaned.toLowerCase(),
-    );
+    final exists = deduped.any((e) => e.toLowerCase() == cleaned.toLowerCase());
     if (!exists) deduped.add(cleaned);
   }
   if (caseType != null) {
@@ -798,6 +781,7 @@ List<String> _applyCaseTypeKeywords(
   }
   return deduped;
 }
+
 String? _legacyAnteriorLabel(String sectionKey) {
   switch (sectionKey) {
     case 'conjunctiva':
@@ -819,9 +803,7 @@ String? _legacyAnteriorLabel(String sectionKey) {
 String _legacyFundusValue(Map<String, dynamic> rawEye, String sectionKey) {
   switch (sectionKey) {
     case 'media':
-      return (rawEye['media'] as String?) ??
-          (rawEye['Media'] as String?) ??
-          '';
+      return (rawEye['media'] as String?) ?? (rawEye['Media'] as String?) ?? '';
     case 'optic_disc':
       return (rawEye['optic_disc'] as String?) ??
           (rawEye['disc'] as String?) ??

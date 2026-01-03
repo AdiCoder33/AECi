@@ -28,7 +28,7 @@ class Step5Iop extends StatelessWidget {
               letterSpacing: 0.3,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -45,7 +45,7 @@ class Step5Iop extends StatelessWidget {
                   validator: _validateNumber,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 14),
               Expanded(
                 child: _EyeField(
                   label: 'Left Eye (LE)',

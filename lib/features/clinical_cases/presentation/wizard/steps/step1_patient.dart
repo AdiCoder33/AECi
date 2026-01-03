@@ -118,27 +118,30 @@ class Step1Patient extends StatelessWidget {
             validator: _required,
           ),
           const SizedBox(height: 20),
-          // UID and MR in Row
-          Row(
-            children: [
-              Expanded(
-                child: _ModernTextField(
-                  controller: uidController,
-                  label: 'UID Number',
-                  icon: Icons.fingerprint,
-                  validator: _required,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _ModernTextField(
-                  controller: mrController,
-                  label: 'MR Number',
-                  icon: Icons.badge_outlined,
-                  validator: _required,
-                ),
-              ),
-            ],
+          // UID Number - Full Width
+          _ModernTextField(
+            controller: uidController,
+            label: 'UID Number',
+            icon: Icons.fingerprint,
+            maxLength: 10,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) return 'Required';
+              if (value.length > 10) return 'Max 10 characters';
+              return null;
+            },
+          ),
+          const SizedBox(height: 20),
+          // MR Number - Full Width
+          _ModernTextField(
+            controller: mrController,
+            label: 'MR Number',
+            icon: Icons.badge_outlined,
+            maxLength: 7,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) return 'Required';
+              if (value.length > 7) return 'Max 7 characters';
+              return null;
+            },
           ),
           const SizedBox(height: 20),
           // Gender Selection with Custom Chips
@@ -167,7 +170,7 @@ class Step1Patient extends StatelessWidget {
                       onTap: () => onGenderChanged('male'),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _GenderChip(
                       label: 'Female',
@@ -180,7 +183,7 @@ class Step1Patient extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
           // Age Field
           _ModernTextField(
             controller: ageController,
@@ -201,8 +204,18 @@ class Step1Patient extends StatelessWidget {
 
   String _getMonthName(int month) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return months[month - 1];
   }
@@ -222,6 +235,7 @@ class _ModernTextField extends StatelessWidget {
     required this.icon,
     this.validator,
     this.keyboardType,
+    this.maxLength,
   });
 
   final TextEditingController controller;
@@ -229,6 +243,7 @@ class _ModernTextField extends StatelessWidget {
   final IconData icon;
   final String? Function(String?)? validator;
   final TextInputType? keyboardType;
+  final int? maxLength;
 
   @override
   Widget build(BuildContext context) {
@@ -247,12 +262,14 @@ class _ModernTextField extends StatelessWidget {
       child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
+        maxLength: maxLength,
         style: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: Color(0xFF1E293B),
         ),
         decoration: InputDecoration(
+          counterText: '', // Hide the counter text
           labelText: label,
           labelStyle: const TextStyle(
             fontSize: 14,
@@ -270,11 +287,7 @@ class _ModernTextField extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              icon,
-              size: 20,
-              color: Colors.white,
-            ),
+            child: Icon(icon, size: 20, color: Colors.white),
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
@@ -286,24 +299,15 @@ class _ModernTextField extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(
-              color: Color(0xFF10B981),
-              width: 2,
-            ),
+            borderSide: const BorderSide(color: Color(0xFF10B981), width: 2),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(
-              color: Color(0xFFEF4444),
-              width: 2,
-            ),
+            borderSide: const BorderSide(color: Color(0xFFEF4444), width: 2),
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(
-              color: Color(0xFFEF4444),
-              width: 2,
-            ),
+            borderSide: const BorderSide(color: Color(0xFFEF4444), width: 2),
           ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 20,
@@ -362,15 +366,15 @@ class _GenderChip extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
+            padding: const EdgeInsets.symmetric(vertical: 14),
             child: Column(
               children: [
                 Icon(
                   icon,
-                  size: 36,
+                  size: 28,
                   color: isSelected ? Colors.white : const Color(0xFF64748B),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
                   label,
                   style: TextStyle(
