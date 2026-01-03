@@ -146,7 +146,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/logbook',
             name: 'logbook',
-            builder: (context, state) => const LogbookScreen(),
+            builder: (context, state) {
+              final section = state.uri.queryParameters['section'];
+              return LogbookScreen(
+                key: ValueKey(section ?? 'default'),
+                initialSection: section,
+              );
+            },
             routes: [
               GoRoute(
                 path: 'new',
@@ -419,9 +425,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     );
                   }
                   if (type == 'laser') {
-                    return LaserFormScreen(
-                      caseId: state.pathParameters['id']!,
-                    );
+                    return LaserFormScreen(caseId: state.pathParameters['id']!);
                   }
                   if (type == 'uvea') {
                     return UveaFormScreen(

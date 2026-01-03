@@ -62,9 +62,9 @@ class HomeScreen extends ConsumerWidget {
                       Text(
                         'Quick Actions',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF1E293B),
-                            ),
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1E293B),
+                        ),
                       ),
                       const SizedBox(height: 16),
                       _ActionGrid(isConsultant: isConsultant),
@@ -91,49 +91,49 @@ class _ActionGrid extends StatelessWidget {
     final actions = <_ActionData>[
       _ActionData(
         title: 'OPD Cases',
-        icon: Icons.local_hospital,
-        color: const Color(0xFF0B5FFF),
+        assetPath: 'assets/OpdCases.png',
+        color: const Color(0xFF10B981),
         route: '/cases',
         description: 'Manage outpatient cases',
       ),
       _ActionData(
         title: 'Atlas',
-        icon: Icons.collections,
+        assetPath: 'assets/Atlas.png',
         color: const Color(0xFF8B5CF6),
         route: '/atlas',
         description: 'Browse medical atlas',
       ),
       _ActionData(
         title: 'Surgical Record',
-        icon: Icons.medical_services,
+        assetPath: 'assets/SurgicalRecords.png',
         color: const Color(0xFFEF4444),
         route: '/surgical',
         description: 'Log surgical procedures',
       ),
       _ActionData(
         title: 'Learning',
-        icon: Icons.school,
+        assetPath: 'assets/Learning.png',
         color: const Color(0xFFF59E0B),
         route: '/teaching',
         description: 'Educational resources',
       ),
       _ActionData(
         title: 'RB Screening',
-        icon: Icons.child_care,
+        assetPath: 'assets/RBScreening.png',
         color: const Color(0xFFEC4899),
         route: '/screening/rb',
         description: 'Retinoblastoma screening',
       ),
       _ActionData(
         title: 'ROP Screening',
-        icon: Icons.baby_changing_station,
+        assetPath: 'assets/ROPScreening.png',
         color: const Color(0xFF06B6D4),
         route: '/screening/rop',
         description: 'Retinopathy of prematurity',
       ),
       _ActionData(
         title: 'Publications',
-        icon: Icons.article,
+        assetPath: 'assets/Publications.png',
         color: const Color(0xFF10B981),
         route: '/publications',
         description: 'Research publications',
@@ -141,7 +141,7 @@ class _ActionGrid extends StatelessWidget {
       if (isConsultant)
         _ActionData(
           title: 'Reviews',
-          icon: Icons.rate_review,
+          assetPath: 'assets/Reviews.png',
           color: const Color(0xFF6366F1),
           route: '/review-queue',
           description: 'Review submissions',
@@ -167,14 +167,14 @@ class _ActionGrid extends StatelessWidget {
 class _ActionData {
   const _ActionData({
     required this.title,
-    required this.icon,
-    required this.color,
+    this.assetPath,
+    this.color = const Color(0xFF64748B),
     required this.route,
     required this.description,
   });
 
   final String title;
-  final IconData icon;
+  final String? assetPath;
   final Color color;
   final String route;
   final String description;
@@ -188,102 +188,121 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: action.color.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => context.go(action.route),
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardHeight = screenWidth < 400 ? 150.0 : screenWidth * 0.42;
+    return SizedBox(
+      height: cardHeight,
+      child: Container(
+        clipBehavior: Clip.hardEdge,
+        decoration: BoxDecoration(
+          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Icon container
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        action.color,
-                        action.color.withOpacity(0.7),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: action.color.withOpacity(0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+          boxShadow: [
+            BoxShadow(
+              color: action.color.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => context.go(action.route),
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: action.color.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: action.color.withOpacity(0.15),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ],
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: action.assetPath != null
+                            ? Image.asset(
+                                action.assetPath!,
+                                width: 64,
+                                height: 64,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  print(
+                                    '❌ Failed to load: ${action.assetPath}',
+                                  );
+                                  print('Error: $error');
+                                  return Icon(
+                                    Icons.broken_image_outlined,
+                                    color: action.color,
+                                    size: 32,
+                                  );
+                                },
+                              )
+                            : Icon(
+                                Icons.image_outlined,
+                                color: action.color,
+                                size: 32,
+                              ),
+                      ),
+                    ),
                   ),
-                  child: Icon(
-                    action.icon,
-                    color: Colors.white,
-                    size: 28,
+                  const SizedBox(height: 8),
+                  Text(
+                    action.title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E293B),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                const SizedBox(height: 12),
-                // Title
-                Text(
-                  action.title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E293B),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                // Description
-                Text(
-                  action.description,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey[600],
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                // Submit button
-                Container(
-                  width: double.infinity,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: action.color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
+                  const SizedBox(height: 2),
+                  Expanded(
                     child: Text(
-                      'Open',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: action.color,
+                      action.description,
+                      style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  SizedBox(
+                    height: 24,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: action.color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Open',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: action.color,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -323,10 +342,7 @@ class _GreetingCard extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [
-                Color(0xFF0B5FFF),
-                Color(0xFF0A47B8),
-              ],
+              colors: [Color(0xFF0B5FFF), Color(0xFF0A47B8)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -407,9 +423,10 @@ class _GreetingCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          [designation, centre]
-                              .where((e) => (e ?? '').isNotEmpty)
-                              .join(' • '),
+                          [
+                            designation,
+                            centre,
+                          ].where((e) => (e ?? '').isNotEmpty).join(' • '),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,

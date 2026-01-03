@@ -102,10 +102,12 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
           break;
         case moduleImages:
           _mediaType = payload['mediaType'] as String?;
-          _atlasDiagnosisController.text = payload['diagnosis'] ??
+          _atlasDiagnosisController.text =
+              payload['diagnosis'] ??
               payload['keyDescriptionOrPathology'] ??
               '';
-          _atlasBriefController.text = payload['briefDescription'] ??
+          _atlasBriefController.text =
+              payload['briefDescription'] ??
               payload['additionalInformation'] ??
               '';
           _keyDescriptionController.text = _atlasDiagnosisController.text;
@@ -122,19 +124,19 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
               payload['stepName'] ?? payload['teachingPoint'] ?? '';
           _surgeonController.text =
               payload['consultantName'] ?? payload['surgeon'] ?? '';
-          _existingVideoPaths =
-              List<String>.from(payload['videoPaths'] ?? []);
+          _existingVideoPaths = List<String>.from(payload['videoPaths'] ?? []);
           break;
         case moduleRecords:
-          _recordPatientNameController.text =
-              payload['patientName'] ?? '';
+          _recordPatientNameController.text = payload['patientName'] ?? '';
           _recordAgeController.text = payload['age']?.toString() ?? '';
           final sex = payload['sex'] as String? ?? '';
           _recordSex = sex.isEmpty
               ? null
               : '${sex[0].toUpperCase()}${sex.substring(1).toLowerCase()}';
           _recordDiagnosisController.text =
-              payload['diagnosis'] ?? payload['preOpDiagnosisOrPathology'] ?? '';
+              payload['diagnosis'] ??
+              payload['preOpDiagnosisOrPathology'] ??
+              '';
           _recordSurgery =
               payload['surgery'] ?? payload['learningPointOrComplication'];
           _recordAssistedByController.text =
@@ -142,16 +144,15 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
           _recordDurationController.text = payload['duration'] ?? '';
           _recordRightEye = payload['rightEye'] as String?;
           _recordLeftEye = payload['leftEye'] as String?;
-          _recordSurgicalNotesController.text =
-              payload['surgicalNotes'] ?? '';
-          _recordComplicationsController.text =
-              payload['complications'] ?? '';
-          _existingVideoPaths =
-              List<String>.from(payload['videoPaths'] ?? []);
-          _existingRecordPreOpImagePaths =
-              List<String>.from(payload['preOpImagePaths'] ?? []);
-          _existingRecordPostOpImagePaths =
-              List<String>.from(payload['postOpImagePaths'] ?? []);
+          _recordSurgicalNotesController.text = payload['surgicalNotes'] ?? '';
+          _recordComplicationsController.text = payload['complications'] ?? '';
+          _existingVideoPaths = List<String>.from(payload['videoPaths'] ?? []);
+          _existingRecordPreOpImagePaths = List<String>.from(
+            payload['preOpImagePaths'] ?? [],
+          );
+          _existingRecordPostOpImagePaths = List<String>.from(
+            payload['postOpImagePaths'] ?? [],
+          );
           break;
       }
     });
@@ -193,225 +194,298 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     final mutation = ref.watch(entryMutationProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text(isEditing ? 'Edit Entry' : 'New Entry')),
+      appBar: AppBar(
+        title: Text(isEditing 
+            ? 'Edit Entry' 
+            : isAtlas 
+                ? 'New Atlas Entry'
+                : isRecords
+                    ? 'New Surgical Record'
+                    : isLearning
+                        ? 'New Learning Entry'
+                        : 'Clinical Case Wizard'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0.5,
+      ),
+      backgroundColor: const Color(0xFFF7F9FB),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (!isAtlas && !isRecords && !isLearning)
-                DropdownButtonFormField<String>(
-                  value: _moduleType,
-                  decoration: const InputDecoration(labelText: 'Module'),
-                  items: moduleTypes
-                      .map(
-                        (m) => DropdownMenuItem(
-                          value: m,
-                          child: Text(m.toUpperCase()),
-                        ),
-                      )
-                      .toList(),
-                  onChanged:
-                      isEditing ? null : (value) => setState(() => _moduleType = value),
-                ),
-              if (isRecords) ...[
-                _buildText(
-                  controller: _recordPatientNameController,
-                  label: 'Patient name',
-                  validator: _required,
-                  enabled: _canEditStatus,
-                ),
-                _buildText(
-                  controller: _patientController,
-                  label: 'UID',
-                  validator: _required,
-                  enabled: _canEditStatus,
-                ),
-                _buildText(
-                  controller: _mrnController,
-                  label: 'MRN',
-                  validator: _required,
-                  enabled: _canEditStatus,
-                ),
-                _buildText(
-                  controller: _recordAgeController,
-                  label: 'Age',
-                  validator: _required,
-                  enabled: _canEditStatus,
-                  keyboardType: TextInputType.number,
-                ),
-                _buildSexDropdown(),
-                _buildText(
-                  controller: _recordDiagnosisController,
-                  label: 'Diagnosis',
-                  validator: _required,
-                  enabled: _canEditStatus,
-                ),
-                _buildSurgeryDropdown(),
-                _buildText(
-                  controller: _recordAssistedByController,
-                  label: 'Assisted by',
-                  validator: _required,
-                  enabled: _canEditStatus,
-                ),
-                _buildText(
-                  controller: _recordDurationController,
-                  label: 'Duration',
-                  validator: _required,
-                  enabled: _canEditStatus,
-                ),
-                _buildEyeDropdownRow(),
-                _buildText(
-                  controller: _recordSurgicalNotesController,
-                  label: 'Surgical notes',
-                  enabled: _canEditStatus,
-                ),
-                _buildText(
-                  controller: _recordComplicationsController,
-                  label: 'Complications',
-                  enabled: _canEditStatus,
-                ),
-                _ImagePickerSection(
-                  title: 'Pre-op images',
-                  existingPaths: _existingRecordPreOpImagePaths,
-                  newImages: _newRecordPreOpImages,
-                  onChanged: () => setState(() {}),
-                  enabled: _canEditStatus,
-                ),
-                _ImagePickerSection(
-                  title: 'Post-op images',
-                  existingPaths: _existingRecordPostOpImagePaths,
-                  newImages: _newRecordPostOpImages,
-                  onChanged: () => setState(() {}),
-                  enabled: _canEditStatus,
-                ),
-              ] else if (isLearning) ...[
-                _buildLearningSurgeryDropdown(),
-                _buildLearningStepDropdown(),
-                _buildText(
-                  controller: _surgeonController,
-                  label: 'Consultant name',
-                  validator: _required,
-                  enabled: _canEditStatus,
-                ),
-              ] else ...[
-                _buildText(
-                  controller: _patientController,
-                  label: 'Patient Unique ID',
-                  validator: _required,
-                  enabled: _canEditStatus,
-                ),
-                _buildText(
-                  controller: _mrnController,
-                  label: 'MRN',
-                  validator: _required,
-                  enabled: _canEditStatus,
-                ),
-                if (isAtlas)
-                  _ModuleFields(
-                    moduleType: _moduleType ?? moduleCases,
-                    briefDescController: _briefDescController,
-                    followUpDescController: _followUpDescController,
-                    keyDescriptionController: _keyDescriptionController,
-                    additionalInfoController: _additionalInfoController,
-                    atlasDiagnosisController: _atlasDiagnosisController,
-                    atlasBriefController: _atlasBriefController,
-                    mediaType: _mediaType,
-                    onMediaTypeChanged: (value) =>
-                        setState(() => _mediaType = value),
-                    preOpController: _preOpController,
-                    surgicalVideoController: _surgicalVideoController,
-                    teachingPointController: _teachingPointController,
-                    surgeonController: _surgeonController,
-                    learningPointController: _learningPointController,
-                    surgeonAssistantController: _surgeonAssistantController,
-                    enabled: _canEditStatus,
-                  ),
-                _buildText(
-                  controller: _keywordsController,
-                  label: 'Keywords (comma separated)',
-                  validator: _required,
-                  enabled: _canEditStatus,
-                ),
-                if (_canEditStatus && !isAtlas)
-                  _KeywordSuggestionsField(
-                    controller: _keywordsController,
-                  ),
-                const SizedBox(height: 12),
-                if (!isAtlas)
-                  _ModuleFields(
-                    moduleType: _moduleType ?? moduleCases,
-                    briefDescController: _briefDescController,
-                    followUpDescController: _followUpDescController,
-                    keyDescriptionController: _keyDescriptionController,
-                    additionalInfoController: _additionalInfoController,
-                    atlasDiagnosisController: _atlasDiagnosisController,
-                    atlasBriefController: _atlasBriefController,
-                    mediaType: _mediaType,
-                    onMediaTypeChanged: (value) =>
-                        setState(() => _mediaType = value),
-                    preOpController: _preOpController,
-                    surgicalVideoController: _surgicalVideoController,
-                    teachingPointController: _teachingPointController,
-                    surgeonController: _surgeonController,
-                    learningPointController: _learningPointController,
-                    surgeonAssistantController: _surgeonAssistantController,
-                    enabled: _canEditStatus,
-                  ),
-                if (_moduleType == moduleCases || _moduleType == moduleImages)
-                  _ImagePickerSection(
-                    existingPaths: _existingImagePaths,
-                    newImages: _newImages,
-                    onChanged: () => setState(() {}),
-                    enabled: _canEditStatus,
-                  ),
-              ],
-              if (isRecords || isLearning)
-                _VideoPickerSection(
-                  existingPaths: _existingVideoPaths,
-                  newVideos: _newVideos,
-                  onChanged: () => setState(() {}),
-                  enabled: _canEditStatus,
-                ),
-              if (!_canEditStatus)
-                const Padding(
-                  padding: EdgeInsets.only(top: 8),
-                  child: Text(
-                    'Editing locked while submitted/approved/rejected.',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  ElevatedButton(
-                    onPressed: !_canEditStatus || mutation.isLoading
-                        ? null
-                        : () => _save(submit: false),
-                    child: mutation.isLoading
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.black,
-                            ),
-                          )
-                        : const Text(
-                            'Save',
-                            style: TextStyle(color: Colors.black),
-                          ),
-                  ),
-                  const SizedBox(width: 12),
-                  TextButton(
-                    onPressed: () => context.pop(),
-                    child: const Text('Cancel'),
-                  ),
-                ],
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
               ),
-            ],
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 22,
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (!isAtlas && !isRecords && !isLearning) ...[
+                        // Progress and section header for Clinical Cases only
+                        Text(
+                          'Step 1 of 8',
+                          style: TextStyle(
+                            color: Colors.blue[700],
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Patient Details',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 22,
+                            color: Color(0xFF1E293B),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(
+                          value: 1 / 8,
+                          minHeight: 5,
+                          backgroundColor: Colors.blue[100],
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.blue[400]!,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        const SizedBox(height: 18),
+                      ],
+                      // Single unified card for all form sections
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Patient Information section (for Atlas and Surgical Records)
+                              if (!isLearning && (isAtlas || isRecords)) ...[
+                                _buildSectionHeader('Patient Information', Icons.person_outline_rounded),
+                                const SizedBox(height: 16),
+                                _buildText(
+                                  controller: _patientController,
+                                  label: 'Patient Unique ID',
+                                  validator: _required,
+                                  enabled: _canEditStatus,
+                                ),
+                                _buildText(
+                                  controller: _mrnController,
+                                  label: 'MRN',
+                                  validator: _required,
+                                  enabled: _canEditStatus,
+                                ),
+                                const Divider(height: 32),
+                              ],
+                              
+                              // Atlas specific sections
+                              if (isAtlas) ...[
+                                _buildSectionHeader('Atlas Details', Icons.image_outlined),
+                                const SizedBox(height: 16),
+                                _ModuleFields(
+                                  moduleType: _moduleType!,
+                                  briefDescController: _briefDescController,
+                                  followUpDescController: _followUpDescController,
+                                  keyDescriptionController: _keyDescriptionController,
+                                  additionalInfoController: _additionalInfoController,
+                                  atlasDiagnosisController: _atlasDiagnosisController,
+                                  atlasBriefController: _atlasBriefController,
+                                  mediaType: _mediaType,
+                                  onMediaTypeChanged: (value) =>
+                                      setState(() => _mediaType = value),
+                                  preOpController: _preOpController,
+                                  surgicalVideoController: _surgicalVideoController,
+                                  teachingPointController: _teachingPointController,
+                                  surgeonController: _surgeonController,
+                                  learningPointController: _learningPointController,
+                                  surgeonAssistantController: _surgeonAssistantController,
+                                  enabled: _canEditStatus,
+                                ),
+                                const Divider(height: 32),
+                                _buildSectionHeader('Keywords', Icons.label_outline_rounded),
+                                const SizedBox(height: 16),
+                                _buildText(
+                                  controller: _keywordsController,
+                                  label: 'Keywords (comma separated)',
+                                  validator: _required,
+                                  enabled: _canEditStatus,
+                                ),
+                                if (_canEditStatus)
+                                  _KeywordSuggestionsField(
+                                    controller: _keywordsController,
+                                  ),
+                                const Divider(height: 32),
+                                _buildSectionHeader('Upload Images', Icons.photo_library_outlined),
+                                const SizedBox(height: 16),
+                                _ImagePickerSection(
+                                  title: 'Images',
+                                  existingPaths: _existingImagePaths,
+                                  newImages: _newImages,
+                                  onChanged: () => setState(() {}),
+                                  enabled: _canEditStatus,
+                                ),
+                              ] else if (isRecords) ...[
+                                _buildSectionHeader('Patient Details', Icons.person_outline_rounded),
+                                const SizedBox(height: 16),
+                                _buildText(
+                                  controller: _recordPatientNameController,
+                                  label: 'Patient Name',
+                                  validator: _required,
+                                  enabled: _canEditStatus,
+                                ),
+                                _buildText(
+                                  controller: _recordAgeController,
+                                  label: 'Age',
+                                  validator: _required,
+                                  enabled: _canEditStatus,
+                                  keyboardType: TextInputType.number,
+                                ),
+                                _buildSexDropdown(),
+                                const Divider(height: 32),
+                                _buildSectionHeader('Surgery Details', Icons.medical_services_outlined),
+                                const SizedBox(height: 16),
+                                _buildText(
+                                  controller: _recordDiagnosisController,
+                                  label: 'Diagnosis',
+                                  validator: _required,
+                                  enabled: _canEditStatus,
+                                ),
+                                _buildSurgeryDropdown(),
+                                _buildText(
+                                  controller: _recordAssistedByController,
+                                  label: 'Assisted by',
+                                  validator: _required,
+                                  enabled: _canEditStatus,
+                                ),
+                                _buildText(
+                                  controller: _recordDurationController,
+                                  label: 'Duration',
+                                  validator: _required,
+                                  enabled: _canEditStatus,
+                                ),
+                                _buildEyeDropdownRow(),
+                                _buildText(
+                                  controller: _recordSurgicalNotesController,
+                                  label: 'Surgical notes',
+                                  enabled: _canEditStatus,
+                                ),
+                                _buildText(
+                                  controller: _recordComplicationsController,
+                                  label: 'Complications',
+                                  enabled: _canEditStatus,
+                                ),
+                                const Divider(height: 32),
+                                _buildSectionHeader('Keywords', Icons.label_outline_rounded),
+                                const SizedBox(height: 16),
+                                _buildText(
+                                  controller: _keywordsController,
+                                  label: 'Keywords (comma separated)',
+                                  validator: _required,
+                                  enabled: _canEditStatus,
+                                ),
+                                if (_canEditStatus)
+                                  _KeywordSuggestionsField(
+                                    controller: _keywordsController,
+                                  ),
+                                const Divider(height: 32),
+                                _buildSectionHeader('Surgical Images', Icons.photo_library_outlined),
+                                const SizedBox(height: 16),
+                                _ImagePickerSection(
+                                  title: 'Pre-Op Images',
+                                  existingPaths: _existingRecordPreOpImagePaths,
+                                  newImages: _newRecordPreOpImages,
+                                  onChanged: () => setState(() {}),
+                                  enabled: _canEditStatus,
+                                ),
+                                const SizedBox(height: 16),
+                                _ImagePickerSection(
+                                  title: 'Post-Op Images',
+                                  existingPaths: _existingRecordPostOpImagePaths,
+                                  newImages: _newRecordPostOpImages,
+                                  onChanged: () => setState(() {}),
+                                  enabled: _canEditStatus,
+                                ),
+                              ] else if (isLearning) ...[
+                                _buildSectionHeader('Learning Module Details', Icons.school_outlined),
+                                const SizedBox(height: 16),
+                                _buildLearningSurgeryDropdown(),
+                                _buildLearningStepDropdown(),
+                                _buildText(
+                                  controller: _surgeonController,
+                                  label: 'Consultant name',
+                                  validator: _required,
+                                  enabled: _canEditStatus,
+                                ),
+                                const Divider(height: 32),
+                                _buildSectionHeader('Keywords', Icons.label_outline_rounded),
+                                const SizedBox(height: 16),
+                                _buildText(
+                                  controller: _keywordsController,
+                                  label: 'Keywords (comma separated)',
+                                  validator: _required,
+                                  enabled: _canEditStatus,
+                                ),
+                                if (_canEditStatus)
+                                  _KeywordSuggestionsField(
+                                    controller: _keywordsController,
+                                  ),
+                                const Divider(height: 32),
+                                _buildSectionHeader('Upload Videos', Icons.video_library_outlined),
+                                const SizedBox(height: 16),
+                                _VideoPickerSection(
+                                  existingPaths: _existingVideoPaths,
+                                  newVideos: _newVideos,
+                                  onChanged: () => setState(() {}),
+                                  enabled: _canEditStatus,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: mutation.isLoading || !_canEditStatus
+                              ? null
+                              : () => _save(submit: false),
+                          child: mutation.isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text('Save'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -423,6 +497,113 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     return null;
   }
 
+  Widget _buildSectionCard({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+    List<Color> gradientColors = const [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Gradient Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: gradientColors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: gradientColors[0],
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Content
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: children,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF3B82F6).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
+            color: const Color(0xFF3B82F6),
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1E293B),
+            letterSpacing: 0.3,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildText({
     required TextEditingController controller,
     required String label,
@@ -431,11 +612,31 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     TextInputType? keyboardType,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 14),
       child: TextFormField(
         controller: controller,
         enabled: enabled,
-        decoration: InputDecoration(labelText: label),
+        decoration: InputDecoration(
+          labelText: label,
+          filled: true,
+          fillColor: const Color(0xFFF3F6FA),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFBFD7ED)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFFBFD7ED)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(color: Color(0xFF0B5FFF), width: 2),
+          ),
+        ),
         validator: validator,
         keyboardType: keyboardType,
       ),
@@ -516,12 +717,20 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     required String? value,
     required ValueChanged<String?>? onChanged,
   }) {
-    const options = ['Operated', 'Not operated'];
+    const options = ['Operated', 'Not Operated'];
     return DropdownButtonFormField<String>(
       value: value,
+      isExpanded: true,
       decoration: InputDecoration(labelText: label),
       items: options
-          .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+          .map((o) => DropdownMenuItem(
+            value: o,
+            child: Text(
+              o,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ))
           .toList(),
       validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
       onChanged: onChanged,
@@ -538,9 +747,17 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
       padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<String>(
         value: current == null || current.isEmpty ? null : current,
+        isExpanded: true,
         decoration: const InputDecoration(labelText: 'Name of the surgery'),
         items: options
-            .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+            .map((o) => DropdownMenuItem(
+              value: o,
+              child: Text(
+                o,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ))
             .toList(),
         validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
         onChanged: _canEditStatus
@@ -560,30 +777,39 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
       padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<String>(
         value: current.isEmpty ? null : current,
+        isExpanded: true,
         items: options
-            .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+            .map((o) => DropdownMenuItem(
+              value: o,
+              child: Text(
+                o,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ))
             .toList(),
         decoration: const InputDecoration(labelText: 'Name of the step'),
         validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
-        onChanged:
-            _canEditStatus ? (v) => _teachingPointController.text = v ?? '' : null,
+        onChanged: _canEditStatus
+            ? (v) => _teachingPointController.text = v ?? ''
+            : null,
       ),
     );
   }
 
   List<String> get _surgeryOptions => const [
-        'SOR',
-        'VH',
-        'RRD',
-        'SFIOL',
-        'MH',
-        'Scleral buckle',
-        'Belt buckle',
-        'ERM',
-        'TRD',
-        'PPL+PPV+SFIOL',
-        'ROP laser',
-      ];
+    'SOR',
+    'VH',
+    'RRD',
+    'SFIOL',
+    'MH',
+    'Scleral buckle',
+    'Belt buckle',
+    'ERM',
+    'TRD',
+    'PPL+PPV+SFIOL',
+    'ROP laser',
+  ];
 
   Future<void> _save({required bool submit}) async {
     if (!_formKey.currentState!.validate()) return;
@@ -599,12 +825,12 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     final keywords = module == moduleRecords
         ? _buildRecordKeywords()
         : module == moduleLearning
-            ? _buildLearningKeywords()
-            : _keywordsController.text
-                .split(',')
-                .map((e) => e.trim())
-                .where((e) => e.isNotEmpty)
-                .toList();
+        ? _buildLearningKeywords()
+        : _keywordsController.text
+              .split(',')
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
+              .toList();
 
     final mediaRepo = ref.read(mediaRepositoryProvider);
     Map<String, dynamic> payload = _buildPayload(module);
@@ -624,64 +850,10 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
           keywords: keywords,
           payload: payload,
         );
-        final entryId =
-            await ref.read(entryMutationProvider.notifier).create(create);
-
-        final newPaths = await _uploadNewImages(
-          mediaRepo,
-          entryId,
-          _newImages,
-        );
-        if (newPaths.isNotEmpty) {
-          payload = _withNewPaths(module, payload, newPaths);
-          await ref
-              .read(entryMutationProvider.notifier)
-              .update(entryId, ElogEntryUpdate(payload: payload));
-        }
-        if (module == moduleRecords) {
-          final prePaths = await _uploadNewImages(
-            mediaRepo,
-            entryId,
-            _newRecordPreOpImages,
-          );
-          final postPaths = await _uploadNewImages(
-            mediaRepo,
-            entryId,
-            _newRecordPostOpImages,
-          );
-          if (prePaths.isNotEmpty || postPaths.isNotEmpty) {
-            payload = _withRecordImagePaths(payload, prePaths, postPaths);
-            await ref
-                .read(entryMutationProvider.notifier)
-                .update(entryId, ElogEntryUpdate(payload: payload));
-          }
-        }
-        if (module == moduleRecords || module == moduleLearning) {
-          final videoPaths = await _uploadNewVideos(mediaRepo, entryId);
-          if (videoPaths.isNotEmpty) {
-            payload = _withNewVideos(payload, videoPaths);
-            await ref
-                .read(entryMutationProvider.notifier)
-                .update(entryId, ElogEntryUpdate(payload: payload));
-          }
-        }
-        if (submit) {
-          await ref.read(entryMutationProvider.notifier).update(
-                entryId,
-                ElogEntryUpdate(
-                  status: statusSubmitted,
-                  submittedAt: DateTime.now(),
-                  clearReview: true,
-                ),
-              );
-        }
+        await ref.read(entryMutationProvider.notifier).create(create);
       } else {
         final entryId = widget.entryId!;
-        final newPaths = await _uploadNewImages(
-          mediaRepo,
-          entryId,
-          _newImages,
-        );
+        final newPaths = await _uploadNewImages(mediaRepo, entryId, _newImages);
         if (newPaths.isNotEmpty) {
           payload = _withNewPaths(module, payload, newPaths);
         }
@@ -725,10 +897,14 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
       }
       // Re-score quality after save/update
       try {
-        await ref.read(qualityRepositoryProvider).scoreEntry(
-              widget.entryId ?? '',
-            );
+        await ref
+            .read(qualityRepositoryProvider)
+            .scoreEntry(widget.entryId ?? '');
       } catch (_) {}
+      
+      // Refresh entries list
+      ref.invalidate(entriesListProvider);
+      
       if (mounted) {
         context.go('/logbook');
       }
@@ -882,7 +1058,10 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     final keywords = <String>[];
     for (final seed in seeds) {
       if (seed.isEmpty) continue;
-      final parts = seed.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty);
+      final parts = seed
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty);
       for (final part in parts) {
         if (keywords.every((k) => k.toLowerCase() != part.toLowerCase())) {
           keywords.add(part);
@@ -903,7 +1082,10 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     final keywords = <String>[];
     for (final seed in seeds) {
       if (seed.isEmpty) continue;
-      final parts = seed.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty);
+      final parts = seed
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty);
       for (final part in parts) {
         if (keywords.every((k) => k.toLowerCase() != part.toLowerCase())) {
           keywords.add(part);
@@ -976,24 +1158,112 @@ class _ModuleFields extends StatelessWidget {
         );
       case moduleImages:
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Media Type Field
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3B82F6).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.category_rounded,
+                    color: Color(0xFF3B82F6),
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Media Type',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF64748B),
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             _buildMediaTypeDropdown(
               value: mediaType,
               onChanged: enabled ? onMediaTypeChanged : null,
             ),
+            const SizedBox(height: 20),
+            // Diagnosis Field
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3B82F6).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.medical_information_rounded,
+                    color: Color(0xFF3B82F6),
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Diagnosis',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF64748B),
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             _buildField(
               controller: atlasDiagnosisController,
-              label: 'Diagnosis',
+              label: 'Enter diagnosis',
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Required' : null,
               enabled: enabled,
             ),
+            const SizedBox(height: 20),
+            // Brief Description Field
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3B82F6).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.description_rounded,
+                    color: Color(0xFF3B82F6),
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Description',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF64748B),
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             _buildField(
               controller: atlasBriefController,
-              label: 'Brief description',
+              label: 'Enter brief description',
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Required' : null,
               enabled: enabled,
+              maxLines: 3,
             ),
           ],
         );
@@ -1070,15 +1340,44 @@ class _ModuleFields extends StatelessWidget {
     required String label,
     String? Function(String?)? validator,
     bool enabled = true,
+    int maxLines = 1,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextFormField(
-        controller: controller,
-        enabled: enabled,
-        decoration: InputDecoration(labelText: label),
-        validator: validator,
+    return TextFormField(
+      controller: controller,
+      enabled: enabled,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: const Color(0xFFF8FAFC),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 2.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        labelStyle: const TextStyle(
+          fontSize: 14,
+          color: Color(0xFF64748B),
+          fontWeight: FontWeight.w500,
+        ),
       ),
+      validator: validator,
     );
   }
 
@@ -1099,8 +1398,7 @@ class _ModuleFields extends StatelessWidget {
             .map((o) => DropdownMenuItem(value: o, child: Text(o)))
             .toList(),
         decoration: const InputDecoration(labelText: 'Teaching point'),
-        validator: (v) =>
-            v == null || v.trim().isEmpty ? 'Required' : null,
+        validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
         onChanged: enabled ? (v) => controller.text = v ?? '' : null,
       ),
     );
@@ -1114,19 +1412,64 @@ class _ModuleFields extends StatelessWidget {
     if (value != null && value.isNotEmpty && !options.contains(value)) {
       options.insert(0, value);
     }
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: DropdownButtonFormField<String>(
-        value: value == null || value.isEmpty ? null : value,
-        items: options
-            .map((o) => DropdownMenuItem(value: o, child: Text(o)))
-            .toList(),
-        decoration: const InputDecoration(labelText: 'Type of media'),
-        validator: (v) =>
-            v == null || v.trim().isEmpty ? 'Required' : null,
-        onChanged: onChanged,
+    return DropdownButtonFormField<String>(
+      value: value == null || value.isEmpty ? null : value,
+      items: options
+          .map((o) => DropdownMenuItem(
+                value: o,
+                child: Row(
+                  children: [
+                    Icon(
+                      _getMediaIcon(o),
+                      size: 18,
+                      color: const Color(0xFF8B5CF6),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(o),
+                  ],
+                ),
+              ))
+          .toList(),
+      decoration: InputDecoration(
+        labelText: 'Select media type',
+        filled: true,
+        fillColor: const Color(0xFFF8FAFC),
+        prefixIcon: const Icon(
+          Icons.category_rounded,
+          color: Color(0xFF8B5CF6),
+          size: 20,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        labelStyle: const TextStyle(
+          fontSize: 14,
+          color: Color(0xFF64748B),
+          fontWeight: FontWeight.w500,
+        ),
       ),
+      validator: (v) =>
+          v == null || v.trim().isEmpty ? 'Required' : null,
+      onChanged: onChanged,
     );
+  }
+
+  IconData _getMediaIcon(String mediaType) {
+    if (mediaType.toLowerCase().contains('photo')) return Icons.photo_camera;
+    if (mediaType.toLowerCase().contains('video')) return Icons.videocam;
+    if (mediaType.toLowerCase().contains('xray')) return Icons.scanner;
+    if (mediaType.toLowerCase().contains('scan')) return Icons.medical_information;
+    return Icons.image;
   }
 }
 
@@ -1368,7 +1711,9 @@ class _KeywordSuggestionsFieldState
                               .map((e) => e.trim())
                               .where((e) => e.isNotEmpty)
                               .toList();
-                          existing.removeWhere((e) => e.toLowerCase() == last.toLowerCase());
+                          existing.removeWhere(
+                            (e) => e.toLowerCase() == last.toLowerCase(),
+                          );
                           existing.add(t.term);
                           widget.controller.text = existing.join(', ');
                           setState(() => current = widget.controller.text);

@@ -370,11 +370,34 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
             ),
           ] else if (entry.moduleType == moduleImages) ...[
             const SizedBox(height: 16),
-            const Text(
-              'Atlas / Images',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF10B981), Color(0xFF34D399)],
+                ),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.photo_library_outlined,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    'Atlas / Images',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             _buildMediaTypeDropdown(),
             _buildTextField(
               controller: _atlasDiagnosisController,
@@ -686,241 +709,343 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
+                Card(
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
                   ),
+                  margin: EdgeInsets.zero,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0B5FFF).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Icons.description,
-                              color: Color(0xFF0B5FFF),
-                              size: 24,
-                            ),
+                      // Header Section with Gradient
+                      Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  entry.patientUniqueId,
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF1E293B),
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'MRN: ${entry.mrn}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF64748B),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (canEdit)
-                            IconButton(
-                              onPressed: () {
-                                ref.read(_isEditingProvider.notifier).state = true;
-                                _loadEntryForEditing(entry);
-                              },
-                              icon: const Icon(Icons.edit),
-                              tooltip: 'Edit',
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      const Divider(),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          _StatusBadge(status: entry.status),
-                          const SizedBox(width: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0B5FFF).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: const Color(0xFF0B5FFF).withOpacity(0.3),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.category_outlined,
-                                  size: 16,
-                                  color: Color(0xFF0B5FFF),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  entry.moduleType,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Color(0xFF0B5FFF),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            'Updated ${_formatDate(entry.updatedAt)}',
-                            style: const TextStyle(
-                              color: Color(0xFF64748B),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (entry.keywords.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Keywords',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF64748B),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(16),
+                            topRight: Radius.circular(16),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: entry.keywords
-                              .map(
-                                (k) => Container(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                _getModuleIcon(entry.moduleType),
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    entry.patientUniqueId,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.badge_outlined,
+                                        color: Colors.white70,
+                                        size: 13,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '# ${entry.mrn}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.white70,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Content Section
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                _StatusBadge(status: entry.status),
+                                const SizedBox(width: 12),
+                                Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 12,
                                     vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF10B981).withOpacity(0.1),
+                                    color: const Color(0xFF3B82F6).withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: const Color(0xFF10B981).withOpacity(0.3),
+                                      color: const Color(0xFF3B82F6).withOpacity(0.3),
                                     ),
                                   ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        _getModuleIcon(entry.moduleType),
+                                        size: 16,
+                                        color: const Color(0xFF3B82F6),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        _getModuleName(entry.moduleType),
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Color(0xFF3B82F6),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Spacer(),
+                                Flexible(
                                   child: Text(
-                                    k,
+                                    'Updated ${_formatDate(entry.updatedAt)}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
-                                      fontSize: 13,
-                                      color: Color(0xFF047857),
-                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF64748B),
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ),
-                              )
-                              .toList(),
+                              ],
+                            ),
+                            if (entry.keywords.isNotEmpty) ...[
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Keywords',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF64748B),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: entry.keywords
+                                    .map(
+                                      (k) => Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF10B981).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: const Color(0xFF10B981).withOpacity(0.3),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          k,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            color: Color(0xFF047857),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            ],
+                            if (entry.moduleType == moduleImages || 
+                                entry.moduleType == moduleRecords || 
+                                entry.moduleType == moduleLearning) ...[
+                              const SizedBox(height: 16),
+                            ],
+                          ],
                         ),
-                      ],
-                      if (entry.moduleType == moduleImages || 
-                          entry.moduleType == moduleRecords || 
-                          entry.moduleType == moduleLearning) ...[
-                        const SizedBox(height: 16),
-                        const Divider(),
-                        const SizedBox(height: 16),
-                        ..._buildPayloadFields(entry),
-                      ],
+                      ),
                     ],
                   ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (canScore) ...[
-                    myAssessmentAsync.when(
-                      data: (assessment) {
-                        final remarks = assessment?.remarks ?? '';
-                        final steps = _recordScoreStepsForSurgery(
-                          _recordSurgeryName(entry),
-                        );
-                        if (entry.moduleType == moduleRecords &&
-                            steps.isNotEmpty) {
-                          final stepScores =
-                              _stepScoresFromAssessment(assessment?.oscarScores);
-                          final totalScore =
-                              _stepScoreTotal(steps, stepScores);
-                          final hasScore =
-                              (assessment?.oscarScores?.isNotEmpty ?? false);
-                          return _RecordScoreCard(
-                            steps: steps,
-                            stepScores: stepScores,
-                            totalScore: totalScore,
-                            remarks: remarks,
-                            hasScore: hasScore,
-                            onEdit: () => _showRecordScoreSheet(
-                              context: context,
-                              ref: ref,
-                              entryId: entry.id,
-                              traineeId: entry.createdBy,
-                              steps: steps,
-                              initialScores: stepScores,
-                              initialRemarks: remarks,
-                            ),
-                          );
-                        }
-                        final score =
-                            assessment?.score ?? assessment?.oscarTotal ?? 0;
-                        final hasScore =
-                            assessment?.score != null ||
-                            assessment?.oscarTotal != null;
-                        return _EntryScoreCard(
-                          score: score,
-                          remarks: remarks,
-                          hasScore: hasScore,
-                          onEdit: () => _showEntryScoreSheet(
-                            context: context,
-                            ref: ref,
-                            entryId: entry.id,
-                            traineeId: entry.createdBy,
-                            initialRating: score,
-                            initialRemarks: remarks,
-                          ),
-                        );
-                      },
-                      loading: () => const Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF0B5FFF),
-                        ),
-                      ),
-                      error: (e, _) => Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Text('Failed to load score: $e'),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  if (entry.moduleType != moduleImages && 
-                      entry.moduleType != moduleRecords && 
-                      entry.moduleType != moduleLearning) ...[
+),
+const SizedBox(height: 12),
+
+// --------------------------------------------------
+// Payload details card (Images / Records / Learning)
+// --------------------------------------------------
+if (entry.moduleType == moduleImages ||
+    entry.moduleType == moduleRecords ||
+    entry.moduleType == moduleLearning) ...[
+  Card(
+    elevation: 3,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+    ),
+    margin: EdgeInsets.zero,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF10B981), Color(0xFF34D399)],
+            ),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                entry.moduleType == moduleImages
+                    ? Icons.photo_library_outlined
+                    : entry.moduleType == moduleRecords
+                        ? Icons.medical_services_outlined
+                        : Icons.school_outlined,
+                color: Colors.white,
+                size: 22,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                entry.moduleType == moduleImages
+                    ? 'Atlas Details'
+                    : entry.moduleType == moduleRecords
+                        ? 'Surgical Record Details'
+                        : 'Learning Module Details',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: _buildPayloadFields(entry),
+          ),
+        ),
+      ],
+    ),
+  ),
+  const SizedBox(height: 12),
+],
+
+// --------------------------------------------------
+// Scoring / Assessment card
+// --------------------------------------------------
+if (canScore) ...[
+  myAssessmentAsync.when(
+    data: (assessment) {
+      final remarks = assessment?.remarks ?? '';
+      final steps =
+          _recordScoreStepsForSurgery(_recordSurgeryName(entry));
+
+      // Surgical record step-wise scoring
+      if (entry.moduleType == moduleRecords && steps.isNotEmpty) {
+        final stepScores =
+            _stepScoresFromAssessment(assessment?.oscarScores);
+        final totalScore = _stepScoreTotal(steps, stepScores);
+        final hasScore =
+            (assessment?.oscarScores?.isNotEmpty ?? false);
+
+        return _RecordScoreCard(
+          steps: steps,
+          stepScores: stepScores,
+          totalScore: totalScore,
+          remarks: remarks,
+          hasScore: hasScore,
+          onEdit: () => _showRecordScoreSheet(
+            context: context,
+            ref: ref,
+            entryId: entry.id,
+            traineeId: entry.createdBy,
+            steps: steps,
+            initialScores: stepScores,
+            initialRemarks: remarks,
+          ),
+        );
+      }
+
+      // Normal entry scoring
+      final score =
+          assessment?.score ?? assessment?.oscarTotal ?? 0;
+      final hasScore =
+          assessment?.score != null ||
+          assessment?.oscarTotal != null;
+
+      return _EntryScoreCard(
+        score: score,
+        remarks: remarks,
+        hasScore: hasScore,
+        onEdit: () => _showEntryScoreSheet(
+          context: context,
+          ref: ref,
+          entryId: entry.id,
+          traineeId: entry.createdBy,
+          initialRating: score,
+          initialRemarks: remarks,
+        ),
+      );
+    },
+    loading: () => const Center(
+      child: CircularProgressIndicator(
+        color: Color(0xFF0B5FFF),
+      ),
+    ),
+    error: (e, _) => Card(
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Text('Failed to load score: $e'),
+      ),
+    ),
+  ),
+  const SizedBox(height: 12),
+],
+
+// --------------------------------------------------
+// Other module types
+// --------------------------------------------------
+if (entry.moduleType != moduleImages &&
+    entry.moduleType != moduleRecords &&
+    entry.moduleType != moduleLearning) ...[
+  // existing content continues here
+],
+
                   _AuthorInfo(author: entry.authorProfile),
                   const SizedBox(height: 12),
                   _PayloadView(entry: entry),
@@ -1039,14 +1164,17 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                       ),
                       const SizedBox(height: 12),
                       OutlinedButton.icon(
-                        onPressed: entry.status == statusDraft
+                        onPressed: (entry.status == statusDraft || 
+                                   (entry.moduleType == moduleImages && entry.status == statusSubmitted))
                             ? () async {
                                 final confirmed = await showDialog<bool>(
                                   context: context,
                                   builder: (_) => AlertDialog(
                                     title: const Text('Delete entry?'),
-                                    content: const Text(
-                                      'This will remove the entry permanently.',
+                                    content: Text(
+                                      entry.status == statusDraft
+                                          ? 'This will remove the entry permanently.'
+                                          : 'This will remove the submitted Atlas entry permanently.',
                                     ),
                                     actions: [
                                       TextButton(
@@ -1071,6 +1199,10 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                                   await ref
                                       .read(entryMutationProvider.notifier)
                                       .delete(entry.id);
+                                  
+                                  // Refresh entries list
+                                  ref.invalidate(entriesListProvider);
+                                  
                                   if (context.mounted) {
                                     context.go('/logbook');
                                   }
@@ -1078,9 +1210,9 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                               }
                             : null,
                         icon: const Icon(Icons.delete, color: Colors.red),
-                        label: const Text(
-                          'Delete Draft',
-                          style: TextStyle(
+                        label: Text(
+                          entry.status == statusDraft ? 'Delete Draft' : 'Delete Entry',
+                          style: const TextStyle(
                             color: Colors.red,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1183,6 +1315,36 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
     }
   }
 
+  IconData _getModuleIcon(String moduleType) {
+    switch (moduleType) {
+      case moduleCases:
+        return Icons.medical_information_rounded;
+      case moduleImages:
+        return Icons.photo_library_rounded;
+      case moduleLearning:
+        return Icons.school_rounded;
+      case moduleRecords:
+        return Icons.folder_special_rounded;
+      default:
+        return Icons.article_rounded;
+    }
+  }
+
+  String _getModuleName(String moduleType) {
+    switch (moduleType) {
+      case moduleCases:
+        return 'CASE';
+      case moduleImages:
+        return 'ATLAS';
+      case moduleLearning:
+        return 'LEARNING';
+      case moduleRecords:
+        return 'RECORD';
+      default:
+        return 'ENTRY';
+    }
+  }
+
   List<Widget> _buildPayloadFields(ElogEntry entry) {
     final payload = entry.payload;
     
@@ -1272,80 +1434,236 @@ class _ImagesView extends ConsumerWidget {
 
     if (imagePaths.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
+      margin: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.image_outlined,
-                color: Color(0xFF0B5FFF),
-                size: 20,
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF10B981), Color(0xFF34D399)],
               ),
-              SizedBox(width: 8),
-              Text(
-                'Images',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1E293B),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.collections_outlined,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  'Atlas Images',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${imagePaths.length} ${imagePaths.length == 1 ? 'image' : 'images'}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 1.0,
+              ),
+              itemCount: imagePaths.length,
+              itemBuilder: (context, index) {
+                final path = imagePaths[index];
+                return FutureBuilder(
+                  future: signedCache.getUrl(path),
+                  builder: (context, snapshot) {
+                    return InkWell(
+                      onTap: snapshot.hasData
+                          ? () => _showImageDialog(context, snapshot.data!)
+                          : null,
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color(0xFF10B981),
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF10B981).withOpacity(0.15),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              snapshot.hasData
+                                  ? Image.network(
+                                      snapshot.data!,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        color: const Color(0xFFF1F5F9),
+                                        child: const Center(
+                                          child: Icon(
+                                            Icons.broken_image,
+                                            size: 28,
+                                            color: Color(0xFF94A3B8),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  : Container(
+                                      color: const Color(0xFFF1F5F9),
+                                      child: const Center(
+                                        child: SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Color(0xFF10B981),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                              if (snapshot.hasData)
+                                Positioned(
+                                  bottom: 4,
+                                  right: 4,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.6),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.zoom_in,
+                                      color: Colors.white,
+                                      size: 12,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showImageDialog(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(20),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: 600,
+            maxHeight: 600,
+          ),
+          child: Stack(
+            children: [
+              InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: const Color(0xFFF1F5F9),
+                      child: const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.broken_image,
+                              size: 64,
+                              color: Color(0xFF94A3B8),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Failed to load image',
+                              style: TextStyle(
+                                color: Color(0xFF64748B),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: imagePaths.length,
-            itemBuilder: (context, index) {
-              final path = imagePaths[index];
-              return FutureBuilder(
-                future: signedCache.getUrl(path),
-                builder: (context, snapshot) {
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: snapshot.hasData
-                        ? Image.network(
-                            snapshot.data!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              color: const Color(0xFFF1F5F9),
-                              child: const Icon(Icons.broken_image, size: 40),
-                            ),
-                          )
-                        : Container(
-                            color: const Color(0xFFF1F5F9),
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            ),
-                          ),
-                  );
-                },
-              );
-            },
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -306,9 +306,24 @@ class _RopScreeningFormScreenState extends ConsumerState<RopScreeningFormScreen>
       child: DropdownButtonFormField<String>(
         value: _gender,
         decoration: const InputDecoration(labelText: 'Gender'),
+        isExpanded: true,
         items: const [
-          DropdownMenuItem(value: 'male', child: Text('Male')),
-          DropdownMenuItem(value: 'female', child: Text('Female')),
+          DropdownMenuItem(
+            value: 'male',
+            child: Text(
+              'Male',
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
+          DropdownMenuItem(
+            value: 'female',
+            child: Text(
+              'Female',
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
         ],
         validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
         onChanged: (v) => setState(() => _gender = v),
