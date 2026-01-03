@@ -12,14 +12,24 @@ const bcvaOptions = [
   'NPL',
 ];
 
-const complaintUnits = ['days', 'weeks', 'months'];
+const complaintUnits = ['days', 'weeks', 'months', 'years'];
 
 const systemicOptions = [
-  'DM',
-  'HTN',
-  'CAD',
-  'Thyroid',
   'Asthma',
+  'Cardiac',
+  'Diabetes',
+  'Epilepsy',
+  'Malignancy',
+  'Hyperlipidemia',
+  'Hypertension',
+  'Non healing ulcer',
+  'Renal disease',
+  'Stroke/Neuro',
+  'TB',
+  'Thyroid status',
+  'Allergies',
+  'Drug Allergies',
+  'Non ocular surgeries',
   'Nil',
   'Others',
 ];

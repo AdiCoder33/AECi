@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../domain/constants/fundus_options.dart';
 import '../../widgets/taxonomy_multi_select_field.dart';
 
-class Step7Fundus extends StatelessWidget {
+class Step7Fundus extends StatefulWidget {
   const Step7Fundus({
     super.key,
     required this.formKey,
@@ -17,156 +17,201 @@ class Step7Fundus extends StatelessWidget {
   final GlobalKey<FormState> formKey;
   final Map<String, dynamic> fundus;
   final void Function(String eye, String sectionKey, List<String> selected)
-      onSelectionChanged;
+  onSelectionChanged;
   final void Function(
     String eye,
     String sectionKey,
     String option,
     String description,
-  ) onDescriptionChanged;
-  final void Function(String eye, String sectionKey, String other) onOtherChanged;
+  )
+  onDescriptionChanged;
+  final void Function(String eye, String sectionKey, String other)
+  onOtherChanged;
   final void Function(String eye, String remarks) onRemarksChanged;
 
   @override
+  State<Step7Fundus> createState() => _Step7FundusState();
+}
+
+class _Step7FundusState extends State<Step7Fundus> {
+  @override
   Widget build(BuildContext context) {
     return Form(
-      key: formKey,
+      key: widget.formKey,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(8),
         children: [
+          // Set All Normal Button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: ElevatedButton.icon(
+              onPressed: () => _setAllNormal(),
+              icon: const Icon(Icons.check_circle_outline, size: 20),
+              label: const Text(
+                'Set All Normal',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF10B981),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                  horizontal: 20,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+              ),
+            ),
+          ),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Gradient Header for RE
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(16),
-                          ),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(
-                              Icons.visibility,
-                              color: Colors.white,
-                              size: 22,
-                            ),
-                            SizedBox(width: 10),
-                            Text(
-                              'Right Eye Fundus',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Content
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: _EyeFundus(
-                          label: 'RE',
-                          eyeKey: 'RE',
-                          fundus: fundus,
-                          onSelectionChanged: onSelectionChanged,
-                          onDescriptionChanged: onDescriptionChanged,
-                          onOtherChanged: onOtherChanged,
-                          onRemarksChanged: onRemarksChanged,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Gradient Header for LE
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Color(0xFF10B981), Color(0xFF34D399)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(16),
-                          ),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(
-                              Icons.visibility,
-                              color: Colors.white,
-                              size: 22,
-                            ),
-                            SizedBox(width: 10),
-                            Text(
-                              'Left Eye Fundus',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Content
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: _EyeFundus(
-                          label: 'LE',
-                          eyeKey: 'LE',
-                          fundus: fundus,
-                          onSelectionChanged: onSelectionChanged,
-                          onDescriptionChanged: onDescriptionChanged,
-                          onOtherChanged: onOtherChanged,
-                          onRemarksChanged: onRemarksChanged,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              Expanded(child: _buildRightEyeCard()),
+              const SizedBox(width: 8),
+              Expanded(child: _buildLeftEyeCard()),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _setAllNormal() {
+    // Map of section keys to their normal values
+    final normalValues = {
+      'media': ['Clear'],
+      'optic_disc': ['Normal'],
+      'vessels': ['Normal'],
+      'background_retina': ['Normal'],
+      'macula': ['Present'],
+    };
+
+    // Set all fundus sections to their normal values for both eyes
+    for (final section in fundusSections) {
+      final normalValue = normalValues[section.key] ?? ['Normal'];
+      widget.onSelectionChanged('RE', section.key, normalValue);
+      widget.onSelectionChanged('LE', section.key, normalValue);
+    }
+  }
+
+  Widget _buildRightEyeCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Gradient Header for RE
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.visibility, color: Colors.white, size: 22),
+                SizedBox(width: 10),
+                Text(
+                  'Right Eye Fundus',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Content
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: _EyeFundus(
+              label: 'RE',
+              eyeKey: 'RE',
+              fundus: widget.fundus,
+              onSelectionChanged: widget.onSelectionChanged,
+              onDescriptionChanged: widget.onDescriptionChanged,
+              onOtherChanged: widget.onOtherChanged,
+              onRemarksChanged: widget.onRemarksChanged,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLeftEyeCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Gradient Header for LE
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF10B981), Color(0xFF34D399)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.visibility, color: Colors.white, size: 22),
+                SizedBox(width: 10),
+                Text(
+                  'Left Eye Fundus',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Content
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: _EyeFundus(
+              label: 'LE',
+              eyeKey: 'LE',
+              fundus: widget.fundus,
+              onSelectionChanged: widget.onSelectionChanged,
+              onDescriptionChanged: widget.onDescriptionChanged,
+              onOtherChanged: widget.onOtherChanged,
+              onRemarksChanged: widget.onRemarksChanged,
+            ),
           ),
         ],
       ),
@@ -189,14 +234,16 @@ class _EyeFundus extends StatelessWidget {
   final String eyeKey;
   final Map<String, dynamic> fundus;
   final void Function(String eye, String sectionKey, List<String> selected)
-      onSelectionChanged;
+  onSelectionChanged;
   final void Function(
     String eye,
     String sectionKey,
     String option,
     String description,
-  ) onDescriptionChanged;
-  final void Function(String eye, String sectionKey, String other) onOtherChanged;
+  )
+  onDescriptionChanged;
+  final void Function(String eye, String sectionKey, String other)
+  onOtherChanged;
   final void Function(String eye, String remarks) onRemarksChanged;
 
   @override
@@ -207,12 +254,14 @@ class _EyeFundus extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ...fundusSections.map((section) {
-          final sectionData =
-              Map<String, dynamic>.from(eye[section.key] as Map? ?? {});
+          final sectionData = Map<String, dynamic>.from(
+            eye[section.key] as Map? ?? {},
+          );
           final selected =
               (sectionData['selected'] as List?)?.cast<String>() ?? <String>[];
-          final descriptions =
-              Map<String, String>.from(sectionData['descriptions'] as Map? ?? {});
+          final descriptions = Map<String, String>.from(
+            sectionData['descriptions'] as Map? ?? {},
+          );
           final other = (sectionData['other'] as String?) ?? '';
           return _FundusSectionCard(
             eyeKey: eyeKey,
@@ -229,9 +278,7 @@ class _EyeFundus extends StatelessWidget {
         TextFormField(
           key: ValueKey('$eyeKey-fundus-remarks-$remarks'),
           initialValue: remarks,
-          decoration: const InputDecoration(
-            labelText: 'Remarks (optional)',
-          ),
+          decoration: const InputDecoration(labelText: 'Remarks (optional)'),
           maxLines: 3,
           onChanged: (value) => onRemarksChanged(eyeKey, value),
         ),
@@ -258,14 +305,16 @@ class _FundusSectionCard extends StatefulWidget {
   final Map<String, String> descriptions;
   final String other;
   final void Function(String eye, String sectionKey, List<String> selected)
-      onSelectionChanged;
+  onSelectionChanged;
   final void Function(
     String eye,
     String sectionKey,
     String option,
     String description,
-  ) onDescriptionChanged;
-  final void Function(String eye, String sectionKey, String other) onOtherChanged;
+  )
+  onDescriptionChanged;
+  final void Function(String eye, String sectionKey, String other)
+  onOtherChanged;
 
   @override
   State<_FundusSectionCard> createState() => _FundusSectionCardState();
@@ -302,8 +351,9 @@ class _FundusSectionCardState extends State<_FundusSectionCard> {
   Widget build(BuildContext context) {
     final normalOption = _normalOption();
     final showOptions = _showOptions(normalOption);
-    final filteredOptions =
-        widget.section.options.where((o) => o != normalOption).toList();
+    final filteredOptions = widget.section.options
+        .where((o) => o != normalOption)
+        .toList();
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Card(
@@ -316,9 +366,9 @@ class _FundusSectionCardState extends State<_FundusSectionCard> {
               Text(
                 widget.section.label,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -326,8 +376,8 @@ class _FundusSectionCardState extends State<_FundusSectionCard> {
                 children: [
                   ChoiceChip(
                     label: const Text('Normal'),
-                    selected: widget.selected.contains(normalOption) &&
-                        !showOptions,
+                    selected:
+                        widget.selected.contains(normalOption) && !showOptions,
                     onSelected: (value) {
                       if (value) {
                         setState(() => _expanded = false);
@@ -387,12 +437,11 @@ class _FundusSectionCardState extends State<_FundusSectionCard> {
                     }
                     return null;
                   },
-                  onSelectionChanged: (next) =>
-                      widget.onSelectionChanged(
-                        widget.eyeKey,
-                        widget.section.key,
-                        next,
-                      ),
+                  onSelectionChanged: (next) => widget.onSelectionChanged(
+                    widget.eyeKey,
+                    widget.section.key,
+                    next,
+                  ),
                   onDescriptionChanged: (option, description) =>
                       widget.onDescriptionChanged(
                         widget.eyeKey,
@@ -400,12 +449,11 @@ class _FundusSectionCardState extends State<_FundusSectionCard> {
                         option,
                         description,
                       ),
-                  onOtherChanged: (value) =>
-                      widget.onOtherChanged(
-                        widget.eyeKey,
-                        widget.section.key,
-                        value,
-                      ),
+                  onOtherChanged: (value) => widget.onOtherChanged(
+                    widget.eyeKey,
+                    widget.section.key,
+                    value,
+                  ),
                 ),
               ],
             ],

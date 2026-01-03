@@ -82,36 +82,60 @@ class Step3Systemic extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: systemicOptions.map((option) {
-            final isSelected = selected.contains(option);
-            return _SystemicChip(
-              label: option,
-              isSelected: isSelected,
-              onTap: () {
-                final next = List<String>.from(selected);
-                if (option == 'Nil') {
-                  if (isSelected) {
-                    next.remove('Nil');
-                  } else {
-                    next
-                      ..clear()
-                      ..add('Nil');
-                  }
-                } else {
-                  next.remove('Nil');
-                  if (isSelected) {
-                    next.remove(option);
-                  } else {
-                    next.add(option);
-                  }
-                }
-                onSelectionChanged(next);
-              },
-            );
-          }).toList(),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Preset systemic diseases:',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ...systemicOptions.map((option) {
+                final isSelected = selected.contains(option);
+                return _SystemicCheckbox(
+                  label: option,
+                  isSelected: isSelected,
+                  onChanged: (value) {
+                    final next = List<String>.from(selected);
+                    if (option == 'Nil') {
+                      if (value == true) {
+                        next
+                          ..clear()
+                          ..add('Nil');
+                      } else {
+                        next.remove('Nil');
+                      }
+                    } else {
+                      next.remove('Nil');
+                      if (value == true) {
+                        next.add(option);
+                      } else {
+                        next.remove(option);
+                      }
+                    }
+                    onSelectionChanged(next);
+                  },
+                );
+              }).toList(),
+            ],
+          ),
         ),
         if (hasOthers) ...[
           const SizedBox(height: 20),
@@ -196,17 +220,11 @@ class Step3Systemic extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFF1F5F9),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFFCBD5E1),
-              ),
+              border: Border.all(color: const Color(0xFFCBD5E1)),
             ),
             child: const Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  color: Color(0xFF64748B),
-                  size: 18,
-                ),
+                Icon(Icons.info_outline, color: Color(0xFF64748B), size: 18),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -227,78 +245,51 @@ class Step3Systemic extends StatelessWidget {
   }
 }
 
-class _SystemicChip extends StatelessWidget {
-  const _SystemicChip({
+class _SystemicCheckbox extends StatelessWidget {
+  const _SystemicCheckbox({
     required this.label,
     required this.isSelected,
-    required this.onTap,
+    required this.onChanged,
   });
 
   final String label;
   final bool isSelected;
-  final VoidCallback onTap;
+  final ValueChanged<bool?> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            gradient: isSelected
-                ? const LinearGradient(
-                    colors: [Color(0xFF14B8A6), Color(0xFF2DD4BF)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                : null,
-            color: isSelected ? null : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? Colors.transparent : const Color(0xFFE2E8F0),
-              width: 1.5,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFF14B8A6).withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (isSelected)
-                const Padding(
-                  padding: EdgeInsets.only(right: 6),
-                  child: Icon(
-                    Icons.check_circle,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                ),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? Colors.white : const Color(0xFF475569),
+    return InkWell(
+      onTap: () => onChanged(!isSelected),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            SizedBox(
+              height: 24,
+              width: 24,
+              child: Checkbox(
+                value: isSelected,
+                onChanged: onChanged,
+                activeColor: const Color(0xFF14B8A6),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isSelected
+                      ? const Color(0xFF1E293B)
+                      : const Color(0xFF475569),
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
