@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/supabase_client.dart';
 import '../../clinical_cases/data/clinical_cases_repository.dart';
 import '../../community/data/community_repository.dart';
 import '../../logbook/data/entries_repository.dart';
 import '../../logbook/domain/logbook_sections.dart';
 import '../../portfolio/data/portfolio_repository.dart';
 import '../../profile/data/profile_model.dart';
+import '../../reviewer/data/reviewer_repository.dart';
 import '../../submissions/data/logbook_submission_repository.dart';
 
 class TraineeAssessmentGroup {
@@ -44,33 +44,17 @@ final consultantPendingProfilesProvider =
   final submissionsRepo = ref.watch(logbookSubmissionRepositoryProvider);
   final communityRepo = ref.watch(communityRepositoryProvider);
 
-  final submissions = await submissionsRepo.listSubmissionsForRecipient();
-  if (submissions.isEmpty) return [];
-
-  final counts = <String, int>{};
-  for (final submission in submissions) {
-    counts[submission.createdBy] = (counts[submission.createdBy] ?? 0) + 1;
-  }
-  return _buildGroupsFromCounts(communityRepo, counts);
+  final counts = await _loadAssessmentCounts(ref, submissionsRepo);
+  return _buildGroupsFromCounts(communityRepo, counts.pending);
 });
 
 final consultantReviewedProfilesProvider =
     FutureProvider.autoDispose<List<TraineeAssessmentGroup>>((ref) async {
-  final client = ref.watch(supabaseClientProvider);
-  final reviewerId = client.auth.currentUser?.id;
-  if (reviewerId == null) return [];
-
-  final entriesRepo = ref.watch(entriesRepositoryProvider);
   final communityRepo = ref.watch(communityRepositoryProvider);
+  final submissionsRepo = ref.watch(logbookSubmissionRepositoryProvider);
 
-  final entries = await entriesRepo.listEntriesReviewedBy(reviewerId);
-  if (entries.isEmpty) return [];
-
-  final counts = <String, int>{};
-  for (final entry in entries) {
-    counts[entry.createdBy] = (counts[entry.createdBy] ?? 0) + 1;
-  }
-  return _buildGroupsFromCounts(communityRepo, counts);
+  final counts = await _loadAssessmentCounts(ref, submissionsRepo);
+  return _buildGroupsFromCounts(communityRepo, counts.reviewed);
 });
 
 final traineeSubmissionItemsProvider =
@@ -225,4 +209,70 @@ Future<List<TraineeAssessmentGroup>> _buildGroupsFromCounts(
   }
   groups.sort((a, b) => a.profile.name.compareTo(b.profile.name));
   return groups;
+}
+
+class _AssessmentCounts {
+  const _AssessmentCounts({
+    required this.pending,
+    required this.reviewed,
+  });
+
+  final Map<String, int> pending;
+  final Map<String, int> reviewed;
+}
+
+Future<_AssessmentCounts> _loadAssessmentCounts(
+  Ref ref,
+  LogbookSubmissionRepository submissionsRepo,
+) async {
+  final submissions = await submissionsRepo.listSubmissionsForRecipient();
+  if (submissions.isEmpty) {
+    return const _AssessmentCounts(pending: {}, reviewed: {});
+  }
+
+  final submissionIds = submissions.map((s) => s.id).toList();
+  final items = await submissionsRepo.listSubmissionItems(submissionIds);
+  if (items.isEmpty) {
+    return const _AssessmentCounts(pending: {}, reviewed: {});
+  }
+
+  final reviewerRepo = ref.watch(reviewerRepositoryProvider);
+  final assessments = await reviewerRepo.listMyAssessments();
+  final assessedKeys = assessments
+      .map((a) => '${a.entityType}:${a.entityId}')
+      .toSet();
+
+  final submissionById = {for (final s in submissions) s.id: s};
+  final totals = <String, int>{};
+  final assessed = <String, int>{};
+
+  for (final item in items) {
+    if (item.entityType != 'clinical_case' && item.entityType != 'elog_entry') {
+      continue;
+    }
+    final submission = submissionById[item.submissionId];
+    if (submission == null) continue;
+    final traineeId = submission.createdBy;
+    totals[traineeId] = (totals[traineeId] ?? 0) + 1;
+    if (assessedKeys.contains('${item.entityType}:${item.entityId}')) {
+      assessed[traineeId] = (assessed[traineeId] ?? 0) + 1;
+    }
+  }
+
+  final pendingCounts = <String, int>{};
+  final reviewedCounts = <String, int>{};
+  totals.forEach((traineeId, total) {
+    final done = assessed[traineeId] ?? 0;
+    if (total <= 0) return;
+    if (done >= total) {
+      reviewedCounts[traineeId] = total;
+    } else {
+      pendingCounts[traineeId] = total - done;
+    }
+  });
+
+  return _AssessmentCounts(
+    pending: pendingCounts,
+    reviewed: reviewedCounts,
+  );
 }
