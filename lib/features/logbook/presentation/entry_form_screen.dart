@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -124,6 +125,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
             ...List<String>.from(payload['uploadImagePaths'] ?? []),
             ...List<String>.from(payload['followUpVisitImagingPaths'] ?? []),
           ];
+          _existingVideoPaths = List<String>.from(payload['videoPaths'] ?? []);
           break;
         case moduleLearning:
           _learningSurgery =
@@ -343,7 +345,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                                     controller: _keywordsController,
                                   ),
                                 const Divider(height: 32),
-                                _buildSectionHeader('Upload Images', Icons.photo_library_outlined),
+                                _buildSectionHeader('Upload Files', Icons.insert_drive_file_outlined),
                                 const SizedBox(height: 16),
                                 _ImagePickerSection(
                                   title: 'Right Eye Images',
@@ -357,6 +359,22 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                                   title: 'Left Eye Images',
                                   existingPaths: _existingImagePathsLE,
                                   newImages: _newImagesLE,
+                                _FilePickerSection(
+                                  title: 'Files',
+                                  existingPaths: _existingImagePaths,
+                                  newFiles: _newImages,
+                                  onChanged: () {
+                                    if (!mounted) return;
+                                    setState(() {});
+                                  },
+                                  enabled: _canEditStatus,
+                                ),
+                                const Divider(height: 32),
+                                _buildSectionHeader('Upload Videos', Icons.video_library_outlined),
+                                const SizedBox(height: 16),
+                                _VideoPickerSection(
+                                  existingPaths: _existingVideoPaths,
+                                  newVideos: _newVideos,
                                   onChanged: () => setState(() {}),
                                   enabled: _canEditStatus,
                                 ),
@@ -438,6 +456,15 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                                   title: 'Post-Op Images',
                                   existingPaths: _existingRecordPostOpImagePaths,
                                   newImages: _newRecordPostOpImages,
+                                  onChanged: () => setState(() {}),
+                                  enabled: _canEditStatus,
+                                ),
+                                const Divider(height: 32),
+                                _buildSectionHeader('Upload Videos', Icons.video_library_outlined),
+                                const SizedBox(height: 16),
+                                _VideoPickerSection(
+                                  existingPaths: _existingVideoPaths,
+                                  newVideos: _newVideos,
                                   onChanged: () => setState(() {}),
                                   enabled: _canEditStatus,
                                 ),
@@ -896,7 +923,9 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
             payload = _withRecordImagePaths(payload, prePaths, postPaths);
           }
         }
-        if (module == moduleRecords || module == moduleLearning) {
+        if (module == moduleRecords ||
+            module == moduleLearning ||
+            module == moduleImages) {
           final videoPaths = await _uploadNewVideos(mediaRepo, entryId);
           if (videoPaths.isNotEmpty) {
             payload = _withNewVideos(payload, videoPaths);
@@ -981,6 +1010,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
           'uploadImagePaths': uploadPaths,
           'uploadImagePathsRE': _existingImagePathsRE,
           'uploadImagePathsLE': _existingImagePathsLE,
+          'videoPaths': _existingVideoPaths,
           'mediaType': _mediaType,
           'diagnosis': _atlasDiagnosisController.text.trim(),
           'briefDescription': _atlasBriefController.text.trim(),
@@ -1509,6 +1539,152 @@ class _ModuleFields extends StatelessWidget {
     if (mediaType.toLowerCase().contains('xray')) return Icons.scanner;
     if (mediaType.toLowerCase().contains('scan')) return Icons.medical_information;
     return Icons.image;
+  }
+}
+
+class _FilePickerSection extends ConsumerWidget {
+  const _FilePickerSection({
+    this.title = 'Files',
+    required this.existingPaths,
+    required this.newFiles,
+    required this.onChanged,
+    required this.enabled,
+  });
+
+  final String title;
+  final List<String> existingPaths;
+  final List<File> newFiles;
+  final VoidCallback onChanged;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final signedCache = ref.watch(signedUrlCacheProvider.notifier);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: !enabled
+                  ? null
+                  : () async {
+                      try {
+                        final result = await FilePicker.platform.pickFiles(
+                          allowMultiple: true,
+                          type: FileType.any,
+                        );
+                        if (result == null) return;
+                        final files = result.files
+                            .where((file) => file.path != null)
+                            .map((file) => File(file.path!))
+                            .toList();
+                        if (files.isNotEmpty) {
+                          newFiles.addAll(files);
+                          onChanged();
+                        }
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to pick file: $e')),
+                        );
+                      }
+                    },
+              icon: const Icon(Icons.add),
+              label: const Text('Add'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Column(
+          children: [
+            ...existingPaths.map(
+              (path) => FutureBuilder(
+                future: signedCache.getUrl(path),
+                builder: (context, snapshot) {
+                  final fileName = _fileNameFromPath(path);
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(_fileIconForName(fileName)),
+                    title: Text(
+                      fileName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: TextButton(
+                      onPressed: snapshot.hasData
+                          ? () => launchUrl(Uri.parse(snapshot.data!))
+                          : null,
+                      child: const Text('Open'),
+                    ),
+                  );
+                },
+              ),
+            ),
+            ...newFiles.map(
+              (file) {
+                final fileName = _fileNameFromPath(file.path);
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(_fileIconForName(fileName)),
+                  title: Text(
+                    fileName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: !enabled
+                        ? null
+                        : () {
+                            newFiles.remove(file);
+                            onChanged();
+                          },
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  String _fileNameFromPath(String path) {
+    final normalized = path.replaceAll('\\', '/');
+    final parts = normalized.split('/');
+    return parts.isNotEmpty ? parts.last : path;
+  }
+
+  IconData _fileIconForName(String fileName) {
+    final ext = fileName.split('.').last.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic'].contains(ext)) {
+      return Icons.image_outlined;
+    }
+    if (['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp', 'm4v'].contains(ext)) {
+      return Icons.videocam_outlined;
+    }
+    if (['pdf'].contains(ext)) {
+      return Icons.picture_as_pdf_outlined;
+    }
+    if (['doc', 'docx', 'rtf', 'txt'].contains(ext)) {
+      return Icons.description_outlined;
+    }
+    if (['xls', 'xlsx', 'csv'].contains(ext)) {
+      return Icons.table_chart_outlined;
+    }
+    if (['ppt', 'pptx'].contains(ext)) {
+      return Icons.slideshow_outlined;
+    }
+    return Icons.insert_drive_file_outlined;
   }
 }
 
