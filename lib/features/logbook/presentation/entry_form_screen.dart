@@ -359,6 +359,10 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                                   title: 'Left Eye Images',
                                   existingPaths: _existingImagePathsLE,
                                   newImages: _newImagesLE,
+                                  onChanged: () => setState(() {}),
+                                  enabled: _canEditStatus,
+                                ),
+                                const SizedBox(height: 16),
                                 _FilePickerSection(
                                   title: 'Files',
                                   existingPaths: _existingImagePaths,

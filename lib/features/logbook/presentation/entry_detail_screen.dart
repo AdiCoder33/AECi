@@ -237,6 +237,7 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
         for (final file in _newAtlasImagesLE) {
           final path = await mediaRepo.uploadImage(entryId: widget.entryId, file: file);
           _existingAtlasImagePathsLE.add(path);
+        }
         for (final file in _newVideos) {
           final path = await mediaRepo.uploadImage(entryId: widget.entryId, file: file);
           _existingVideosPaths.add(path);
@@ -443,12 +444,16 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
               title: 'Left Eye Images',
               existingPaths: _existingAtlasImagePathsLE,
               newImages: _newAtlasImagesLE,
+              onChanged: () => setState(() {}),
+            ),
+            const SizedBox(height: 16),
             _FilePickerSection(
               title: 'Files',
               existingPaths: _existingAtlasImagePaths,
               newFiles: _newAtlasImages,
               onChanged: () => setState(() {}),
             ),
+            const SizedBox(height: 16),
             _VideoPickerSection(
               title: 'Videos',
               existingPaths: _existingVideosPaths,
@@ -1466,19 +1471,28 @@ class _ImagesView extends ConsumerWidget {
     final payload = entry.payload;
     final signedCache = ref.read(signedUrlCacheProvider.notifier);
 
-    final filePaths = [
+    final rawPaths = [
       ...List<String>.from(payload['uploadImagePaths'] ?? []),
       ...List<String>.from(payload['followUpVisitImagingPaths'] ?? []),
     ];
+    final imagePaths = rawPaths.where(_isImagePath).toList();
+    final filePaths = rawPaths.where((path) => !_isImagePath(path)).toList();
     final imagePathsRE = List<String>.from(payload['uploadImagePathsRE'] ?? []);
     final imagePathsLE = List<String>.from(payload['uploadImagePathsLE'] ?? []);
-
-    if (imagePaths.isEmpty && imagePathsRE.isEmpty && imagePathsLE.isEmpty) {
-      return const SizedBox.shrink();
-    }
     final videoPaths = List<String>.from(payload['videoPaths'] ?? []);
 
-    if (filePaths.isEmpty && videoPaths.isEmpty) return const SizedBox.shrink();
+    final hasImages =
+        imagePaths.isNotEmpty || imagePathsRE.isNotEmpty || imagePathsLE.isNotEmpty;
+    final hasFiles = filePaths.isNotEmpty;
+    final hasVideos = videoPaths.isNotEmpty;
+
+    if (!hasImages && !hasFiles && !hasVideos) {
+      return const SizedBox.shrink();
+    }
+
+    final totalImages = imagePaths.length + imagePathsRE.length + imagePathsLE.length;
+    final totalFiles = filePaths.length;
+    final totalVideos = videoPaths.length;
 
     return Card(
       elevation: 3,
@@ -1525,8 +1539,9 @@ class _ImagesView extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${imagePaths.length + imagePathsRE.length + imagePathsLE.length} ${(imagePaths.length + imagePathsRE.length + imagePathsLE.length) == 1 ? 'image' : 'images'}',
-                    '${filePaths.length} ${filePaths.length == 1 ? 'file' : 'files'}',
+                    '$totalImages ${totalImages == 1 ? 'image' : 'images'} | '
+                    '$totalFiles ${totalFiles == 1 ? 'file' : 'files'} | '
+                    '$totalVideos ${totalVideos == 1 ? 'video' : 'videos'}',
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -1542,7 +1557,6 @@ class _ImagesView extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Right Eye Images
                 if (imagePathsRE.isNotEmpty) ...[
                   Text(
                     'Right Eye',
@@ -1565,12 +1579,13 @@ class _ImagesView extends ConsumerWidget {
                     itemCount: imagePathsRE.length,
                     itemBuilder: (context, index) {
                       final path = imagePathsRE[index];
-                      return FutureBuilder(
+                      return FutureBuilder<String>(
                         future: signedCache.getUrl(path),
                         builder: (context, snapshot) {
+                          final url = snapshot.data;
                           return InkWell(
-                            onTap: snapshot.hasData
-                                ? () => _showImageDialog(context, snapshot.data!)
+                            onTap: url != null
+                                ? () => _showImageDialog(context, url)
                                 : null,
                             borderRadius: BorderRadius.circular(10),
                             child: Container(
@@ -1595,7 +1610,7 @@ class _ImagesView extends ConsumerWidget {
                                   children: [
                                     snapshot.hasData
                                         ? Image.network(
-                                            snapshot.data!,
+                                            url!,
                                             fit: BoxFit.cover,
                                             errorBuilder: (_, __, ___) => Container(
                                               color: const Color(0xFFF1F5F9),
@@ -1649,8 +1664,6 @@ class _ImagesView extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                 ],
-
-                // Left Eye Images
                 if (imagePathsLE.isNotEmpty) ...[
                   Text(
                     'Left Eye',
@@ -1673,12 +1686,13 @@ class _ImagesView extends ConsumerWidget {
                     itemCount: imagePathsLE.length,
                     itemBuilder: (context, index) {
                       final path = imagePathsLE[index];
-                      return FutureBuilder(
+                      return FutureBuilder<String>(
                         future: signedCache.getUrl(path),
                         builder: (context, snapshot) {
+                          final url = snapshot.data;
                           return InkWell(
-                            onTap: snapshot.hasData
-                                ? () => _showImageDialog(context, snapshot.data!)
+                            onTap: url != null
+                                ? () => _showImageDialog(context, url)
                                 : null,
                             borderRadius: BorderRadius.circular(10),
                             child: Container(
@@ -1703,7 +1717,7 @@ class _ImagesView extends ConsumerWidget {
                                   children: [
                                     snapshot.hasData
                                         ? Image.network(
-                                            snapshot.data!,
+                                            url!,
                                             fit: BoxFit.cover,
                                             errorBuilder: (_, __, ___) => Container(
                                               color: const Color(0xFFF1F5F9),
@@ -1757,8 +1771,6 @@ class _ImagesView extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                 ],
-
-                // Old images (backward compatibility)
                 if (imagePaths.isNotEmpty) ...[
                   GridView.builder(
                     shrinkWrap: true,
@@ -1772,12 +1784,13 @@ class _ImagesView extends ConsumerWidget {
                     itemCount: imagePaths.length,
                     itemBuilder: (context, index) {
                       final path = imagePaths[index];
-                      return FutureBuilder(
+                      return FutureBuilder<String>(
                         future: signedCache.getUrl(path),
                         builder: (context, snapshot) {
+                          final url = snapshot.data;
                           return InkWell(
-                            onTap: snapshot.hasData
-                                ? () => _showImageDialog(context, snapshot.data!)
+                            onTap: url != null
+                                ? () => _showImageDialog(context, url)
                                 : null,
                             borderRadius: BorderRadius.circular(10),
                             child: Container(
@@ -1802,7 +1815,7 @@ class _ImagesView extends ConsumerWidget {
                                   children: [
                                     snapshot.hasData
                                         ? Image.network(
-                                            snapshot.data!,
+                                            url!,
                                             fit: BoxFit.cover,
                                             errorBuilder: (_, __, ___) => Container(
                                               color: const Color(0xFFF1F5F9),
@@ -1856,8 +1869,6 @@ class _ImagesView extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                 ],
-
-                // Files list (new)
                 if (filePaths.isNotEmpty) ...[
                   const Text(
                     'Files',
@@ -1875,7 +1886,7 @@ class _ImagesView extends ConsumerWidget {
                     separatorBuilder: (_, __) => const SizedBox(height: 6),
                     itemBuilder: (context, index) {
                       final path = filePaths[index];
-                      return FutureBuilder(
+                      return FutureBuilder<String>(
                         future: signedCache.getUrl(path),
                         builder: (context, snapshot) {
                           final fileName = _fileNameFromPath(path);
@@ -1901,19 +1912,9 @@ class _ImagesView extends ConsumerWidget {
                       );
                     },
                   ),
+                  if (videoPaths.isNotEmpty) const SizedBox(height: 16),
                 ],
-              ],
-            ),
-          ),
-
-              ),
-            ),
-          if (videoPaths.isNotEmpty)
-            Padding(
-              padding: EdgeInsets.fromLTRB(16, filePaths.isEmpty ? 16 : 0, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                if (videoPaths.isNotEmpty) ...[
                   const Text(
                     'Videos',
                     style: TextStyle(
@@ -1924,7 +1925,7 @@ class _ImagesView extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   ...videoPaths.map(
-                    (path) => FutureBuilder(
+                    (path) => FutureBuilder<String>(
                       future: signedCache.getUrl(path),
                       builder: (context, snapshot) {
                         final fileName = _fileNameFromPath(path);
@@ -1968,10 +1969,44 @@ class _ImagesView extends ConsumerWidget {
                     ),
                   ),
                 ],
-              ),
+              ],
             ),
+          ),
         ],
       ),
+    );
+  }
+
+  bool _isImagePath(String path) {
+    final ext = _fileNameFromPath(path).split('.').last.toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic'].contains(ext);
+  }
+
+  void _showImageDialog(BuildContext context, String url) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(16),
+          child: InteractiveViewer(
+            minScale: 0.5,
+            maxScale: 4,
+            child: Image.network(
+              url,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Container(
+                color: const Color(0xFFF1F5F9),
+                padding: const EdgeInsets.all(24),
+                child: const Icon(
+                  Icons.broken_image,
+                  size: 48,
+                  color: Color(0xFF94A3B8),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

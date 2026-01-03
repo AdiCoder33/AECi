@@ -17,14 +17,10 @@ class EntryCard extends ConsumerWidget {
     final filePaths = entry.moduleType == moduleImages
         ? [
             ...List<String>.from(entry.payload['uploadImagePaths'] ?? []),
+            ...List<String>.from(entry.payload['uploadImagePathsRE'] ?? []),
+            ...List<String>.from(entry.payload['uploadImagePathsLE'] ?? []),
             ...List<String>.from(entry.payload['videoPaths'] ?? []),
           ]
-        : <String>[];
-    final imagePathsRE = entry.moduleType == moduleImages
-        ? List<String>.from(entry.payload['uploadImagePathsRE'] ?? [])
-        : <String>[];
-    final imagePathsLE = entry.moduleType == moduleImages
-        ? List<String>.from(entry.payload['uploadImagePathsLE'] ?? [])
         : <String>[];
     final fileNames = filePaths.map(_fileNameFromPath).toList();
 
@@ -300,8 +296,7 @@ class EntryCard extends ConsumerWidget {
                         ],
                       ],
                     ),
-                    // Image Preview for Atlas Entries - Larger and Clickable
-                    if (imagePathsRE.isNotEmpty || imagePathsLE.isNotEmpty || imagePaths.isNotEmpty) ...[
+                    // Attachments preview for Atlas entries
                     if (fileNames.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       if (entry.payload['briefDescription'] != null &&
@@ -342,240 +337,61 @@ class EntryCard extends ConsumerWidget {
                         ),
                         const SizedBox(height: 10),
                       ],
-                      // Right Eye Images
-                      if (imagePathsRE.isNotEmpty) ...[
-                        Text(
-                          'Right Eye',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.green[700],
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.attach_file,
+                            size: 14,
+                            color: Color(0xFF64748B),
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: imagePathsRE.length == 1 ? 1 : 2,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
-                            childAspectRatio: 1.2,
+                          const SizedBox(width: 6),
+                          Text(
+                            'Files (${fileNames.length})',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF475569),
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                          itemCount: imagePathsRE.length > 4 ? 4 : imagePathsRE.length,
-                          itemBuilder: (context, index) {
-                            final path = imagePathsRE[index];
-                            return FutureBuilder(
-                              future: signedCache.getUrl(path),
-                              builder: (context, snapshot) {
-                                return InkWell(
-                                  onTap: snapshot.hasData
-                                      ? () => _showImageDialog(context, snapshot.data!)
-                                      : null,
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: Colors.green,
-                                        width: 2,
-                                      ),
-                                      borderRadius: BorderRadius.circular(10),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.green.withOpacity(0.2),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: snapshot.hasData
-                                          ? Image.network(
-                                              snapshot.data!,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) => Container(
-                                                color: const Color(0xFFF8FAFC),
-                                                child: const Center(
-                                                  child: Icon(
-                                                    Icons.broken_image,
-                                                    size: 40,
-                                                    color: Color(0xFF94A3B8),
-                                                  ),
-                                                ),
-                                              ),
-                                            )
-                                          : Container(
-                                              color: const Color(0xFFF8FAFC),
-                                              child: const Center(
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  color: Colors.green,
-                                                ),
-                                              ),
-                                            ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      // Left Eye Images
-                      if (imagePathsLE.isNotEmpty) ...[
-                        Text(
-                          'Left Eye',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.blue[700],
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: imagePathsLE.length == 1 ? 1 : 2,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
-                            childAspectRatio: 1.2,
-                          ),
-                          itemCount: imagePathsLE.length > 4 ? 4 : imagePathsLE.length,
-                          itemBuilder: (context, index) {
-                            final path = imagePathsLE[index];
-                            return FutureBuilder(
-                              future: signedCache.getUrl(path),
-                              builder: (context, snapshot) {
-                                return InkWell(
-                                  onTap: snapshot.hasData
-                                      ? () => _showImageDialog(context, snapshot.data!)
-                                      : null,
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: Colors.blue,
-                                        width: 2,
-                                      ),
-                                      borderRadius: BorderRadius.circular(10),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.blue.withOpacity(0.2),
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: snapshot.hasData
-                                          ? Image.network(
-                                              snapshot.data!,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) => Container(
-                                                color: const Color(0xFFF8FAFC),
-                                                child: const Center(
-                                                  child: Icon(
-                                                    Icons.broken_image,
-                                                    size: 40,
-                                                    color: Color(0xFF94A3B8),
-                                                  ),
-                                                ),
-                                              ),
-                                            )
-                                          : Container(
-                                              color: const Color(0xFFF8FAFC),
-                                              child: const Center(
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  color: Colors.blue,
-                                                ),
-                                              ),
-                                            ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      // Old Images (backward compatibility)
-                      if (imagePaths.isNotEmpty)
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: imagePaths.length == 1 ? 1 : 2,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                          childAspectRatio: 1.2,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.insert_drive_file_outlined,
-                                  size: 14,
-                                  color: Color(0xFF64748B),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Files (${fileNames.length})',
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ...fileNames.take(2).map(
+                        (name) => Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _fileIconForName(name),
+                                size: 14,
+                                color: const Color(0xFF10B981),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                     fontSize: 12,
                                     color: Color(0xFF475569),
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            ...fileNames.take(2).map(
-                              (name) => Padding(
-                                padding: const EdgeInsets.only(bottom: 4),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      _fileIconForName(name),
-                                      size: 14,
-                                      color: const Color(0xFF10B981),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        name,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Color(0xFF475569),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
                               ),
-                            ),
-                            if (fileNames.length > 2)
-                              Text(
-                                '+${fileNames.length - 2} more files',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Color(0xFF10B981),
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
+                      if (fileNames.length > 2)
+                        Text(
+                          '+${fileNames.length - 2} more files',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF10B981),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                     ],
                   ],
                 ),
