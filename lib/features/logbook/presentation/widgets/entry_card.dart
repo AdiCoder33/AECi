@@ -1,18 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/elog_entry.dart';
+import '../../application/logbook_providers.dart';
 
-class EntryCard extends StatelessWidget {
+class EntryCard extends ConsumerWidget {
   const EntryCard({super.key, required this.entry, this.onTap});
 
   final ElogEntry entry;
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final summary = _summaryText(entry);
     final keywordChips = entry.keywords.take(3).toList();
     final extra = entry.keywords.length - keywordChips.length;
+    final signedCache = ref.read(signedUrlCacheProvider.notifier);
+    
+    // Get image paths for atlas entries
+    final imagePaths = entry.moduleType == moduleImages
+        ? List<String>.from(entry.payload['uploadImagePaths'] ?? [])
+        : <String>[];
 
     return Container(
       decoration: BoxDecoration(
@@ -221,26 +229,233 @@ class EntryCard extends StatelessWidget {
                         ],
                       ),
                     ],
-                    const SizedBox(height: 8),
-                    // Updated Time
+                    const SizedBox(height: 10),
+                    // Bottom Info Row
                     Row(
                       children: [
-                        const Icon(
-                          Icons.schedule,
-                          size: 11,
-                          color: Color(0xFF94A3B8),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Updated ${_formatDate(entry.updatedAt)}',
-                          style: const TextStyle(
-                            color: Color(0xFF94A3B8),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
+                        // Updated Time
+                        Expanded(
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.schedule,
+                                size: 11,
+                                color: Color(0xFF94A3B8),
+                              ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  'Updated ${_formatDate(entry.updatedAt)}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Color(0xFF94A3B8),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                        // Draft indicator if draft
+                        if (entry.status == statusDraft) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF59E0B).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: const Color(0xFFF59E0B).withOpacity(0.3),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.edit_note,
+                                  size: 10,
+                                  color: const Color(0xFFF59E0B),
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  'DRAFT',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFFF59E0B),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
+                    // Image Preview for Atlas Entries - Larger and Clickable
+                    if (imagePaths.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      // Description if available
+                      if (entry.payload['briefDescription'] != null && 
+                          entry.payload['briefDescription'].toString().isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.description_outlined,
+                                size: 14,
+                                color: const Color(0xFF64748B),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  entry.payload['briefDescription'],
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF475569),
+                                    height: 1.4,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                      // Image Grid
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: imagePaths.length == 1 ? 1 : 2,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                          childAspectRatio: 1.2,
+                        ),
+                        itemCount: imagePaths.length > 4 ? 4 : imagePaths.length,
+                        itemBuilder: (context, index) {
+                          final path = imagePaths[index];
+                          return FutureBuilder(
+                            future: signedCache.getUrl(path),
+                            builder: (context, snapshot) {
+                              return InkWell(
+                                onTap: snapshot.hasData
+                                    ? () => _showImageDialog(context, snapshot.data!)
+                                    : null,
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: const Color(0xFF10B981),
+                                      width: 2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF10B981).withOpacity(0.2),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        snapshot.hasData
+                                            ? Image.network(
+                                                snapshot.data!,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) => Container(
+                                                  color: const Color(0xFFF1F5F9),
+                                                  child: const Center(
+                                                    child: Icon(
+                                                      Icons.broken_image,
+                                                      size: 32,
+                                                      color: Color(0xFF94A3B8),
+                                                    ),
+                                                  ),
+                                                ),
+                                              )
+                                            : Container(
+                                                color: const Color(0xFFF1F5F9),
+                                                child: const Center(
+                                                  child: SizedBox(
+                                                    width: 20,
+                                                    height: 20,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Color(0xFF10B981),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                        if (snapshot.hasData)
+                                          Positioned(
+                                            bottom: 4,
+                                            right: 4,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black.withOpacity(0.6),
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(
+                                                Icons.zoom_in,
+                                                color: Colors.white,
+                                                size: 14,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                      if (imagePaths.length > 4)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color(0xFF10B981).withOpacity(0.3),
+                                ),
+                              ),
+                              child: Text(
+                                '+${imagePaths.length - 4} more images • Tap to view all',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF10B981),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ],
                 ),
               ),
@@ -319,6 +534,82 @@ class EntryCard extends StatelessWidget {
       default:
         return '';
     }
+  }
+
+  void _showImageDialog(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: 500,
+            maxHeight: 500,
+          ),
+          child: Stack(
+            children: [
+              InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: const Color(0xFFF1F5F9),
+                      child: const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.broken_image,
+                              size: 64,
+                              color: Color(0xFF94A3B8),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Failed to load image',
+                              style: TextStyle(
+                                color: Color(0xFF64748B),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

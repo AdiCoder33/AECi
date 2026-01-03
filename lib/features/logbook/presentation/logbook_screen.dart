@@ -7,6 +7,7 @@ import '../../../core/widgets/shimmer_loading.dart';
 import '../../clinical_cases/application/clinical_cases_controller.dart';
 import '../../clinical_cases/data/clinical_cases_repository.dart';
 import '../../portfolio/application/portfolio_controller.dart';
+import '../../portfolio/data/portfolio_repository.dart';
 import '../../review/application/review_controller.dart';
 import '../application/logbook_providers.dart';
 import '../domain/elog_entry.dart';
@@ -53,16 +54,17 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
     final entries = isEntrySection ? ref.watch(entriesListProvider) : null;
     final AsyncValue<List<ClinicalCase>>? cases = isCaseSection
         ? (section == logbookSectionRetinoblastoma
-              ? ref.watch(clinicalCaseListByKeywordProvider('retinoblastoma'))
-              : section == logbookSectionRop
-              ? ref.watch(clinicalCaseListByKeywordProvider('rop'))
-              : section == logbookSectionLaser
-              ? ref.watch(clinicalCaseListByKeywordProvider('laser'))
-              : ref.watch(clinicalCaseListProvider))
+            ? ref.watch(clinicalCaseListByKeywordProvider('retinoblastoma'))
+            : section == logbookSectionRop
+                ? ref.watch(clinicalCaseListByKeywordProvider('rop'))
+                : section == logbookSectionLaser
+                    ? ref.watch(clinicalCaseListByKeywordProvider('laser'))
+                    : section == logbookSectionUvea
+                      ? ref.watch(clinicalCaseListByKeywordProvider('uvea'))
+                    : ref.watch(clinicalCaseListProvider))
         : null;
-    final publications = isPublications
-        ? ref.watch(publicationListProvider)
-        : null;
+                    final AsyncValue<List<PublicationItem>>? publications =
+                  isPublications ? ref.watch(publicationListProvider) : null;
     final reviews = isReviews ? ref.watch(reviewControllerProvider) : null;
     final showMine = ref.watch(showMineProvider);
     final showDrafts = ref.watch(showDraftsProvider);
@@ -141,10 +143,17 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
             case logbookSectionLaser:
               context.push('/cases/new?type=laser');
               return;
+            case logbookSectionUvea:
+              context.push('/cases/new?type=uvea');
+              return;
             case logbookSectionAtlas:
+              context.pushNamed('logbookNew', extra: moduleImages);
+              return;
             case logbookSectionSurgicalRecord:
+              context.pushNamed('logbookNew', extra: moduleRecords);
+              return;
             case logbookSectionLearning:
-              context.pushNamed('logbookNew', extra: module);
+              context.pushNamed('logbookNew', extra: moduleLearning);
               return;
             case logbookSectionPublications:
               context.pushNamed('pubNew');
@@ -336,81 +345,48 @@ class _ModuleChip extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Card with gradient and shadow effect
+              // Simple card without gradient or shadow
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
-                margin: EdgeInsets.only(
-                  top: selected ? 0 : 4,
-                  bottom: selected ? 0 : 4,
+                padding: EdgeInsets.symmetric(
+                  horizontal: selected ? 16 : 12,
+                  vertical: selected ? 12 : 10,
                 ),
                 decoration: BoxDecoration(
-                  gradient: selected
-                      ? const LinearGradient(
-                          colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : null,
-                  color: selected ? null : Colors.white,
+                  color: selected ? const Color(0xFF3B82F6) : Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: selected
-                          ? const Color(0xFF3B82F6).withOpacity(0.4)
-                          : Colors.black.withOpacity(0.08),
-                      blurRadius: selected ? 12 : 6,
-                      offset: Offset(0, selected ? 4 : 2),
-                      spreadRadius: selected ? 1 : 0,
-                    ),
-                  ],
                   border: Border.all(
                     color: selected
-                        ? Colors.transparent
+                        ? const Color(0xFF3B82F6)
                         : const Color(0xFFE2E8F0),
-                    width: selected ? 0 : 1,
+                    width: 1,
                   ),
                 ),
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 300),
-                    opacity: 1.0,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: selected ? 16 : 12,
-                        vertical: selected ? 12 : 10,
-                      ),
-                      child: Center(
-                        child: Text(
-                          label,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: selected ? Colors.white : const Color(0xFF64748B),
-                          fontSize: selected ? 13 : 12,
-                          fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
+                child: Center(
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: selected ? Colors.white : const Color(0xFF64748B),
+                      fontSize: selected ? 13 : 12,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ),
               ),
-              // Connector line for selected
+              // Simple underline for selected
               if (selected)
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  width: 3,
-                  height: 12,
+                Container(
+                  margin: const EdgeInsets.only(top: 4),
+                  width: 30,
+                  height: 3,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        const Color(0xFF3B82F6),
-                        const Color(0xFF3B82F6).withOpacity(0),
-                      ],
-                    ),
+                    color: const Color(0xFF3B82F6),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
             ],
@@ -514,7 +490,7 @@ class _SectionBody extends StatelessWidget {
   final bool isReviews;
   final AsyncValue<List<ElogEntry>>? entries;
   final AsyncValue<List<ClinicalCase>>? cases;
-  final AsyncValue<List<dynamic>>? publications;
+  final AsyncValue<List<PublicationItem>>? publications;
   final ReviewQueueState? reviews;
   final String section;
 
@@ -604,6 +580,9 @@ class _SectionBody extends StatelessWidget {
                         case logbookSectionLaser:
                           context.push('/cases/laser/${c.id}');
                           return;
+                        case logbookSectionUvea:
+                          context.push('/cases/uvea/${c.id}');
+                          return;
                         default:
                           context.push('/cases/${c.id}');
                           return;
@@ -611,7 +590,7 @@ class _SectionBody extends StatelessWidget {
                     },
                     child: Column(
                       children: [
-                        // Gradient Header
+                        // Header
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: const BoxDecoration(
@@ -661,6 +640,7 @@ class _SectionBody extends StatelessWidget {
                             ],
                           ),
                         ),
+
                         // Content
                         Padding(
                           padding: const EdgeInsets.all(16),
@@ -669,6 +649,7 @@ class _SectionBody extends StatelessWidget {
                               Expanded(
                                 child: Row(
                                   children: [
+                                    // UID Badge
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 10,
@@ -701,7 +682,10 @@ class _SectionBody extends StatelessWidget {
                                         ],
                                       ),
                                     ),
+
                                     const SizedBox(width: 8),
+
+                                    // MR Badge
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 10,
@@ -834,13 +818,16 @@ class _SectionBody extends StatelessWidget {
         return list.where((c) => _hasKeyword(c, 'rop')).toList();
       case logbookSectionLaser:
         return list.where((c) => _hasKeyword(c, 'laser')).toList();
+      case logbookSectionUvea:
+        return list.where((c) => _hasKeyword(c, 'uvea')).toList();
       case logbookSectionOpdCases:
         return list
             .where(
               (c) =>
                   !_hasKeyword(c, 'retinoblastoma') &&
                   !_hasKeyword(c, 'rop') &&
-                  !_hasKeyword(c, 'laser'),
+                  !_hasKeyword(c, 'laser') &&
+                  !_hasKeyword(c, 'uvea'),
             )
             .toList();
     }

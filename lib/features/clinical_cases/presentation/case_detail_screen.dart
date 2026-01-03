@@ -12,15 +12,22 @@ import '../data/clinical_cases_repository.dart';
 import '../data/assessment_repository.dart';
 import '../../profile/application/profile_controller.dart';
 import '../../auth/application/auth_controller.dart';
-import '../../reviewer/data/reviewer_repository.dart';
+import '../../reviewer/application/reviewer_controller.dart';
 
 class ClinicalCaseDetailScreen extends ConsumerWidget {
-  const ClinicalCaseDetailScreen({super.key, required this.caseId});
+  const ClinicalCaseDetailScreen({
+    super.key,
+    required this.caseId,
+    this.readOnly = false,
+  });
 
   final String caseId;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authControllerProvider);
+    final profileState = ref.watch(profileControllerProvider);
     final caseAsync = ref.watch(clinicalCaseDetailProvider(caseId));
     final recipientsAsync = ref.watch(caseAssessmentRecipientsProvider(caseId));
 
@@ -33,33 +40,56 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
         actions: [
           caseAsync.maybeWhen(
             data: (c) {
-              final canEdit = c.status == 'draft' || c.status == 'submitted';
-              if (!canEdit) return const SizedBox.shrink();
+              final authId = authState.session?.user.id;
+              final designation = profileState.profile?.designation;
+              final canScore = designation == 'Consultant' &&
+                  authId != null &&
+                  authId != c.createdBy;
+              final canEdit = !readOnly &&
+                  (c.status == 'draft' || c.status == 'submitted');
               final isRetinoblastoma = c.keywords.any(
                 (k) => k.toLowerCase().contains('retinoblastoma'),
               );
-              final isRop = c.keywords.any((k) => k.toLowerCase() == 'rop');
-              final isLaser = c.keywords.any((k) => k.toLowerCase() == 'laser');
+              final isRop = c.keywords.any(
+                (k) => k.toLowerCase() == 'rop',
+              );
+              final isLaser = c.keywords.any(
+                (k) => k.toLowerCase() == 'laser',
+              );
+              final isUvea = c.keywords.any(
+                (k) => k.toLowerCase() == 'uvea',
+              );
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined),
-                    onPressed: () => context.push(
-                      isRetinoblastoma
-                          ? '/cases/${c.id}/edit?type=retinoblastoma'
-                          : isRop
-                          ? '/cases/${c.id}/edit?type=rop'
-                          : isLaser
-                          ? '/cases/${c.id}/edit?type=laser'
-                          : '/cases/${c.id}/edit',
+                  if (canScore)
+                    TextButton.icon(
+                      onPressed: () => _showCaseScoreSheet(
+                        context: context,
+                        ref: ref,
+                        caseId: c.id,
+                        traineeId: c.createdBy,
+                        initialRating: 0,
+                        initialRemarks: '',
+                      ),
+                      icon: const Icon(Icons.star_rate),
+                      label: const Text('Score Now'),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    onPressed: () =>
-                        _showDeleteConfirmation(context, ref, c.id),
-                  ),
+                  if (canEdit)
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined),
+                      onPressed: () => context.push(
+                        isRetinoblastoma
+                            ? '/cases/${c.id}/edit?type=retinoblastoma'
+                            : isRop
+                                ? '/cases/${c.id}/edit?type=rop'
+                                : isLaser
+                                    ? '/cases/${c.id}/edit?type=laser'
+                                    : isUvea
+                                        ? '/cases/${c.id}/edit?type=uvea'
+                                        : '/cases/${c.id}/edit',
+                      ),
+                    ),
                 ],
               );
             },
@@ -69,6 +99,9 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
       ),
       body: caseAsync.when(
         data: (c) {
+          final isUvea = c.keywords.any(
+            (k) => k.toLowerCase() == 'uvea',
+          );
           return DefaultTabController(
             length: 4,
             child: Column(
@@ -95,9 +128,25 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
                 Expanded(
                   child: TabBarView(
                     children: [
-                      _SummaryTab(c: c),
-                      _FollowupsTab(caseId: caseId),
-                      _MediaTab(caseId: caseId),
+                      _SummaryTab(
+                        c: c,
+                        isUvea: isUvea,
+                        useRetinoblastomaLayout: readOnly &&
+                            (profileState.profile?.designation ==
+                                'Consultant') &&
+                            c.keywords.any(
+                              (k) =>
+                                  k.toLowerCase().contains('retinoblastoma'),
+                            ),
+                        useRopLayout: readOnly &&
+                            (profileState.profile?.designation ==
+                                'Consultant') &&
+                            c.keywords.any(
+                              (k) => k.toLowerCase() == 'rop',
+                            ),
+                      ),
+                      _FollowupsTab(caseId: caseId, readOnly: readOnly),
+                      _MediaTab(caseId: caseId, readOnly: readOnly),
                       recipientsAsync.when(
                         data: (recipients) => _AssessmentTab(
                           caseId: caseId,
@@ -132,12 +181,26 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
 }
 
 class _SummaryTab extends StatelessWidget {
-  const _SummaryTab({required this.c});
+  const _SummaryTab({
+    required this.c,
+    required this.isUvea,
+    required this.useRetinoblastomaLayout,
+    required this.useRopLayout,
+  });
   final ClinicalCase c;
+  final bool isUvea;
+  final bool useRetinoblastomaLayout;
+  final bool useRopLayout;
 
   @override
   Widget build(BuildContext context) {
     final examDate = c.dateOfExamination.toIso8601String().split('T').first;
+    if (useRetinoblastomaLayout) {
+      return _RetinoblastomaSummary(c: c);
+    }
+    if (useRopLayout) {
+      return _RopSummary(c: c);
+    }
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -185,6 +248,8 @@ class _SummaryTab extends StatelessWidget {
                 padding: const EdgeInsets.all(18),
                 child: Column(
                   children: [
+                    _InfoRow(label: 'Patient:', value: c.patientName),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(
@@ -215,7 +280,9 @@ class _SummaryTab extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
+                    _InfoRow(label: 'UID:', value: c.uidNumber),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(
@@ -1257,16 +1324,39 @@ class _SummaryTab extends StatelessWidget {
       return text.isEmpty ? '-' : text;
     }
 
+    final paramsByEye = params.containsKey('RE') || params.containsKey('LE');
+
     String paramVal(String key) {
-      final value = params[key];
+      final value = params[key] ??
+          (key == 'power_mw' ? params['power'] : null) ??
+          (key == 'duration_ms' ? params['duration'] : null) ??
+          (key == 'spot_size_um' ? params['spot_size'] : null);
       if (value == null) return '-';
       final text = value.toString().trim();
       return text.isEmpty ? '-' : text;
     }
 
-    final hasParams = params.values.any(
-      (v) => v != null && v.toString().trim().isNotEmpty,
-    );
+    String paramEyeVal(String eye, String key) {
+      final eyeMap = Map<String, dynamic>.from(params[eye] as Map? ?? {});
+      final value = eyeMap[key] ??
+          (key == 'power_mw' ? eyeMap['power'] : null) ??
+          (key == 'duration_ms' ? eyeMap['duration'] : null) ??
+          (key == 'spot_size_um' ? eyeMap['spot_size'] : null);
+      if (value == null) return '-';
+      final text = value.toString().trim();
+      return text.isEmpty ? '-' : text;
+    }
+
+    final hasParams = paramsByEye
+        ? (() {
+            final re = Map<String, dynamic>.from(params['RE'] as Map? ?? {});
+            final le = Map<String, dynamic>.from(params['LE'] as Map? ?? {});
+            return re.values.any((v) => v != null && v.toString().trim().isNotEmpty) ||
+                le.values.any((v) => v != null && v.toString().trim().isNotEmpty);
+          })()
+        : params.values.any(
+            (v) => v != null && v.toString().trim().isNotEmpty,
+          );
 
     return _Section(
       title: 'Laser Details',
@@ -1292,23 +1382,67 @@ class _SummaryTab extends StatelessWidget {
           ),
           if (hasParams) ...[
             const SizedBox(height: 8),
-            _InfoRow(label: 'Power (mW)', value: paramVal('power_mw')),
-            _InfoRow(label: 'Duration (ms)', value: paramVal('duration_ms')),
-            _InfoRow(label: 'Interval', value: paramVal('interval')),
-            _InfoRow(label: 'Spot size (um)', value: paramVal('spot_size_um')),
-            _InfoRow(label: 'Pattern', value: paramVal('pattern')),
-            _InfoRow(label: 'Spot spacing', value: paramVal('spot_spacing')),
-            _InfoRow(
-              label: 'Burn intensity',
-              value: paramVal('burn_intensity'),
-            ),
+            if (paramsByEye) ...[
+              _EyePairRow(
+                label: 'Power (mW)',
+                right: paramEyeVal('RE', 'power_mw'),
+                left: paramEyeVal('LE', 'power_mw'),
+              ),
+              _EyePairRow(
+                label: 'Duration (ms)',
+                right: paramEyeVal('RE', 'duration_ms'),
+                left: paramEyeVal('LE', 'duration_ms'),
+              ),
+              _EyePairRow(
+                label: 'Interval',
+                right: paramEyeVal('RE', 'interval'),
+                left: paramEyeVal('LE', 'interval'),
+              ),
+              _EyePairRow(
+                label: 'Spot size (um)',
+                right: paramEyeVal('RE', 'spot_size_um'),
+                left: paramEyeVal('LE', 'spot_size_um'),
+              ),
+              _EyePairRow(
+                label: 'Pattern',
+                right: paramEyeVal('RE', 'pattern'),
+                left: paramEyeVal('LE', 'pattern'),
+              ),
+              _EyePairRow(
+                label: 'Spot spacing',
+                right: paramEyeVal('RE', 'spot_spacing'),
+                left: paramEyeVal('LE', 'spot_spacing'),
+              ),
+              _EyePairRow(
+                label: 'Burn intensity',
+                right: paramEyeVal('RE', 'burn_intensity'),
+                left: paramEyeVal('LE', 'burn_intensity'),
+              ),
+            ] else ...[
+              _InfoRow(label: 'Power (mW)', value: paramVal('power_mw')),
+              _InfoRow(label: 'Duration (ms)', value: paramVal('duration_ms')),
+              _InfoRow(label: 'Interval', value: paramVal('interval')),
+              _InfoRow(label: 'Spot size (um)', value: paramVal('spot_size_um')),
+              _InfoRow(label: 'Pattern', value: paramVal('pattern')),
+              _InfoRow(label: 'Spot spacing', value: paramVal('spot_spacing')),
+              _InfoRow(
+                label: 'Burn intensity',
+                value: paramVal('burn_intensity'),
+              ),
+            ],
           ],
         ],
       ),
     );
   }
 
-  String _formatFundus(Map<String, dynamic>? fundus) {
+  String _formatFundus(
+    Map<String, dynamic>? fundus, {
+    bool isUvea = false,
+  }) {
+    if (isUvea) {
+      return _formatUveaFundus(fundus);
+    }
     if (fundus == null || fundus.isEmpty) return '-';
     if (fundus.containsKey('RE') || fundus.containsKey('LE')) {
       final lines = <String>[];
@@ -1341,6 +1475,214 @@ class _SummaryTab extends StatelessWidget {
       lines.add('Remarks: $remarks');
     }
     return lines.join('\n');
+  }
+
+  String _formatUveaAnterior(Map<String, dynamic>? anterior) {
+    if (anterior == null || anterior.isEmpty) return '-';
+    final uvea = Map<String, dynamic>.from(anterior['uvea'] as Map? ?? {});
+    if (uvea.isEmpty) return '-';
+    final lines = <String>[];
+    for (final eyeKey in ['RE', 'LE']) {
+      final eye = Map<String, dynamic>.from(uvea[eyeKey] as Map? ?? {});
+      if (eye.isEmpty) continue;
+      final conjunctiva =
+          _formatOtherValue(eye['conjunctiva'], eye['conjunctiva_other']);
+      if (conjunctiva.isNotEmpty) {
+        lines.add('$eyeKey Conjunctiva: $conjunctiva');
+      }
+      final corneaParts = <String>[];
+      final keratitis = _boolLabel(eye['corneal_keratitis']);
+      if (keratitis.isNotEmpty) {
+        corneaParts.add('Keratitis $keratitis');
+      }
+      final kpsType = _stringValue(eye['kps_type']);
+      final kpsDistribution = _stringValue(eye['kps_distribution']);
+      if (kpsType.isNotEmpty || kpsDistribution.isNotEmpty) {
+        final kps = [
+          if (kpsType.isNotEmpty) kpsType,
+          if (kpsDistribution.isNotEmpty) kpsDistribution,
+        ].join(', ');
+        corneaParts.add('KPs: $kps');
+      }
+      if (corneaParts.isNotEmpty) {
+        lines.add('$eyeKey Cornea: ${corneaParts.join('; ')}');
+      }
+      final acCells = _stringValue(eye['ac_cells']);
+      if (acCells.isNotEmpty) {
+        lines.add('$eyeKey AC cells: $acCells');
+      }
+      final flare = _stringValue(eye['flare']);
+      if (flare.isNotEmpty) {
+        lines.add('$eyeKey Flare: $flare');
+      }
+      final fm = _boolLabel(eye['fm']);
+      if (fm.isNotEmpty) {
+        lines.add('$eyeKey FM: $fm');
+      }
+      final hypopyon = _boolLabel(eye['hypopyon']);
+      if (hypopyon.isNotEmpty) {
+        final height = _stringValue(eye['hypopyon_height_mm']);
+        final suffix = height.isNotEmpty ? ' (${height} mm)' : '';
+        lines.add('$eyeKey Hypopyon: $hypopyon$suffix');
+      }
+      final irisParts = <String>[];
+      final nodules =
+          _formatOtherValue(eye['iris_nodules'], eye['iris_nodules_other']);
+      if (nodules.isNotEmpty) {
+        irisParts.add('Nodules: $nodules');
+      }
+      final synechiae = _stringValue(eye['iris_synechiae']);
+      if (synechiae.isNotEmpty) {
+        irisParts.add('Synechiae: $synechiae');
+      }
+      final rubeosis = _boolLabel(eye['iris_rubeosis']);
+      if (rubeosis.isNotEmpty) {
+        irisParts.add('Rubeosis: $rubeosis');
+      }
+      if (irisParts.isNotEmpty) {
+        lines.add('$eyeKey Iris: ${irisParts.join('; ')}');
+      }
+      final glaucoma =
+          _formatOtherValue(eye['glaucoma'], eye['glaucoma_other']);
+      if (glaucoma.isNotEmpty) {
+        lines.add('$eyeKey Glaucoma: $glaucoma');
+      }
+      final lensStatus = _stringValue(eye['lens_status']);
+      if (lensStatus.isNotEmpty) {
+        lines.add('$eyeKey Lens status: $lensStatus');
+      }
+    }
+    if (lines.isEmpty) return '-';
+    return lines.join('\n');
+  }
+
+  String _formatUveaFundus(Map<String, dynamic>? fundus) {
+    if (fundus == null || fundus.isEmpty) return '-';
+    final uvea = Map<String, dynamic>.from(fundus['uvea'] as Map? ?? {});
+    if (uvea.isEmpty) return '-';
+    final lines = <String>[];
+    for (final eyeKey in ['RE', 'LE']) {
+      final eye = Map<String, dynamic>.from(uvea[eyeKey] as Map? ?? {});
+      if (eye.isEmpty) continue;
+      final avf = _stringValue(eye['avf_vitreous']);
+      if (avf.isNotEmpty) {
+        lines.add('$eyeKey AVF/Vitreous opacities: $avf');
+      }
+      final snowballs = _presenceLabel(eye['media_snowballs']);
+      if (snowballs.isNotEmpty) {
+        lines.add('$eyeKey Snowballs: $snowballs');
+      }
+      final opticDisc = _stringValue(eye['optic_disc']);
+      if (opticDisc.isNotEmpty) {
+        lines.add('$eyeKey Optic disc: $opticDisc');
+      }
+      final vessels = _stringValue(eye['vessels']);
+      final vesselsType = _stringValue(eye['vessels_type']);
+      final vesselText = [
+        if (vessels.isNotEmpty) vessels,
+        if (vesselsType.isNotEmpty) '($vesselsType)',
+      ].join(' ');
+      if (vesselText.trim().isNotEmpty) {
+        lines.add('$eyeKey Vessels: $vesselText');
+      }
+      final backgroundParts = <String>[];
+      final retinitis = _stringValue(eye['background_retinitis']);
+      if (retinitis.isNotEmpty) {
+        backgroundParts.add('Retinitis: $retinitis');
+      }
+      final choroiditis = _stringValue(eye['background_choroiditis']);
+      if (choroiditis.isNotEmpty) {
+        backgroundParts.add('Choroiditis: $choroiditis');
+      }
+      final vasculitis = _stringValue(eye['background_vasculitis']);
+      if (vasculitis.isNotEmpty) {
+        backgroundParts.add('Vasculitis: $vasculitis');
+      }
+      final snowbanking = _boolLabel(eye['background_snowbanking']);
+      if (snowbanking.isNotEmpty) {
+        backgroundParts.add('Snowbanking: $snowbanking');
+      }
+      final snowballing = _boolLabel(eye['background_snowballing']);
+      if (snowballing.isNotEmpty) {
+        backgroundParts.add('Snowballing: $snowballing');
+      }
+      final exudative = _boolLabel(eye['background_exudative_rd']);
+      if (exudative.isNotEmpty) {
+        backgroundParts.add('Exudative RD: $exudative');
+      }
+      final backgroundOther = _stringValue(eye['background_other']);
+      if (backgroundOther.isNotEmpty) {
+        backgroundParts.add('Other: $backgroundOther');
+      }
+      if (backgroundParts.isNotEmpty) {
+        lines.add('$eyeKey Background: ${backgroundParts.join('; ')}');
+      }
+      final maculaParts = <String>[];
+      final cme = _boolLabel(eye['macula_cme']);
+      if (cme.isNotEmpty) {
+        maculaParts.add('Cystoid macular edema: $cme');
+      }
+      final exudates = _boolLabel(eye['macula_exudates']);
+      if (exudates.isNotEmpty) {
+        maculaParts.add('Exudates: $exudates');
+      }
+      final maculaOther = _stringValue(eye['macula_other']);
+      if (maculaOther.isNotEmpty) {
+        maculaParts.add('Other: $maculaOther');
+      }
+      if (maculaParts.isNotEmpty) {
+        lines.add('$eyeKey Macula: ${maculaParts.join('; ')}');
+      }
+      final extraNotes = _stringValue(eye['extra_notes']);
+      if (extraNotes.isNotEmpty) {
+        lines.add('$eyeKey Extra notes: $extraNotes');
+      }
+    }
+    if (lines.isEmpty) return '-';
+    return lines.join('\n');
+  }
+
+  String _formatUveaLocation(Map<String, dynamic>? fundus) {
+    if (fundus == null || fundus.isEmpty) return '-';
+    final locations =
+        Map<String, dynamic>.from(fundus['uvea_location'] as Map? ?? {});
+    if (locations.isEmpty) return '-';
+    final lines = <String>[];
+    for (final eyeKey in ['RE', 'LE']) {
+      final value = _stringValue(locations[eyeKey]);
+      if (value.isNotEmpty) {
+        lines.add('$eyeKey: $value');
+      }
+    }
+    if (lines.isEmpty) return '-';
+    return lines.join('\n');
+  }
+
+  String _stringValue(dynamic value) {
+    if (value == null) return '';
+    return value.toString().trim();
+  }
+
+  String _formatOtherValue(dynamic value, dynamic other) {
+    final text = _stringValue(value);
+    if (text.isEmpty) return '';
+    if (text == 'Other') {
+      final otherText = _stringValue(other);
+      return otherText.isNotEmpty ? 'Other: $otherText' : 'Other';
+    }
+    return text;
+  }
+
+  String _boolLabel(dynamic value) {
+    if (value == true) return 'Yes';
+    if (value == false) return 'No';
+    return '';
+  }
+
+  String _presenceLabel(dynamic value) {
+    if (value == true) return 'Present';
+    if (value == false) return 'Absent';
+    return '';
   }
 
   bool _hasRopMeta(Map<String, dynamic>? fundus) {
@@ -1596,24 +1938,381 @@ class _EyePairRow extends StatelessWidget {
   }
 }
 
+class _RetinoblastomaSummary extends StatelessWidget {
+  const _RetinoblastomaSummary({required this.c});
+
+  final ClinicalCase c;
+
+  @override
+  Widget build(BuildContext context) {
+    final anterior = c.anteriorSegment ?? const <String, dynamic>{};
+    final fundus = c.fundus ?? const <String, dynamic>{};
+    final rb =
+        Map<String, dynamic>.from(anterior['retinoblastoma'] as Map? ?? {});
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _CaseSectionCard(
+          title: 'Patient Details',
+          child: Column(
+            children: [
+              _InfoRow(label: 'Patient', value: c.patientName),
+              _InfoRow(label: 'Age', value: c.patientAge.toString()),
+              _InfoRow(label: 'UID', value: c.uidNumber),
+              _InfoRow(label: 'MRN', value: c.mrNumber),
+              _InfoRow(label: 'Gender', value: c.patientGender),
+              _InfoRow(label: 'Exam Date', value: _formatExamDate(c.dateOfExamination)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _CaseSectionCard(
+          title: 'Anterior Segment Remarks',
+          child: Column(
+            children: [
+              _EyePairRow(
+                label: 'Remarks',
+                right: _eyeRemarks(anterior, 'RE'),
+                left: _eyeRemarks(anterior, 'LE'),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _CaseSectionCard(
+          title: 'Fundus Examination',
+          child: Column(
+            children: [
+              _EyePairRow(
+                label: 'Media',
+                right: _selectedValue(fundus, 'RE', 'media'),
+                left: _selectedValue(fundus, 'LE', 'media'),
+              ),
+              const SizedBox(height: 8),
+              _EyePairRow(
+                label: 'Optic disc',
+                right: _selectedValue(fundus, 'RE', 'optic_disc'),
+                left: _selectedValue(fundus, 'LE', 'optic_disc'),
+              ),
+              const SizedBox(height: 8),
+              _EyePairRow(
+                label: 'Vessels',
+                right: _selectedValue(fundus, 'RE', 'vessels'),
+                left: _selectedValue(fundus, 'LE', 'vessels'),
+              ),
+              const SizedBox(height: 8),
+              _EyePairRow(
+                label: 'Background',
+                right: _selectedValue(fundus, 'RE', 'background_retina'),
+                left: _selectedValue(fundus, 'LE', 'background_retina'),
+              ),
+              const SizedBox(height: 8),
+              _EyePairRow(
+                label: 'Macula',
+                right: _selectedValue(fundus, 'RE', 'macula'),
+                left: _selectedValue(fundus, 'LE', 'macula'),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _CaseSectionCard(
+          title: 'Retinoblastoma Details',
+          child: Column(
+            children: [
+              _InfoRow(
+                label: 'Vitreous seedings',
+                value: _boolLabel(rb['vitreous_seedings'] as bool?),
+              ),
+              _InfoRow(
+                label: 'Retinal detachment',
+                value: _boolLabel(rb['retinal_detachment'] as bool?),
+              ),
+              _InfoRow(
+                label: 'Group',
+                value: rb['group']?.toString() ?? '-',
+              ),
+              _InfoRow(
+                label: 'Regression pattern',
+                value: rb['regression_pattern']?.toString() ?? '-',
+              ),
+              _InfoRow(
+                label: 'Treatment given',
+                value: _joinList(rb['treatment_given']),
+              ),
+              if ((rb['treatment_other'] ?? '').toString().trim().isNotEmpty)
+                _InfoRow(
+                  label: 'Treatment (other)',
+                  value: rb['treatment_other']?.toString() ?? '-',
+                ),
+              _InfoRow(
+                label: 'No. of sittings',
+                value: rb['sittings']?.toString() ?? '-',
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _CaseSectionCard(
+          title: 'Diagnosis & Remarks',
+          child: Column(
+            children: [
+              _InfoRow(label: 'Diagnosis', value: c.diagnosis),
+              _InfoRow(
+                label: 'Remarks',
+                value: (c.management ?? '').isEmpty ? '-' : c.management!,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RopSummary extends StatelessWidget {
+  const _RopSummary({required this.c});
+
+  final ClinicalCase c;
+
+  @override
+  Widget build(BuildContext context) {
+    final anterior = c.anteriorSegment ?? const <String, dynamic>{};
+    final fundus = c.fundus ?? const <String, dynamic>{};
+    final ropMeta = Map<String, dynamic>.from(fundus['rop_meta'] as Map? ?? {});
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _CaseSectionCard(
+          title: 'Patient Details',
+          child: Column(
+            children: [
+              _InfoRow(label: 'Patient', value: c.patientName),
+              _InfoRow(label: 'UID', value: c.uidNumber),
+              _InfoRow(label: 'MRN', value: c.mrNumber),
+              _InfoRow(label: 'Gender', value: c.patientGender),
+              _InfoRow(label: 'Exam Date', value: _formatExamDate(c.dateOfExamination)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _CaseSectionCard(
+          title: 'Anterior Segment',
+          child: Column(
+            children: [
+              _EyePairRow(
+                label: 'Pupil',
+                right: _selectedValue(anterior, 'RE', 'pupil'),
+                left: _selectedValue(anterior, 'LE', 'pupil'),
+              ),
+              const SizedBox(height: 8),
+              _EyePairRow(
+                label: 'Lens',
+                right: _selectedValue(anterior, 'RE', 'lens'),
+                left: _selectedValue(anterior, 'LE', 'lens'),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _CaseSectionCard(
+          title: 'Fundus Examination',
+          child: Column(
+            children: [
+              _EyePairRow(
+                label: 'Media',
+                right: _selectedValue(fundus, 'RE', 'media'),
+                left: _selectedValue(fundus, 'LE', 'media'),
+              ),
+              const SizedBox(height: 8),
+              _EyePairRow(
+                label: 'Optic disc',
+                right: _selectedValue(fundus, 'RE', 'optic_disc'),
+                left: _selectedValue(fundus, 'LE', 'optic_disc'),
+              ),
+              const SizedBox(height: 8),
+              _EyePairRow(
+                label: 'Vessels',
+                right: _selectedValue(fundus, 'RE', 'vessels'),
+                left: _selectedValue(fundus, 'LE', 'vessels'),
+              ),
+              const SizedBox(height: 8),
+              _EyePairRow(
+                label: 'Background',
+                right: _selectedValue(fundus, 'RE', 'background_retina'),
+                left: _selectedValue(fundus, 'LE', 'background_retina'),
+              ),
+              const SizedBox(height: 8),
+              _EyePairRow(
+                label: 'Macula',
+                right: _selectedValue(fundus, 'RE', 'macula'),
+                left: _selectedValue(fundus, 'LE', 'macula'),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _CaseSectionCard(
+          title: 'ROP Assessment',
+          child: Column(
+            children: [
+              _InfoRow(
+                label: 'Gestational age',
+                value: ropMeta['gestational_age']?.toString() ?? '-',
+              ),
+              _InfoRow(
+                label: 'Post conceptional age',
+                value: ropMeta['post_conceptional_age']?.toString() ?? '-',
+              ),
+              const SizedBox(height: 8),
+              _EyePairRow(
+                label: 'Zone',
+                right: _eyeMapValue(ropMeta['zone'], 'RE'),
+                left: _eyeMapValue(ropMeta['zone'], 'LE'),
+              ),
+              const SizedBox(height: 8),
+              _EyePairRow(
+                label: 'Stage',
+                right: _eyeMapValue(ropMeta['stage'], 'RE'),
+                left: _eyeMapValue(ropMeta['stage'], 'LE'),
+              ),
+              const SizedBox(height: 8),
+              _EyePairRow(
+                label: 'Plus disease',
+                right: _boolLabel(_eyeMapBool(ropMeta['plus_disease'], 'RE')),
+                left: _boolLabel(_eyeMapBool(ropMeta['plus_disease'], 'LE')),
+              ),
+              const SizedBox(height: 8),
+              _EyePairRow(
+                label: 'AGROP',
+                right: _boolLabel(_eyeMapBool(ropMeta['agrop'], 'RE')),
+                left: _boolLabel(_eyeMapBool(ropMeta['agrop'], 'LE')),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _CaseSectionCard(
+          title: 'Diagnosis & Remarks',
+          child: Column(
+            children: [
+              _InfoRow(label: 'Diagnosis', value: c.diagnosis),
+              _InfoRow(
+                label: 'Remarks',
+                value: (c.management ?? '').isEmpty ? '-' : c.management!,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _formatExamDate(DateTime date) =>
+    '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+String _selectedValue(
+  Map<String, dynamic> payload,
+  String eye,
+  String key,
+) {
+  final eyeMap = Map<String, dynamic>.from(payload[eye] as Map? ?? {});
+  final section = Map<String, dynamic>.from(eyeMap[key] as Map? ?? {});
+  final selected = (section['selected'] as List?)?.cast<String>() ?? const [];
+  if (selected.isEmpty) return '-';
+  return selected.join(', ');
+}
+
+String _eyeRemarks(Map<String, dynamic> anterior, String eye) {
+  final eyeMap = Map<String, dynamic>.from(anterior[eye] as Map? ?? {});
+  final remarks = (eyeMap['remarks'] as String?) ?? '';
+  return remarks.trim().isEmpty ? '-' : remarks.trim();
+}
+
+String _boolLabel(bool? value) {
+  if (value == null) return '-';
+  return value ? 'Yes' : 'No';
+}
+
+String _joinList(dynamic value) {
+  if (value is List) {
+    final items = value.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+    if (items.isEmpty) return '-';
+    return items.join(', ');
+  }
+  return '-';
+}
+
+String _eyeMapValue(dynamic data, String eye) {
+  if (data is Map) {
+    final value = data[eye];
+    if (value == null || value.toString().trim().isEmpty) return '-';
+    return value.toString();
+  }
+  return '-';
+}
+
+bool? _eyeMapBool(dynamic data, String eye) {
+  if (data is Map) {
+    return data[eye] as bool?;
+  }
+  return null;
+}
+
+class _CaseSectionCard extends StatelessWidget {
+  const _CaseSectionCard({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _FollowupsTab extends ConsumerWidget {
-  const _FollowupsTab({required this.caseId});
+  const _FollowupsTab({
+    required this.caseId,
+    required this.readOnly,
+  });
   final String caseId;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final followupsAsync = ref.watch(caseFollowupsProvider(caseId));
     return followupsAsync.when(
       data: (list) {
-        if (list.isEmpty) {
-          return _EmptyState(
-            icon: Icons.event_note_outlined,
-            title: 'No Follow-ups Yet',
-            subtitle: 'Track patient follow-up visits here',
-            actionLabel: 'Add Follow-up',
-            onAction: () => context.push('/cases/$caseId/followup'),
-          );
-        }
+          if (list.isEmpty) {
+            return _EmptyState(
+              icon: Icons.event_note_outlined,
+              title: 'No Follow-ups Yet',
+              subtitle: 'Track patient follow-up visits here',
+              actionLabel: readOnly ? null : 'Add Follow-up',
+              onAction:
+                  readOnly ? null : () => context.push('/cases/$caseId/followup'),
+            );
+          }
         return Column(
           children: [
             Expanded(
@@ -1653,45 +2352,51 @@ class _FollowupsTab extends ConsumerWidget {
                             Text('Management: ${f.management}'),
                           ],
                           const SizedBox(height: 8),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () => context.push(
-                                '/cases/$caseId/followup/${f.id}',
+                            if (!readOnly)
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () => context.push(
+                                    '/cases/$caseId/followup/${f.id}',
+                                  ),
+                                  child: const Text('Edit'),
+                                ),
                               ),
-                              child: const Text('Edit'),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => context.push('/cases/$caseId/followup'),
-                  icon: const Icon(Icons.add, color: Colors.white),
-                  label: const Text('Add Follow-up'),
+                    );
+                  },
                 ),
               ),
-            ),
-          ],
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
+              if (!readOnly)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => context.push('/cases/$caseId/followup'),
+                      icon: const Icon(Icons.add, color: Colors.white),
+                      label: const Text('Add Follow-up'),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Failed to load follow-ups: $e')),
     );
   }
 }
 
 class _MediaTab extends ConsumerWidget {
-  const _MediaTab({required this.caseId});
+  const _MediaTab({
+    required this.caseId,
+    required this.readOnly,
+  });
   final String caseId;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1892,11 +2597,9 @@ class _MediaTab extends ConsumerWidget {
                   ),
                   label: const Text('Add Media'),
                 ),
-              ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Failed to load media: $e')),
     );
@@ -1978,15 +2681,15 @@ class _EmptyState extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.actionLabel,
-    required this.onAction,
+    this.actionLabel,
+    this.onAction,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
-  final String actionLabel;
-  final VoidCallback onAction;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -2022,19 +2725,20 @@ class _EmptyState extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: onAction,
-              icon: const Icon(Icons.add, color: Colors.white),
-              label: Text(actionLabel),
-            ),
-          ),
-        ],
-      ),
-    );
+            if (actionLabel != null && onAction != null)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: onAction,
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  label: Text(actionLabel!),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
   }
-}
 
 class _AssessmentTab extends ConsumerStatefulWidget {
   const _AssessmentTab({
@@ -2065,13 +2769,18 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
 
   @override
   Widget build(BuildContext context) {
-    final mutation = ref.watch(assessmentMutationProvider);
-    final authState = ref.watch(authControllerProvider);
-    final profileState = ref.watch(profileControllerProvider);
-    final doctorsAsync = ref.watch(assessmentDoctorsProvider);
-    final authId = authState.session?.user.id;
-    final isOwner = authId != null && authId == widget.caseOwnerId;
-    final isReviewer = profileState.profile?.designation == 'Reviewer';
+      final mutation = ref.watch(assessmentMutationProvider);
+      final authState = ref.watch(authControllerProvider);
+      final profileState = ref.watch(profileControllerProvider);
+      final myAssessmentAsync =
+          ref.watch(reviewerCaseAssessmentProvider(widget.caseId));
+      final doctorsAsync = ref.watch(assessmentDoctorsProvider);
+      final authId = authState.session?.user.id;
+      final isOwner = authId != null && authId == widget.caseOwnerId;
+      final designation = profileState.profile?.designation;
+      final isConsultant = designation == 'Consultant';
+      final hasReviewerAccess =
+          designation == 'Reviewer' || isConsultant;
 
     if (!_seededSelection && widget.recipients.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -2084,9 +2793,13 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
       });
     }
 
-    final isAssignedReviewer = widget.recipients.any(
-      (r) => r.recipientId == authId && r.canReview,
-    );
+      final isAssignedReviewer = widget.recipients.any(
+        (r) => r.recipientId == authId && r.canReview,
+      );
+      final canScore = (isConsultant &&
+              authId != null &&
+              authId != widget.caseOwnerId) ||
+          (designation == 'Reviewer' && isAssignedReviewer);
 
     return Container(
       color: const Color(0xFFF7F9FC),
@@ -2273,11 +2986,13 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
               ),
             ),
           ],
-          if (!isOwner && widget.recipients.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+            if (!isOwner &&
+                widget.recipients.isNotEmpty &&
+                !canScore) ...[
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -2285,7 +3000,7 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'You have view access to this case. Only reviewers can submit scores.',
+                        'You have view access to this case. Only assigned consultants can submit scores.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: const Color(0xFF64748B),
                         ),
@@ -2296,35 +3011,43 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
               ),
             ),
           ],
-          if (isReviewer && isAssignedReviewer) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  final item = ReviewItem(
-                    entityType: 'clinical_case',
-                    entityId: widget.caseId,
-                    traineeId: widget.caseOwnerId,
-                    title: widget.patientName,
-                    subtitle: 'UID ${widget.uidNumber} | MR ${widget.mrNumber}',
-                    updatedAt: DateTime.now(),
-                  );
-                  context.push(
-                    '/reviewer/pending/assess/clinical_case/${widget.caseId}',
-                    extra: item,
+            if (hasReviewerAccess && canScore) ...[
+              const SizedBox(height: 12),
+              myAssessmentAsync.when(
+                data: (assessment) {
+                  final score = assessment?.score ?? 0;
+                  final remarks = assessment?.remarks ?? '';
+                  final hasScore = assessment?.score != null;
+                  return _ReviewerScoreCard(
+                    score: score,
+                    remarks: remarks,
+                    onEdit: () => _showCaseScoreSheet(
+                      context: context,
+                      ref: ref,
+                      caseId: widget.caseId,
+                      traineeId: widget.caseOwnerId,
+                      initialRating: score,
+                      initialRemarks: remarks,
+                    ),
+                    hasScore: hasScore,
                   );
                 },
-                icon: const Icon(Icons.rate_review, color: Colors.white),
-                label: const Text('Open Review'),
+                loading: () => const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                error: (e, _) => Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text('Failed to load score: $e'),
+                  ),
+                ),
               ),
-            ),
+            ],
           ],
-        ],
-      ),
-    );
+        ),
+      );
+    }
   }
-}
 
 class _StatusPill extends StatelessWidget {
   const _StatusPill({required this.status});
@@ -2365,7 +3088,9 @@ class _StatusPill extends StatelessWidget {
     );
   }
 }
-
+// --------------------------------------------------
+// Delete Case Confirmation Dialog
+// --------------------------------------------------
 void _showDeleteConfirmation(
   BuildContext context,
   WidgetRef ref,
@@ -2375,14 +3100,23 @@ void _showDeleteConfirmation(
     context: context,
     builder: (BuildContext dialogContext) {
       return AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
         title: Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
-            const SizedBox(width: 12),
-            const Text(
+          children: const [
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.orange,
+              size: 28,
+            ),
+            SizedBox(width: 12),
+            Text(
               'Delete Case',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
@@ -2409,9 +3143,11 @@ void _showDeleteConfirmation(
                 await ref
                     .read(clinicalCasesRepositoryProvider)
                     .deleteCase(caseId);
-                // Invalidate providers to refresh the list
+
+                // Refresh lists
                 ref.invalidate(clinicalCaseListProvider);
                 ref.invalidate(clinicalCaseListByKeywordProvider);
+
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -2438,15 +3174,293 @@ void _showDeleteConfirmation(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 12,
+              ),
             ),
             child: const Text(
               'Yes, Delete',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
       );
     },
   );
+}
+
+// --------------------------------------------------
+// Reviewer Score Card
+// --------------------------------------------------
+class _ReviewerScoreCard extends StatelessWidget {
+  const _ReviewerScoreCard({
+    required this.score,
+    required this.remarks,
+    required this.onEdit,
+    required this.hasScore,
+  });
+
+  final int score;
+  final String remarks;
+  final VoidCallback onEdit;
+  final bool hasScore;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  'Your Score',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit, size: 18),
+                  label: Text(hasScore ? 'Edit Score' : 'Score Now'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _RatingStars(rating: score),
+            if (remarks.trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                remarks,
+                style: const TextStyle(
+                  color: Color(0xFF475569),
+                  height: 1.4,
+                ),
+              ),
+            ],
+            if (!hasScore)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'No score submitted yet.',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// --------------------------------------------------
+// Rating Stars Widget
+// --------------------------------------------------
+class _RatingStars extends StatelessWidget {
+  const _RatingStars({required this.rating});
+
+  final int rating;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: List.generate(5, (index) {
+        final isSelected = rating >= index + 1;
+        return Icon(
+          isSelected ? Icons.star : Icons.star_border,
+          color: Colors.amber[600],
+        );
+      }),
+    );
+  }
+}
+
+// --------------------------------------------------
+// Show Case Score Bottom Sheet
+// --------------------------------------------------
+Future<void> _showCaseScoreSheet({
+  required BuildContext context,
+  required WidgetRef ref,
+  required String caseId,
+  required String traineeId,
+  int initialRating = 0,
+  String initialRemarks = '',
+}) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) {
+      return _CaseScoreSheet(
+        caseId: caseId,
+        traineeId: traineeId,
+        initialRating: initialRating,
+        initialRemarks: initialRemarks,
+      );
+    },
+  );
+}
+
+// --------------------------------------------------
+// Case Score Sheet
+// --------------------------------------------------
+class _CaseScoreSheet extends ConsumerStatefulWidget {
+  const _CaseScoreSheet({
+    required this.caseId,
+    required this.traineeId,
+    required this.initialRating,
+    required this.initialRemarks,
+  });
+
+  final String caseId;
+  final String traineeId;
+  final int initialRating;
+  final String initialRemarks;
+
+  @override
+  ConsumerState<_CaseScoreSheet> createState() => _CaseScoreSheetState();
+}
+
+class _CaseScoreSheetState extends ConsumerState<_CaseScoreSheet> {
+  final TextEditingController _remarksController = TextEditingController();
+  int _rating = 0;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _rating = widget.initialRating.clamp(0, 5);
+    _remarksController.text = widget.initialRemarks;
+  }
+
+  @override
+  void dispose() {
+    _remarksController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    setState(() => _isSaving = true);
+    try {
+      await ref.read(reviewerMutationProvider.notifier).submitClinicalCase(
+            caseId: widget.caseId,
+            traineeId: widget.traineeId,
+            score: _rating,
+            remarks: _remarksController.text.trim(),
+          );
+
+      if (!mounted) return;
+
+      Navigator.pop(context);
+      ref.invalidate(reviewerCaseAssessmentProvider(widget.caseId));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Score submitted')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to submit score: $e')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Score Case',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Rating (0–5)',
+              style: TextStyle(color: Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                ...List.generate(5, (index) {
+                  final isSelected = _rating >= index + 1;
+                  return IconButton(
+                    onPressed: () => setState(() => _rating = index + 1),
+                    icon: Icon(
+                      isSelected ? Icons.star : Icons.star_border,
+                      color: Colors.amber[600],
+                    ),
+                  );
+                }),
+                TextButton(
+                  onPressed:
+                      _rating == 0 ? null : () => setState(() => _rating = 0),
+                  child: const Text('Clear'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _remarksController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Remarks',
+                hintText: 'Add remarks for this case',
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed:
+                        _isSaving ? null : () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isSaving ? null : _submit,
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Submit'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 }

@@ -214,6 +214,19 @@ class ClinicalCasesRepository {
         .toList();
   }
 
+  Future<List<ClinicalCase>> listCasesByIds(List<String> caseIds) async {
+    if (caseIds.isEmpty) return [];
+    final quoted = caseIds.toSet().map((id) => '"$id"').join(',');
+    final rows = await _client
+        .from('clinical_cases')
+        .select('*')
+        .filter('id', 'in', '($quoted)')
+        .order('updated_at', ascending: false);
+    return (rows as List)
+        .map((e) => ClinicalCase.fromMap(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
   Future<ClinicalCase> getCase(String id) async {
     final row = await _client
         .from('clinical_cases')
@@ -332,6 +345,30 @@ class ClinicalCasesRepository {
       'note': note,
     });
     return path;
+  }
+
+  Future<void> deleteMedia(String mediaId) async {
+    final uid = _client.auth.currentUser?.id;
+    if (uid == null) throw AuthException('Not signed in');
+    
+    // Get media info to delete from storage
+    final media = await _client
+        .from('case_media')
+        .select('storage_path')
+        .eq('id', mediaId)
+        .single();
+    
+    final storagePath = media['storage_path'] as String;
+    
+    // Delete from storage (ignore errors if already deleted)
+    try {
+      await _client.storage.from('elogbook-media').remove([storagePath]);
+    } catch (e) {
+      // File might already be deleted, continue
+    }
+    
+    // Delete from database
+    await _client.from('case_media').delete().eq('id', mediaId);
   }
 
   Future<String> getSignedUrl(String path) async {

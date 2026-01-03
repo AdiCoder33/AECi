@@ -27,6 +27,20 @@ class CommunityRepository {
     if (row == null) return null;
     return Profile.fromMap(Map<String, dynamic>.from(row));
   }
+
+  Future<List<Profile>> listProfilesByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    final uniqueIds = ids.toSet().toList();
+    final quoted = uniqueIds.map((id) => '"$id"').join(',');
+    final rows = await _client
+        .from('profiles')
+        .select('*')
+        .filter('id', 'in', '($quoted)')
+        .order('name');
+    return (rows as List)
+        .map((row) => Profile.fromMap(Map<String, dynamic>.from(row)))
+        .toList();
+  }
 }
 
 final communityRepositoryProvider = Provider<CommunityRepository>((ref) {

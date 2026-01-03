@@ -460,6 +460,58 @@ class ClinicalCaseWizardController
     next[targetEye] = eyeMap;
     state = state.copyWith(fundus: next);
   }
+
+  void setUveaAnteriorField({
+    required String eye,
+    required String field,
+    required dynamic value,
+  }) {
+    final next = _copyAnterior(state.anteriorSegment);
+    final uvea = Map<String, dynamic>.from(next['uvea'] as Map? ?? {});
+    final eyeMap = Map<String, dynamic>.from(uvea[eye] as Map? ?? {});
+    if (value == null || (value is String && value.trim().isEmpty)) {
+      eyeMap.remove(field);
+    } else {
+      eyeMap[field] = value;
+    }
+    uvea[eye] = eyeMap;
+    next['uvea'] = uvea;
+    state = state.copyWith(anteriorSegment: next);
+  }
+
+  void setUveaFundusField({
+    required String eye,
+    required String field,
+    required dynamic value,
+  }) {
+    final next = _copyFundus(state.fundus);
+    final uvea = Map<String, dynamic>.from(next['uvea'] as Map? ?? {});
+    final eyeMap = Map<String, dynamic>.from(uvea[eye] as Map? ?? {});
+    if (value == null || (value is String && value.trim().isEmpty)) {
+      eyeMap.remove(field);
+    } else {
+      eyeMap[field] = value;
+    }
+    uvea[eye] = eyeMap;
+    next['uvea'] = uvea;
+    state = state.copyWith(fundus: next);
+  }
+
+  void setUveaLocation({
+    required String eye,
+    required String? location,
+  }) {
+    final next = _copyFundus(state.fundus);
+    final map =
+        Map<String, dynamic>.from(next['uvea_location'] as Map? ?? {});
+    if (location == null || location.trim().isEmpty) {
+      map.remove(eye);
+    } else {
+      map[eye] = location;
+    }
+    next['uvea_location'] = map;
+    state = state.copyWith(fundus: next);
+  }
 }
 
 final clinicalCaseWizardProvider =
@@ -488,6 +540,14 @@ Map<String, dynamic> _normalizeAnterior(Map<String, dynamic> anterior) {
   final hasEyes = anterior.containsKey('RE') || anterior.containsKey('LE');
   final source = hasEyes ? anterior : {'RE': anterior, 'LE': {}};
   final next = _copyAnterior(source);
+  final extras = <String, dynamic>{};
+  for (final entry in source.entries) {
+    if (entry.key == 'RE' || entry.key == 'LE') continue;
+    extras[entry.key] = entry.value;
+  }
+  final sectionKeys = {
+    for (final section in anteriorSegmentSections) section.key,
+  };
   for (final eyeKey in ['RE', 'LE']) {
     final rawEye = Map<String, dynamic>.from(next[eyeKey] as Map? ?? {});
     final eye = <String, dynamic>{};
@@ -526,7 +586,16 @@ Map<String, dynamic> _normalizeAnterior(Map<String, dynamic> anterior) {
       eye[key] = _emptyAnteriorSection();
     }
     eye['remarks'] = (rawEye['remarks'] as String?) ?? '';
+    for (final entry in rawEye.entries) {
+      if (entry.key == 'remarks' || sectionKeys.contains(entry.key)) {
+        continue;
+      }
+      eye[entry.key] = entry.value;
+    }
     next[eyeKey] = eye;
+  }
+  for (final entry in extras.entries) {
+    next[entry.key] = entry.value;
   }
   return next;
 }
@@ -560,6 +629,14 @@ Map<String, dynamic> _normalizeFundus(Map<String, dynamic> fundus) {
   final hasEyes = fundus.containsKey('RE') || fundus.containsKey('LE');
   final source = hasEyes ? fundus : {'RE': fundus, 'LE': {}};
   final next = _copyFundus(source);
+  final extras = <String, dynamic>{};
+  for (final entry in source.entries) {
+    if (entry.key == 'RE' || entry.key == 'LE') continue;
+    extras[entry.key] = entry.value;
+  }
+  final sectionKeys = {
+    for (final section in fundusSections) section.key,
+  };
   for (final eyeKey in ['RE', 'LE']) {
     final rawEye = Map<String, dynamic>.from(next[eyeKey] as Map? ?? {});
     final eye = <String, dynamic>{};
@@ -580,7 +657,16 @@ Map<String, dynamic> _normalizeFundus(Map<String, dynamic> fundus) {
       }
     }
     eye['remarks'] = (rawEye['remarks'] as String?) ?? '';
+    for (final entry in rawEye.entries) {
+      if (entry.key == 'remarks' || sectionKeys.contains(entry.key)) {
+        continue;
+      }
+      eye[entry.key] = entry.value;
+    }
     next[eyeKey] = eye;
+  }
+  for (final entry in extras.entries) {
+    next[entry.key] = entry.value;
   }
   return next;
 }
@@ -675,6 +761,7 @@ String? _detectCaseType(List<String> keywords) {
   for (final keyword in keywords) {
     final normalized = keyword.trim().toLowerCase();
     if (normalized == 'rop') return 'rop';
+    if (normalized == 'uvea') return 'uvea';
   }
   return null;
 }

@@ -220,6 +220,9 @@ String _caseRoute(ClinicalCase c) {
   if (keywords.any((k) => k == 'laser')) {
     return '/cases/laser/${c.id}';
   }
+  if (keywords.any((k) => k == 'uvea')) {
+    return '/cases/uvea/${c.id}';
+  }
   return '/cases/${c.id}';
 }
 

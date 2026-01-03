@@ -78,8 +78,8 @@ class _CaseFollowupFormScreenState
                 _intervalDays = existing.intervalDays;
                 _ucvaRe.text = existing.ucvaRe ?? '';
                 _ucvaLe.text = existing.ucvaLe ?? '';
-                _bcvaRe = existing.bcvaRe ?? '';
-                _bcvaLe = existing.bcvaLe ?? '';
+                _bcvaRe = _normalizeBcva(existing.bcvaRe ?? '');
+                _bcvaLe = _normalizeBcva(existing.bcvaLe ?? '');
                 _iopRe.text = existing.iopRe?.toString() ?? '';
                 _iopLe.text = existing.iopLe?.toString() ?? '';
                 _anterior.text = existing.anteriorSegmentFindings ?? '';
@@ -93,10 +93,19 @@ class _CaseFollowupFormScreenState
                 followups.isNotEmpty ? followups.last : null;
             final previousDate = lastFollowup?.dateOfExamination ??
                 caseData.dateOfExamination;
+            final isUvea = caseData.keywords.any(
+              (k) => k.toLowerCase() == 'uvea',
+            );
             final prevAnterior = lastFollowup?.anteriorSegmentFindings ??
-                _formatAnterior(caseData.anteriorSegment);
+                _formatAnterior(caseData.anteriorSegment, isUvea: isUvea);
             final prevFundus =
-                lastFollowup?.fundusFindings ?? _formatFundus(caseData.fundus);
+                lastFollowup?.fundusFindings ??
+                    _formatFundus(caseData.fundus, isUvea: isUvea);
+            final laser =
+                Map<String, dynamic>.from(caseData.anteriorSegment?['laser'] as Map? ?? {});
+            final bcvaPre =
+                Map<String, dynamic>.from(laser['bcva_pre'] as Map? ?? {});
+            final isLaser = laser.isNotEmpty;
 
             return Scaffold(
               appBar: AppBar(
@@ -152,26 +161,33 @@ class _CaseFollowupFormScreenState
                             : _friendlyInterval(_intervalDays),
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: _EyeTextField(
-                              label: 'RE',
-                              fieldLabel: 'UCVA',
-                              controller: _ucvaRe,
+                      if (isLaser)
+                        _EyeReadonlyRow(
+                          label: 'Pre-laser BCVA',
+                          right: _eyeValue(bcvaPre, 'RE'),
+                          left: _eyeValue(bcvaPre, 'LE'),
+                        )
+                      else
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _EyeTextField(
+                                label: 'RE',
+                                fieldLabel: 'UCVA',
+                                controller: _ucvaRe,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _EyeTextField(
-                              label: 'LE',
-                              fieldLabel: 'UCVA',
-                              controller: _ucvaLe,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _EyeTextField(
+                                label: 'LE',
+                                fieldLabel: 'UCVA',
+                                controller: _ucvaLe,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
                       const SizedBox(height: 12),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,7 +386,13 @@ class _CaseFollowupFormScreenState
     return '$days days';
   }
 
-  String _formatAnterior(Map<String, dynamic>? anterior) {
+  String _formatAnterior(
+    Map<String, dynamic>? anterior, {
+    bool isUvea = false,
+  }) {
+    if (isUvea) {
+      return _formatUveaAnterior(anterior);
+    }
     if (anterior == null || anterior.isEmpty) return '-';
     final lines = <String>[];
     for (final eyeKey in ['RE', 'LE']) {
@@ -391,7 +413,42 @@ class _CaseFollowupFormScreenState
     return lines.join('\n');
   }
 
-  String _formatFundus(Map<String, dynamic>? fundus) {
+  String _eyeValue(Map<String, dynamic> map, String eye) {
+    final value = map[eye];
+    if (value == null) return '-';
+    final text = value.toString().trim();
+    return text.isEmpty ? '-' : text;
+  }
+
+  String _normalizeBcva(String raw) {
+    var value = raw.trim();
+    if (value.isEmpty) return '';
+    value = value.replaceAll('\\', '/');
+    final lower = value.toLowerCase();
+    for (final option in bcvaOptions) {
+      if (option.toLowerCase() == lower) {
+        return option;
+      }
+    }
+    final digitsOnly = RegExp(r'^\d+$');
+    if (digitsOnly.hasMatch(value)) {
+      final candidate = '6/$value';
+      for (final option in bcvaOptions) {
+        if (option.toLowerCase() == candidate.toLowerCase()) {
+          return option;
+        }
+      }
+    }
+    return '';
+  }
+
+  String _formatFundus(
+    Map<String, dynamic>? fundus, {
+    bool isUvea = false,
+  }) {
+    if (isUvea) {
+      return _formatUveaFundus(fundus);
+    }
     if (fundus == null || fundus.isEmpty) return '-';
     if (fundus.containsKey('RE') || fundus.containsKey('LE')) {
       final lines = <String>[];
@@ -426,6 +483,198 @@ class _CaseFollowupFormScreenState
       lines.add('Remarks: $remarks');
     }
     return lines.join('\n');
+  }
+
+  String _formatUveaAnterior(Map<String, dynamic>? anterior) {
+    if (anterior == null || anterior.isEmpty) return '-';
+    final uvea = Map<String, dynamic>.from(anterior['uvea'] as Map? ?? {});
+    if (uvea.isEmpty) return '-';
+    final lines = <String>[];
+    for (final eyeKey in ['RE', 'LE']) {
+      final eye = Map<String, dynamic>.from(uvea[eyeKey] as Map? ?? {});
+      if (eye.isEmpty) continue;
+      final conjunctiva =
+          _formatOtherValue(eye['conjunctiva'], eye['conjunctiva_other']);
+      if (conjunctiva.isNotEmpty) {
+        lines.add('$eyeKey Conjunctiva: $conjunctiva');
+      }
+      final corneaParts = <String>[];
+      final keratitis = _boolLabel(eye['corneal_keratitis']);
+      if (keratitis.isNotEmpty) {
+        corneaParts.add('Keratitis $keratitis');
+      }
+      final kpsType = _stringValue(eye['kps_type']);
+      final kpsDistribution = _stringValue(eye['kps_distribution']);
+      if (kpsType.isNotEmpty || kpsDistribution.isNotEmpty) {
+        final kps = [
+          if (kpsType.isNotEmpty) kpsType,
+          if (kpsDistribution.isNotEmpty) kpsDistribution,
+        ].join(', ');
+        corneaParts.add('KPs: $kps');
+      }
+      if (corneaParts.isNotEmpty) {
+        lines.add('$eyeKey Cornea: ${corneaParts.join('; ')}');
+      }
+      final acCells = _stringValue(eye['ac_cells']);
+      if (acCells.isNotEmpty) {
+        lines.add('$eyeKey AC cells: $acCells');
+      }
+      final flare = _stringValue(eye['flare']);
+      if (flare.isNotEmpty) {
+        lines.add('$eyeKey Flare: $flare');
+      }
+      final fm = _boolLabel(eye['fm']);
+      if (fm.isNotEmpty) {
+        lines.add('$eyeKey FM: $fm');
+      }
+      final hypopyon = _boolLabel(eye['hypopyon']);
+      if (hypopyon.isNotEmpty) {
+        final height = _stringValue(eye['hypopyon_height_mm']);
+        final suffix = height.isNotEmpty ? ' (${height} mm)' : '';
+        lines.add('$eyeKey Hypopyon: $hypopyon$suffix');
+      }
+      final irisParts = <String>[];
+      final nodules =
+          _formatOtherValue(eye['iris_nodules'], eye['iris_nodules_other']);
+      if (nodules.isNotEmpty) {
+        irisParts.add('Nodules: $nodules');
+      }
+      final synechiae = _stringValue(eye['iris_synechiae']);
+      if (synechiae.isNotEmpty) {
+        irisParts.add('Synechiae: $synechiae');
+      }
+      final rubeosis = _boolLabel(eye['iris_rubeosis']);
+      if (rubeosis.isNotEmpty) {
+        irisParts.add('Rubeosis: $rubeosis');
+      }
+      if (irisParts.isNotEmpty) {
+        lines.add('$eyeKey Iris: ${irisParts.join('; ')}');
+      }
+      final glaucoma =
+          _formatOtherValue(eye['glaucoma'], eye['glaucoma_other']);
+      if (glaucoma.isNotEmpty) {
+        lines.add('$eyeKey Glaucoma: $glaucoma');
+      }
+      final lensStatus = _stringValue(eye['lens_status']);
+      if (lensStatus.isNotEmpty) {
+        lines.add('$eyeKey Lens status: $lensStatus');
+      }
+    }
+    if (lines.isEmpty) return '-';
+    return lines.join('\n');
+  }
+
+  String _formatUveaFundus(Map<String, dynamic>? fundus) {
+    if (fundus == null || fundus.isEmpty) return '-';
+    final uvea = Map<String, dynamic>.from(fundus['uvea'] as Map? ?? {});
+    if (uvea.isEmpty) return '-';
+    final lines = <String>[];
+    for (final eyeKey in ['RE', 'LE']) {
+      final eye = Map<String, dynamic>.from(uvea[eyeKey] as Map? ?? {});
+      if (eye.isEmpty) continue;
+      final avf = _stringValue(eye['avf_vitreous']);
+      if (avf.isNotEmpty) {
+        lines.add('$eyeKey AVF/Vitreous opacities: $avf');
+      }
+      final snowballs = _presenceLabel(eye['media_snowballs']);
+      if (snowballs.isNotEmpty) {
+        lines.add('$eyeKey Snowballs: $snowballs');
+      }
+      final opticDisc = _stringValue(eye['optic_disc']);
+      if (opticDisc.isNotEmpty) {
+        lines.add('$eyeKey Optic disc: $opticDisc');
+      }
+      final vessels = _stringValue(eye['vessels']);
+      final vesselsType = _stringValue(eye['vessels_type']);
+      final vesselText = [
+        if (vessels.isNotEmpty) vessels,
+        if (vesselsType.isNotEmpty) '($vesselsType)',
+      ].join(' ');
+      if (vesselText.trim().isNotEmpty) {
+        lines.add('$eyeKey Vessels: $vesselText');
+      }
+      final backgroundParts = <String>[];
+      final retinitis = _stringValue(eye['background_retinitis']);
+      if (retinitis.isNotEmpty) {
+        backgroundParts.add('Retinitis: $retinitis');
+      }
+      final choroiditis = _stringValue(eye['background_choroiditis']);
+      if (choroiditis.isNotEmpty) {
+        backgroundParts.add('Choroiditis: $choroiditis');
+      }
+      final vasculitis = _stringValue(eye['background_vasculitis']);
+      if (vasculitis.isNotEmpty) {
+        backgroundParts.add('Vasculitis: $vasculitis');
+      }
+      final snowbanking = _boolLabel(eye['background_snowbanking']);
+      if (snowbanking.isNotEmpty) {
+        backgroundParts.add('Snowbanking: $snowbanking');
+      }
+      final snowballing = _boolLabel(eye['background_snowballing']);
+      if (snowballing.isNotEmpty) {
+        backgroundParts.add('Snowballing: $snowballing');
+      }
+      final exudative = _boolLabel(eye['background_exudative_rd']);
+      if (exudative.isNotEmpty) {
+        backgroundParts.add('Exudative RD: $exudative');
+      }
+      final backgroundOther = _stringValue(eye['background_other']);
+      if (backgroundOther.isNotEmpty) {
+        backgroundParts.add('Other: $backgroundOther');
+      }
+      if (backgroundParts.isNotEmpty) {
+        lines.add('$eyeKey Background: ${backgroundParts.join('; ')}');
+      }
+      final maculaParts = <String>[];
+      final cme = _boolLabel(eye['macula_cme']);
+      if (cme.isNotEmpty) {
+        maculaParts.add('Cystoid macular edema: $cme');
+      }
+      final exudates = _boolLabel(eye['macula_exudates']);
+      if (exudates.isNotEmpty) {
+        maculaParts.add('Exudates: $exudates');
+      }
+      final maculaOther = _stringValue(eye['macula_other']);
+      if (maculaOther.isNotEmpty) {
+        maculaParts.add('Other: $maculaOther');
+      }
+      if (maculaParts.isNotEmpty) {
+        lines.add('$eyeKey Macula: ${maculaParts.join('; ')}');
+      }
+      final extraNotes = _stringValue(eye['extra_notes']);
+      if (extraNotes.isNotEmpty) {
+        lines.add('$eyeKey Extra notes: $extraNotes');
+      }
+    }
+    if (lines.isEmpty) return '-';
+    return lines.join('\n');
+  }
+
+  String _stringValue(dynamic value) {
+    if (value == null) return '';
+    return value.toString().trim();
+  }
+
+  String _formatOtherValue(dynamic value, dynamic other) {
+    final text = _stringValue(value);
+    if (text.isEmpty) return '';
+    if (text == 'Other') {
+      final otherText = _stringValue(other);
+      return otherText.isNotEmpty ? 'Other: $otherText' : 'Other';
+    }
+    return text;
+  }
+
+  String _boolLabel(dynamic value) {
+    if (value == true) return 'Yes';
+    if (value == false) return 'No';
+    return '';
+  }
+
+  String _presenceLabel(dynamic value) {
+    if (value == true) return 'Present';
+    if (value == false) return 'Absent';
+    return '';
   }
 
   String _formatSection(Map<String, dynamic> sectionData) {
@@ -556,12 +805,64 @@ class _EyeDropdown extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          value: value.isEmpty ? null : value,
+          value: bcvaOptions.contains(value) ? value : null,
           items: bcvaOptions
               .map((o) => DropdownMenuItem(value: o, child: Text(o)))
               .toList(),
           decoration: InputDecoration(labelText: fieldLabel),
           onChanged: (v) => onChanged(v ?? ''),
+        ),
+      ],
+    );
+  }
+}
+
+class _EyeReadonlyRow extends StatelessWidget {
+  const _EyeReadonlyRow({
+    required this.label,
+    required this.right,
+    required this.left,
+  });
+
+  final String label;
+  final String right;
+  final String left;
+
+  @override
+  Widget build(BuildContext context) {
+    final labelStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        );
+    final valueStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onSurface,
+        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: labelStyle),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('RE', style: labelStyle),
+                  Text(right, style: valueStyle),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('LE', style: labelStyle),
+                  Text(left, style: valueStyle),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );

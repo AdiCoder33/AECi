@@ -1,9 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as p;
 
 import '../application/clinical_cases_controller.dart';
 import '../data/clinical_case_constants.dart';
+import '../data/clinical_cases_repository.dart';
 
 class LaserFormScreen extends ConsumerStatefulWidget {
   const LaserFormScreen({super.key, this.caseId});
@@ -24,18 +29,28 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
   final _bcvaLeController = TextEditingController();
   final _diagnosisReController = TextEditingController();
   final _diagnosisLeController = TextEditingController();
-  final _powerController = TextEditingController();
-  final _durationController = TextEditingController();
-  final _intervalController = TextEditingController();
-  final _spotSizeController = TextEditingController();
-  final _spotSpacingController = TextEditingController();
+  final _powerReController = TextEditingController();
+  final _powerLeController = TextEditingController();
+  final _durationReController = TextEditingController();
+  final _durationLeController = TextEditingController();
+  final _intervalReController = TextEditingController();
+  final _intervalLeController = TextEditingController();
+  final _spotSizeReController = TextEditingController();
+  final _spotSizeLeController = TextEditingController();
+  final _spotSpacingReController = TextEditingController();
+  final _spotSpacingLeController = TextEditingController();
+  final _examDateController = TextEditingController();
 
   DateTime? _examDate;
   String? _gender;
   String? _laserTypeRe;
   String? _laserTypeLe;
-  String? _pattern;
-  String? _burnIntensity;
+  String? _patternRe;
+  String? _patternLe;
+  String? _burnIntensityRe;
+  String? _burnIntensityLe;
+  bool _uploadingRe = false;
+  bool _uploadingLe = false;
 
   static const _laserTypes = [
     'Pan retinal photocoagulation',
@@ -54,6 +69,7 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
     'Grade 3 (moderate)',
     'Grade 4 (heavy)',
   ];
+  static const _laserMediaCategory = 'FUNDUS';
 
   @override
   void initState() {
@@ -73,11 +89,17 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
     _bcvaLeController.dispose();
     _diagnosisReController.dispose();
     _diagnosisLeController.dispose();
-    _powerController.dispose();
-    _durationController.dispose();
-    _intervalController.dispose();
-    _spotSizeController.dispose();
-    _spotSpacingController.dispose();
+    _powerReController.dispose();
+    _powerLeController.dispose();
+    _durationReController.dispose();
+    _durationLeController.dispose();
+    _intervalReController.dispose();
+    _intervalLeController.dispose();
+    _spotSizeReController.dispose();
+    _spotSizeLeController.dispose();
+    _spotSpacingReController.dispose();
+    _spotSpacingLeController.dispose();
+    _examDateController.dispose();
     super.dispose();
   }
 
@@ -89,6 +111,7 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
     _ageController.text = c.patientAge.toString();
     _gender = c.patientGender;
     _examDate = c.dateOfExamination;
+    _examDateController.text = _formatDate(_examDate!);
     _bcvaReController.text = c.bcvaRe ?? '';
     _bcvaLeController.text = c.bcvaLe ?? '';
 
@@ -103,23 +126,52 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
     final params =
         Map<String, dynamic>.from(laser['parameters'] as Map? ?? {});
 
-    _bcvaReController.text =
-        (bcva['RE'] as String?) ?? _bcvaReController.text;
-    _bcvaLeController.text =
-        (bcva['LE'] as String?) ?? _bcvaLeController.text;
+    _bcvaReController.text = _normalizeBcva(
+      (bcva['RE'] as String?) ?? _bcvaReController.text,
+    );
+    _bcvaLeController.text = _normalizeBcva(
+      (bcva['LE'] as String?) ?? _bcvaLeController.text,
+    );
     _diagnosisReController.text =
         (diagnosis['RE'] as String?) ?? '';
     _diagnosisLeController.text =
         (diagnosis['LE'] as String?) ?? '';
     _laserTypeRe = laserType['RE'] as String?;
     _laserTypeLe = laserType['LE'] as String?;
-    _powerController.text = (params['power_mw'] as String?) ?? '';
-    _durationController.text = (params['duration_ms'] as String?) ?? '';
-    _intervalController.text = (params['interval'] as String?) ?? '';
-    _spotSizeController.text = (params['spot_size_um'] as String?) ?? '';
-    _pattern = params['pattern'] as String?;
-    _spotSpacingController.text = (params['spot_spacing'] as String?) ?? '';
-    _burnIntensity = params['burn_intensity'] as String?;
+
+    Map<String, dynamic> reParams = {};
+    Map<String, dynamic> leParams = {};
+    if (params.containsKey('RE') || params.containsKey('LE')) {
+      reParams = Map<String, dynamic>.from(params['RE'] as Map? ?? {});
+      leParams = Map<String, dynamic>.from(params['LE'] as Map? ?? {});
+    } else {
+      reParams = params;
+      leParams = params;
+    }
+
+    _powerReController.text = (reParams['power_mw'] ?? reParams['power'] ?? '')
+        .toString();
+    _durationReController.text =
+        (reParams['duration_ms'] ?? reParams['duration'] ?? '').toString();
+    _intervalReController.text = (reParams['interval'] ?? '').toString();
+    _spotSizeReController.text =
+        (reParams['spot_size_um'] ?? reParams['spot_size'] ?? '').toString();
+    _patternRe = reParams['pattern'] as String?;
+    _spotSpacingReController.text =
+        (reParams['spot_spacing'] ?? '').toString();
+    _burnIntensityRe = reParams['burn_intensity'] as String?;
+
+    _powerLeController.text = (leParams['power_mw'] ?? leParams['power'] ?? '')
+        .toString();
+    _durationLeController.text =
+        (leParams['duration_ms'] ?? leParams['duration'] ?? '').toString();
+    _intervalLeController.text = (leParams['interval'] ?? '').toString();
+    _spotSizeLeController.text =
+        (leParams['spot_size_um'] ?? leParams['spot_size'] ?? '').toString();
+    _patternLe = leParams['pattern'] as String?;
+    _spotSpacingLeController.text =
+        (leParams['spot_spacing'] ?? '').toString();
+    _burnIntensityLe = leParams['burn_intensity'] as String?;
 
     setState(() {});
   }
@@ -171,7 +223,7 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: _buildText(
+                    child: _buildBcvaDropdown(
                       controller: _bcvaReController,
                       label: 'RE',
                       validator: _required,
@@ -179,7 +231,7 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildText(
+                    child: _buildBcvaDropdown(
                       controller: _bcvaLeController,
                       label: 'LE',
                       validator: _required,
@@ -245,42 +297,22 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              _buildText(
-                controller: _powerController,
-                label: 'Power (mW)',
-                keyboardType: TextInputType.number,
+              _buildLaserParametersSection(),
+              const SizedBox(height: 16),
+              const Text(
+                'Laser images',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
-              _buildText(
-                controller: _durationController,
-                label: 'Duration (ms)',
-                keyboardType: TextInputType.number,
-              ),
-              _buildText(
-                controller: _intervalController,
-                label: 'Interval',
-              ),
-              _buildText(
-                controller: _spotSizeController,
-                label: 'Spot size (um)',
-                keyboardType: TextInputType.number,
-              ),
-              _buildDropdown(
-                label: 'Pattern',
-                value: _pattern,
-                items: _patterns,
-                onChanged: (v) => setState(() => _pattern = v),
-              ),
-              _buildText(
-                controller: _spotSpacingController,
-                label: 'Spot spacing',
-                keyboardType: TextInputType.number,
-              ),
-              _buildDropdown(
-                label: 'Burn intensity',
-                value: _burnIntensity,
-                items: _burnIntensities,
-                onChanged: (v) => setState(() => _burnIntensity = v),
-              ),
+              const SizedBox(height: 8),
+              if (widget.caseId == null)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    'Save the entry first to upload images.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+              _buildLaserImagesSection(),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -325,6 +357,53 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
     );
   }
 
+  Widget _buildBcvaDropdown({
+    required TextEditingController controller,
+    required String label,
+    String? Function(String?)? validator,
+  }) {
+    final normalized = _normalizeBcva(controller.text);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: DropdownButtonFormField<String>(
+        value: normalized.isEmpty ? null : normalized,
+        items: bcvaOptions
+            .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+            .toList(),
+        decoration: InputDecoration(labelText: label),
+        isExpanded: true,
+        validator: (val) => validator?.call(val),
+        onChanged: (val) {
+          setState(() {
+            controller.text = val ?? '';
+          });
+        },
+      ),
+    );
+  }
+
+  String _normalizeBcva(String raw) {
+    var value = raw.trim();
+    if (value.isEmpty) return '';
+    value = value.replaceAll('\\', '/');
+    final lower = value.toLowerCase();
+    for (final option in bcvaOptions) {
+      if (option.toLowerCase() == lower) {
+        return option;
+      }
+    }
+    final digitsOnly = RegExp(r'^\d+$');
+    if (digitsOnly.hasMatch(value)) {
+      final candidate = '6/$value';
+      for (final option in bcvaOptions) {
+        if (option.toLowerCase() == candidate.toLowerCase()) {
+          return option;
+        }
+      }
+    }
+    return '';
+  }
+
   Widget _buildDropdown({
     required String label,
     required String? value,
@@ -336,8 +415,17 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
       child: DropdownButtonFormField<String>(
         value: value,
         decoration: InputDecoration(labelText: label),
+        isExpanded: true,
+        selectedItemBuilder: (context) => items
+            .map((item) => Text(item, overflow: TextOverflow.ellipsis))
+            .toList(),
         items: items
-            .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+            .map(
+              (item) => DropdownMenuItem(
+                value: item,
+                child: Text(item, overflow: TextOverflow.ellipsis),
+              ),
+            )
             .toList(),
         validator: (v) => v == null || v.isEmpty ? 'Required' : null,
         onChanged: onChanged,
@@ -362,14 +450,15 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
   }
 
   Widget _buildDateField() {
-    final label = _examDate == null
-        ? 'Date of examination'
-        : 'Date of examination (${_formatDate(_examDate!)})';
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: TextFormField(
         readOnly: true,
-        decoration: InputDecoration(labelText: label),
+        controller: _examDateController,
+        decoration: const InputDecoration(
+          labelText: 'Date of examination',
+          hintText: 'Select date',
+        ),
         validator: (_) => _examDate == null ? 'Required' : null,
         onTap: () async {
           final now = DateTime.now();
@@ -380,7 +469,10 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
             lastDate: now,
           );
           if (picked != null) {
-            setState(() => _examDate = picked);
+            setState(() {
+              _examDate = picked;
+              _examDateController.text = _formatDate(picked);
+            });
           }
         },
       ),
@@ -403,6 +495,199 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
 
   String _formatDate(DateTime date) =>
       '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+  bool _isLaserActive(String? type) {
+    if (type == null) return false;
+    final value = type.trim().toLowerCase();
+    return value.isNotEmpty && value != 'nil';
+  }
+
+  Widget _buildLaserParametersSection() {
+    final showRe = _isLaserActive(_laserTypeRe);
+    final showLe = _isLaserActive(_laserTypeLe);
+    if (!showRe && !showLe) {
+      return const SizedBox.shrink();
+    }
+
+    if (showRe && showLe) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: _buildLaserParamColumn('RE')),
+          const SizedBox(width: 12),
+          Expanded(child: _buildLaserParamColumn('LE')),
+        ],
+      );
+    }
+
+    return _buildLaserParamColumn(showRe ? 'RE' : 'LE');
+  }
+
+  Widget _buildLaserParamColumn(String eye) {
+    final isRe = eye == 'RE';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          eye,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        _buildText(
+          controller: isRe ? _powerReController : _powerLeController,
+          label: 'Power (mW)',
+          keyboardType: TextInputType.number,
+        ),
+        _buildText(
+          controller: isRe ? _durationReController : _durationLeController,
+          label: 'Duration (ms)',
+          keyboardType: TextInputType.number,
+        ),
+        _buildText(
+          controller: isRe ? _intervalReController : _intervalLeController,
+          label: 'Interval',
+        ),
+        _buildText(
+          controller: isRe ? _spotSizeReController : _spotSizeLeController,
+          label: 'Spot size (um)',
+          keyboardType: TextInputType.number,
+        ),
+        _buildDropdown(
+          label: 'Pattern',
+          value: isRe ? _patternRe : _patternLe,
+          items: _patterns,
+          onChanged: (v) => setState(() {
+            if (isRe) {
+              _patternRe = v;
+            } else {
+              _patternLe = v;
+            }
+          }),
+        ),
+        _buildText(
+          controller:
+              isRe ? _spotSpacingReController : _spotSpacingLeController,
+          label: 'Spot spacing',
+          keyboardType: TextInputType.number,
+        ),
+        _buildDropdown(
+          label: 'Burn intensity',
+          value: isRe ? _burnIntensityRe : _burnIntensityLe,
+          items: _burnIntensities,
+          onChanged: (v) => setState(() {
+            if (isRe) {
+              _burnIntensityRe = v;
+            } else {
+              _burnIntensityLe = v;
+            }
+          }),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLaserImagesSection() {
+    final showRe = _isLaserActive(_laserTypeRe);
+    final showLe = _isLaserActive(_laserTypeLe);
+    if (!showRe && !showLe) {
+      return const SizedBox.shrink();
+    }
+
+    if (showRe && showLe) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: _buildLaserImageColumn('RE')),
+          const SizedBox(width: 12),
+          Expanded(child: _buildLaserImageColumn('LE')),
+        ],
+      );
+    }
+
+    return _buildLaserImageColumn(showRe ? 'RE' : 'LE');
+  }
+
+  Widget _buildLaserImageColumn(String eye) {
+    final isRe = eye == 'RE';
+    final uploading = isRe ? _uploadingRe : _uploadingLe;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          eye,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: widget.caseId == null || uploading
+              ? null
+              : () => _pickLaserImage(eye),
+          icon: uploading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.image_outlined),
+          label: Text(uploading ? 'Uploading...' : 'Upload image'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickLaserImage(String eye) async {
+    if (widget.caseId == null) {
+      _showError('Save the entry first to upload images.');
+      return;
+    }
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.gallery);
+    if (file == null) return;
+
+    final ext = p.extension(file.path).toLowerCase();
+    const allowedImages = ['.jpg', '.jpeg', '.png'];
+    if (!allowedImages.contains(ext)) {
+      _showError('Only JPEG or PNG images are allowed.');
+      return;
+    }
+
+    setState(() {
+      if (eye == 'RE') {
+        _uploadingRe = true;
+      } else {
+        _uploadingLe = true;
+      }
+    });
+
+    try {
+      await ref.read(clinicalCasesRepositoryProvider).uploadMedia(
+            caseId: widget.caseId!,
+            category: _laserMediaCategory,
+            mediaType: 'image',
+            file: File(file.path),
+            note: 'Laser $eye',
+          );
+      ref.invalidate(caseMediaProvider(widget.caseId!));
+    } catch (e) {
+      _showError('Upload failed: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          if (eye == 'RE') {
+            _uploadingRe = false;
+          } else {
+            _uploadingLe = false;
+          }
+        });
+      }
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+    );
+  }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -485,6 +770,29 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
   }
 
   Map<String, dynamic> _buildLaserPayload() {
+    final params = <String, dynamic>{};
+    if (_isLaserActive(_laserTypeRe)) {
+      params['RE'] = {
+        'power_mw': _powerReController.text.trim(),
+        'duration_ms': _durationReController.text.trim(),
+        'interval': _intervalReController.text.trim(),
+        'spot_size_um': _spotSizeReController.text.trim(),
+        'pattern': _patternRe,
+        'spot_spacing': _spotSpacingReController.text.trim(),
+        'burn_intensity': _burnIntensityRe,
+      };
+    }
+    if (_isLaserActive(_laserTypeLe)) {
+      params['LE'] = {
+        'power_mw': _powerLeController.text.trim(),
+        'duration_ms': _durationLeController.text.trim(),
+        'interval': _intervalLeController.text.trim(),
+        'spot_size_um': _spotSizeLeController.text.trim(),
+        'pattern': _patternLe,
+        'spot_spacing': _spotSpacingLeController.text.trim(),
+        'burn_intensity': _burnIntensityLe,
+      };
+    }
     return {
       'laser': {
         'bcva_pre': {
@@ -499,15 +807,7 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
           'RE': _laserTypeRe,
           'LE': _laserTypeLe,
         },
-        'parameters': {
-          'power_mw': _powerController.text.trim(),
-          'duration_ms': _durationController.text.trim(),
-          'interval': _intervalController.text.trim(),
-          'spot_size_um': _spotSizeController.text.trim(),
-          'pattern': _pattern,
-          'spot_spacing': _spotSpacingController.text.trim(),
-          'burn_intensity': _burnIntensity,
-        },
+        'parameters': params,
       },
     };
   }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../auth/application/auth_controller.dart';
 import '../../profile/application/profile_controller.dart';
 import '../application/dashboard_providers.dart';
 
@@ -11,7 +10,6 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authControllerProvider);
     final profileState = ref.watch(profileControllerProvider);
     final profile = profileState.profile;
     final displayName = profile?.name;
@@ -54,10 +52,12 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-                // Submission Card
+                // Submission / Assessments Card
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _SubmissionCard(),
+                  child: isConsultant
+                      ? const _AssessmentsCard()
+                      : const _SubmissionCard(),
                 ),
                 const SizedBox(height: 24),
                 // Daily Clinical Work Section
@@ -719,8 +719,6 @@ class _SubmissionCard extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: const Color(0xFF10B981),
-                    disabledBackgroundColor: Colors.white.withOpacity(0.3),
-                    disabledForegroundColor: Colors.white.withOpacity(0.6),
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
@@ -730,17 +728,17 @@ class _SubmissionCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isSubmissionDay ? Icons.send : Icons.lock_outline,
+                        Icons.send,
                         size: 16,
                       ),
-                      const SizedBox(width: 6),
+                      SizedBox(width: 6),
                       Text(
-                        isSubmissionDay ? 'Submit Now' : 'Locked',
-                        style: const TextStyle(
+                        'Submit Now',
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                         ),
@@ -774,8 +772,9 @@ class _SubmissionCard extends StatelessWidget {
     return months[month - 1];
   }
 }
-
+// ------------------------------
 // Horizontal Card Component
+// ------------------------------
 class _HorizontalCard extends StatelessWidget {
   const _HorizontalCard({
     required this.title,
@@ -803,7 +802,10 @@ class _HorizontalCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFFF8FAFC),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.withOpacity(0.2), width: 1),
+            border: Border.all(
+              color: Colors.grey.withOpacity(0.2),
+              width: 1,
+            ),
           ),
           child: Row(
             children: [
@@ -819,16 +821,14 @@ class _HorizontalCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   child: Image.asset(
                     assetPath,
-                    width: 56,
-                    height: 56,
                     fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(Icons.image_outlined, color: color, size: 28);
-                    },
+                    errorBuilder: (_, __, ___) =>
+                        Icon(Icons.image_outlined, color: color, size: 28),
                   ),
                 ),
               ),
               const SizedBox(width: 16),
+
               // Text
               Expanded(
                 child: Column(
@@ -845,13 +845,21 @@ class _HorizontalCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
                     ),
                   ],
                 ),
               ),
+
               // Arrow
-              Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Colors.grey[400],
+              ),
             ],
           ),
         ),
@@ -860,7 +868,9 @@ class _HorizontalCard extends StatelessWidget {
   }
 }
 
+// ------------------------------
 // Small Card Component
+// ------------------------------
 class _SmallCard extends StatelessWidget {
   const _SmallCard({
     required this.title,
@@ -906,20 +916,17 @@ class _SmallCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   child: Image.asset(
                     assetPath,
-                    width: 48,
-                    height: 48,
                     fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(
-                        Icons.image_outlined,
-                        color: iconColor,
-                        size: 24,
-                      );
-                    },
+                    errorBuilder: (_, __, ___) => Icon(
+                      Icons.image_outlined,
+                      color: iconColor,
+                      size: 24,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
+
               // Title
               Text(
                 title,
@@ -932,13 +939,17 @@ class _SmallCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
-              // Description
+
+              // Description + Arrow
               Row(
                 children: [
                   Expanded(
                     child: Text(
                       description,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[700],
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -953,6 +964,126 @@ class _SmallCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ------------------------------
+// Assessments Card Component
+// ------------------------------
+class _AssessmentsCard extends ConsumerWidget {
+  const _AssessmentsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final statsAsync = ref.watch(consultantDashboardProvider);
+
+    final pendingText = statsAsync.when(
+      data: (stats) =>
+          stats.pending == 0
+              ? 'No pending submissions'
+              : '${stats.pending} pending submissions',
+      loading: () => 'Loading pending submissions...',
+      error: (_, __) => 'Review submitted logbooks',
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0EA5E9), Color(0xFF2563EB)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0EA5E9).withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Icon
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.assignment_turned_in_outlined,
+              color: Color(0xFF2563EB),
+              size: 28,
+            ),
+          ),
+          const SizedBox(width: 16),
+
+          // Text
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Assessments',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  pendingText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // Button
+          ElevatedButton(
+            onPressed: () => context.go('/assessments'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF2563EB),
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 10,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Open',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -108,7 +108,6 @@ class _FilterChips extends StatelessWidget {
     const options = [
       'All',
       'Consultant',
-      'Reviewer',
       'Fellow',
       'Resident',
     ];
