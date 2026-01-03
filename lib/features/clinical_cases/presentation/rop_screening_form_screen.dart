@@ -22,6 +22,7 @@ class _RopScreeningFormScreenState extends ConsumerState<RopScreeningFormScreen>
   final _mrnController = TextEditingController();
   final _gestationalAgeController = TextEditingController();
   final _postConceptionAgeController = TextEditingController();
+  final _birthWeightController = TextEditingController();
   final _diagnosisController = TextEditingController();
   final _remarksController = TextEditingController();
   final _dateController = TextEditingController();
@@ -82,6 +83,7 @@ class _RopScreeningFormScreenState extends ConsumerState<RopScreeningFormScreen>
     _mrnController.dispose();
     _gestationalAgeController.dispose();
     _postConceptionAgeController.dispose();
+    _birthWeightController.dispose();
     _diagnosisController.dispose();
     _remarksController.dispose();
     _dateController.dispose();
@@ -116,6 +118,8 @@ class _RopScreeningFormScreenState extends ConsumerState<RopScreeningFormScreen>
         meta['gestational_age']?.toString() ?? '';
     _postConceptionAgeController.text =
         meta['post_conceptional_age']?.toString() ?? '';
+    _birthWeightController.text =
+        meta['birth_weight']?.toString() ?? '';
     _zoneRe = (meta['zone'] as Map?)?['RE']?.toString();
     _zoneLe = (meta['zone'] as Map?)?['LE']?.toString();
     _stageRe = (meta['stage'] as Map?)?['RE']?.toString();
@@ -173,6 +177,12 @@ class _RopScreeningFormScreenState extends ConsumerState<RopScreeningFormScreen>
               _buildText(
                 controller: _postConceptionAgeController,
                 label: 'Post conceptional age (weeks)',
+                validator: _required,
+                keyboardType: TextInputType.number,
+              ),
+              _buildText(
+                controller: _birthWeightController,
+                label: 'Birth weight (grams)',
                 validator: _required,
                 keyboardType: TextInputType.number,
               ),
@@ -246,7 +256,7 @@ class _RopScreeningFormScreenState extends ConsumerState<RopScreeningFormScreen>
               ),
               const SizedBox(height: 8),
               _buildEyeToggleRow(
-                label: 'AGROP',
+                label: 'A-ROP',
                 valueRe: _agropRe,
                 valueLe: _agropLe,
                 onChangedRe: (v) => setState(() => _agropRe = v),
@@ -651,6 +661,7 @@ class _RopScreeningFormScreenState extends ConsumerState<RopScreeningFormScreen>
       'rop_meta': {
         'gestational_age': gestationalAge,
         'post_conceptional_age': postConceptionAge,
+        'birth_weight': num.tryParse(_birthWeightController.text.trim()),
         'zone': {'RE': _zoneRe, 'LE': _zoneLe},
         'stage': {'RE': _stageRe, 'LE': _stageLe},
         'plus_disease': {'RE': _plusRe, 'LE': _plusLe},

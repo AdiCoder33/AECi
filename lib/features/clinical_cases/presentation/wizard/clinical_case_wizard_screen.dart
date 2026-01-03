@@ -391,17 +391,7 @@ if (isUvea)
             step: _stepIndex + 1,
             total: steps.length,
             title: titles[_stepIndex],
-            patientInfo: _stepIndex > 0 && wizard.patientName.isNotEmpty
-                ? PatientInfoSummary(
-                    patientName: wizard.patientName,
-                    uidNumber: wizard.uidNumber,
-                    mrNumber: wizard.mrNumber,
-                    age: wizard.patientAge?.toString() ?? '',
-                    gender: wizard.patientGender,
-                    examDate:
-                        '${wizard.dateOfExamination.day.toString().padLeft(2, '0')}-${wizard.dateOfExamination.month.toString().padLeft(2, '0')}-${wizard.dateOfExamination.year}',
-                  )
-                : null,
+            patientInfo: null, // Removed patient info card from wizard header
           ),
           Expanded(
             child: IndexedStack(index: _stepIndex, children: steps),
