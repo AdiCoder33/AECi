@@ -2597,6 +2597,8 @@ class _MediaTab extends ConsumerWidget {
                   ),
                   label: const Text('Add Media'),
                 ),
+              ),
+            ),
             ],
           );
         },
@@ -3461,6 +3463,4 @@ class _CaseScoreSheetState extends ConsumerState<_CaseScoreSheet> {
       ),
     );
   }
-}
-
 }
