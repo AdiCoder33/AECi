@@ -366,13 +366,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                   return ClinicalCaseWizardScreen(caseType: type);
                 },
               ),
-              GoRoute(
-                path: ':id',
-                name: 'caseDetail',
-                builder: (context, state) => ClinicalCaseDetailScreen(
-                  caseId: state.pathParameters['id']!,
-                ),
-              ),
+          GoRoute(
+            path: ':id',
+            name: 'caseDetail',
+            builder: (context, state) => ClinicalCaseDetailScreen(
+              caseId: state.pathParameters['id']!,
+              readOnly: state.uri.queryParameters['readonly'] == '1',
+            ),
+          ),
               GoRoute(
                 path: 'rop/:id',
                 name: 'ropDetail',
@@ -394,13 +395,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                   caseId: state.pathParameters['id']!,
                 ),
               ),
-              GoRoute(
-                path: 'uvea/:id',
-                name: 'uveaDetail',
-                builder: (context, state) => ClinicalCaseDetailScreen(
-                  caseId: state.pathParameters['id']!,
-                ),
-              ),
+          GoRoute(
+            path: 'uvea/:id',
+            name: 'uveaDetail',
+            builder: (context, state) => ClinicalCaseDetailScreen(
+              caseId: state.pathParameters['id']!,
+              readOnly: state.uri.queryParameters['readonly'] == '1',
+            ),
+          ),
               GoRoute(
                 path: ':id/edit',
                 name: 'caseEdit',

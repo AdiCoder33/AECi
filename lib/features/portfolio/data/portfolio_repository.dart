@@ -228,6 +228,21 @@ class PortfolioRepository {
     return PublicationItem.fromMap(Map<String, dynamic>.from(row));
   }
 
+  Future<List<PublicationItem>> listPublicationsByIds(
+    List<String> publicationIds,
+  ) async {
+    if (publicationIds.isEmpty) return [];
+    final quoted = publicationIds.toSet().map((id) => '"$id"').join(',');
+    final rows = await _client
+        .from('presentations_publications')
+        .select('*')
+        .filter('id', 'in', '($quoted)')
+        .order('updated_at', ascending: false);
+    return (rows as List)
+        .map((e) => PublicationItem.fromMap(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
   Future<String> createPublication(PublicationItem data) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) throw AuthException('Not signed in');

@@ -590,29 +590,27 @@ class _SubmissionCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 // Submit Button
                 ElevatedButton(
-                  onPressed: isSubmissionDay ? () => context.go('/submit') : null,
+                  onPressed: () => context.go('/submit'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: const Color(0xFF10B981),
-                    disabledBackgroundColor: Colors.white.withOpacity(0.3),
-                    disabledForegroundColor: Colors.white.withOpacity(0.6),
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isSubmissionDay ? Icons.send : Icons.lock_outline,
+                        Icons.send,
                         size: 16,
                       ),
-                      const SizedBox(width: 6),
+                      SizedBox(width: 6),
                       Text(
-                        isSubmissionDay ? 'Submit Now' : 'Locked',
-                        style: const TextStyle(
+                        'Submit Now',
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                         ),

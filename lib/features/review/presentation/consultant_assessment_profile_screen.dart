@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../community/application/community_controller.dart';
-import '../../logbook/domain/elog_entry.dart';
-import '../../logbook/presentation/widgets/entry_card.dart';
+import '../../logbook/domain/logbook_sections.dart';
 import '../../profile/data/profile_model.dart';
 import '../application/consultant_assessments_controller.dart';
 
@@ -19,7 +18,7 @@ class ConsultantAssessmentProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(communityProfileProvider(traineeId));
-    final entriesAsync = ref.watch(traineeSubmittedEntriesProvider(traineeId));
+    final entriesAsync = ref.watch(traineeSubmissionItemsProvider(traineeId));
 
     return Scaffold(
       appBar: AppBar(
@@ -49,32 +48,44 @@ class ConsultantAssessmentProfileScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            'Submitted Logbook Entries',
+            'Submitted Logbook Items',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
           ),
           const SizedBox(height: 12),
           entriesAsync.when(
-            data: (entries) {
-              if (entries.isEmpty) {
+            data: (items) {
+              if (items.isEmpty) {
                 return const _InfoCard(
                   title: 'No submissions yet',
-                  subtitle: 'This trainee has not submitted any logbook entries.',
+                  subtitle: 'This trainee has not submitted any logbook items.',
                 );
               }
-              return ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: entries.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  final entry = entries[index];
-                  return EntryCard(
-                    entry: entry,
-                    onTap: () => _openEntry(context, entry),
-                  );
-                },
+              final groups = _groupItems(items);
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final group in groups) ...[
+                    Text(
+                      group.label,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    ...group.items.map(
+                      (item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _SubmissionItemCard(
+                          item: item,
+                          onTap: () => _openItem(context, item),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                  ],
+                ],
               );
             },
             loading: () => const Padding(
@@ -91,12 +102,47 @@ class ConsultantAssessmentProfileScreen extends ConsumerWidget {
     );
   }
 
-  void _openEntry(BuildContext context, ElogEntry entry) {
-    if (entry.status == statusSubmitted) {
-      context.pushNamed('reviewDetail', pathParameters: {'id': entry.id});
-      return;
+  void _openItem(BuildContext context, SubmissionItemDetail item) {
+    switch (item.entityType) {
+      case 'elog_entry':
+        context.pushNamed('logbookDetail', pathParameters: {'id': item.entityId});
+        break;
+      case 'clinical_case':
+        context.pushNamed(
+          'caseDetail',
+          pathParameters: {'id': item.entityId},
+          queryParameters: {'readonly': '1'},
+        );
+        break;
+      case 'publication':
+        context.pushNamed('pubDetail', pathParameters: {'id': item.entityId});
+        break;
     }
-    context.pushNamed('logbookDetail', pathParameters: {'id': entry.id});
+  }
+
+  List<_SectionGroup> _groupItems(List<SubmissionItemDetail> items) {
+    final order = <String, int>{
+      for (var i = 0; i < logbookSections.length; i++)
+        logbookSections[i].key: i,
+    };
+    final grouped = <String, List<SubmissionItemDetail>>{};
+    for (final item in items) {
+      grouped.putIfAbsent(item.moduleKey, () => []).add(item);
+    }
+    final labels = {
+      for (final section in logbookSections) section.key: section.label,
+    };
+    final keys = grouped.keys.toList()
+      ..sort((a, b) => (order[a] ?? 999).compareTo(order[b] ?? 999));
+    return keys.map((key) {
+      final list = grouped[key] ?? [];
+      list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      return _SectionGroup(
+        key,
+        labels[key] ?? key,
+        list,
+      );
+    }).toList();
   }
 }
 
@@ -291,4 +337,52 @@ class _LoadingCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SubmissionItemCard extends StatelessWidget {
+  const _SubmissionItemCard({
+    required this.item,
+    required this.onTap,
+  });
+
+  final SubmissionItemDetail item;
+  final VoidCallback onTap;
+
+  IconData _icon() {
+    switch (item.entityType) {
+      case 'elog_entry':
+        return Icons.menu_book_outlined;
+      case 'clinical_case':
+        return Icons.local_hospital_outlined;
+      case 'publication':
+        return Icons.article_outlined;
+      default:
+        return Icons.folder_outlined;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+          foregroundColor: Theme.of(context).colorScheme.primary,
+          child: Icon(_icon()),
+        ),
+        title: Text(item.title),
+        subtitle: Text(item.subtitle),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _SectionGroup {
+  const _SectionGroup(this.key, this.label, this.items);
+
+  final String key;
+  final String label;
+  final List<SubmissionItemDetail> items;
 }

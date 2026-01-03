@@ -11,15 +11,22 @@ import '../data/clinical_cases_repository.dart';
 import '../data/assessment_repository.dart';
 import '../../profile/application/profile_controller.dart';
 import '../../auth/application/auth_controller.dart';
-import '../../reviewer/data/reviewer_repository.dart';
+import '../../reviewer/application/reviewer_controller.dart';
 
 class ClinicalCaseDetailScreen extends ConsumerWidget {
-  const ClinicalCaseDetailScreen({super.key, required this.caseId});
+  const ClinicalCaseDetailScreen({
+    super.key,
+    required this.caseId,
+    this.readOnly = false,
+  });
 
   final String caseId;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authControllerProvider);
+    final profileState = ref.watch(profileControllerProvider);
     final caseAsync = ref.watch(clinicalCaseDetailProvider(caseId));
     final recipientsAsync =
         ref.watch(caseAssessmentRecipientsProvider(caseId));
@@ -33,8 +40,13 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
         actions: [
           caseAsync.maybeWhen(
             data: (c) {
-              final canEdit = c.status == 'draft' || c.status == 'submitted';
-              if (!canEdit) return const SizedBox.shrink();
+              final authId = authState.session?.user.id;
+              final designation = profileState.profile?.designation;
+              final canScore = designation == 'Consultant' &&
+                  authId != null &&
+                  authId != c.createdBy;
+              final canEdit = !readOnly &&
+                  (c.status == 'draft' || c.status == 'submitted');
               final isRetinoblastoma = c.keywords.any(
                 (k) => k.toLowerCase().contains('retinoblastoma'),
               );
@@ -47,19 +59,38 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
               final isUvea = c.keywords.any(
                 (k) => k.toLowerCase() == 'uvea',
               );
-              return IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: () => context.push(
-                  isRetinoblastoma
-                      ? '/cases/${c.id}/edit?type=retinoblastoma'
-                      : isRop
-                          ? '/cases/${c.id}/edit?type=rop'
-                          : isLaser
-                              ? '/cases/${c.id}/edit?type=laser'
-                              : isUvea
-                                  ? '/cases/${c.id}/edit?type=uvea'
-                              : '/cases/${c.id}/edit',
-                ),
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (canScore)
+                    TextButton.icon(
+                      onPressed: () => _showCaseScoreSheet(
+                        context: context,
+                        ref: ref,
+                        caseId: c.id,
+                        traineeId: c.createdBy,
+                        initialRating: 0,
+                        initialRemarks: '',
+                      ),
+                      icon: const Icon(Icons.star_rate),
+                      label: const Text('Score Now'),
+                    ),
+                  if (canEdit)
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined),
+                      onPressed: () => context.push(
+                        isRetinoblastoma
+                            ? '/cases/${c.id}/edit?type=retinoblastoma'
+                            : isRop
+                                ? '/cases/${c.id}/edit?type=rop'
+                                : isLaser
+                                    ? '/cases/${c.id}/edit?type=laser'
+                                    : isUvea
+                                        ? '/cases/${c.id}/edit?type=uvea'
+                                        : '/cases/${c.id}/edit',
+                      ),
+                    ),
+                ],
               );
             },
             orElse: () => const SizedBox.shrink(),
@@ -98,8 +129,8 @@ class ClinicalCaseDetailScreen extends ConsumerWidget {
                   child: TabBarView(
                     children: [
                       _SummaryTab(c: c, isUvea: isUvea),
-                      _FollowupsTab(caseId: caseId),
-                      _MediaTab(caseId: caseId),
+                      _FollowupsTab(caseId: caseId, readOnly: readOnly),
+                      _MediaTab(caseId: caseId, readOnly: readOnly),
                       recipientsAsync.when(
                         data: (recipients) => _AssessmentTab(
                           caseId: caseId,
@@ -1073,23 +1104,28 @@ class _EyePairRow extends StatelessWidget {
 }
 
 class _FollowupsTab extends ConsumerWidget {
-  const _FollowupsTab({required this.caseId});
+  const _FollowupsTab({
+    required this.caseId,
+    required this.readOnly,
+  });
   final String caseId;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final followupsAsync = ref.watch(caseFollowupsProvider(caseId));
     return followupsAsync.when(
       data: (list) {
-        if (list.isEmpty) {
-          return _EmptyState(
-            icon: Icons.event_note_outlined,
-            title: 'No Follow-ups Yet',
-            subtitle: 'Track patient follow-up visits here',
-            actionLabel: 'Add Follow-up',
-            onAction: () => context.push('/cases/$caseId/followup'),
-          );
-        }
+          if (list.isEmpty) {
+            return _EmptyState(
+              icon: Icons.event_note_outlined,
+              title: 'No Follow-ups Yet',
+              subtitle: 'Track patient follow-up visits here',
+              actionLabel: readOnly ? null : 'Add Follow-up',
+              onAction:
+                  readOnly ? null : () => context.push('/cases/$caseId/followup'),
+            );
+          }
         return Column(
           children: [
             Expanded(
@@ -1127,60 +1163,66 @@ class _FollowupsTab extends ConsumerWidget {
                             Text('Management: ${f.management}'),
                           ],
                           const SizedBox(height: 8),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () => context.push(
-                                '/cases/$caseId/followup/${f.id}',
+                            if (!readOnly)
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () => context.push(
+                                    '/cases/$caseId/followup/${f.id}',
+                                  ),
+                                  child: const Text('Edit'),
+                                ),
                               ),
-                              child: const Text('Edit'),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => context.push('/cases/$caseId/followup'),
-                  icon: const Icon(Icons.add, color: Colors.white),
-                  label: const Text('Add Follow-up'),
+                    );
+                  },
                 ),
               ),
-            ),
-          ],
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
+              if (!readOnly)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => context.push('/cases/$caseId/followup'),
+                      icon: const Icon(Icons.add, color: Colors.white),
+                      label: const Text('Add Follow-up'),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Failed to load follow-ups: $e')),
     );
   }
 }
 
 class _MediaTab extends ConsumerWidget {
-  const _MediaTab({required this.caseId});
+  const _MediaTab({
+    required this.caseId,
+    required this.readOnly,
+  });
   final String caseId;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mediaAsync = ref.watch(caseMediaProvider(caseId));
     return mediaAsync.when(
       data: (list) {
-        if (list.isEmpty) {
-          return _EmptyState(
-            icon: Icons.photo_library_outlined,
-            title: 'No Media Files',
-            subtitle: 'Add images or videos',
-            actionLabel: 'Add Media',
-            onAction: () => context.push('/cases/$caseId/media'),
-          );
-        }
+          if (list.isEmpty) {
+            return _EmptyState(
+              icon: Icons.photo_library_outlined,
+              title: 'No Media Files',
+              subtitle: 'Add images or videos',
+              actionLabel: readOnly ? null : 'Add Media',
+              onAction: readOnly ? null : () => context.push('/cases/$caseId/media'),
+            );
+          }
         return Column(
           children: [
             Expanded(
@@ -1199,20 +1241,22 @@ class _MediaTab extends ConsumerWidget {
                 },
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => context.push('/cases/$caseId/media'),
-                  icon: const Icon(Icons.add_photo_alternate, color: Colors.white),
-                  label: const Text('Add Media'),
+              if (!readOnly)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => context.push('/cases/$caseId/media'),
+                      icon:
+                          const Icon(Icons.add_photo_alternate, color: Colors.white),
+                      label: const Text('Add Media'),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Failed to load media: $e')),
     );
@@ -1297,15 +1341,15 @@ class _EmptyState extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.actionLabel,
-    required this.onAction,
+    this.actionLabel,
+    this.onAction,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
-  final String actionLabel;
-  final VoidCallback onAction;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -1341,19 +1385,20 @@ class _EmptyState extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: onAction,
-              icon: const Icon(Icons.add, color: Colors.white),
-              label: Text(actionLabel),
-            ),
-          ),
-        ],
-      ),
-    );
+            if (actionLabel != null && onAction != null)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: onAction,
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  label: Text(actionLabel!),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
   }
-}
 
 class _AssessmentTab extends ConsumerStatefulWidget {
   const _AssessmentTab({
@@ -1384,15 +1429,18 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
 
   @override
   Widget build(BuildContext context) {
-    final mutation = ref.watch(assessmentMutationProvider);
-    final authState = ref.watch(authControllerProvider);
-    final profileState = ref.watch(profileControllerProvider);
-    final doctorsAsync = ref.watch(assessmentDoctorsProvider);
-    final authId = authState.session?.user.id;
-    final isOwner = authId != null && authId == widget.caseOwnerId;
-    final designation = profileState.profile?.designation;
-    final hasReviewerAccess =
-        designation == 'Reviewer' || designation == 'Consultant';
+      final mutation = ref.watch(assessmentMutationProvider);
+      final authState = ref.watch(authControllerProvider);
+      final profileState = ref.watch(profileControllerProvider);
+      final myAssessmentAsync =
+          ref.watch(reviewerCaseAssessmentProvider(widget.caseId));
+      final doctorsAsync = ref.watch(assessmentDoctorsProvider);
+      final authId = authState.session?.user.id;
+      final isOwner = authId != null && authId == widget.caseOwnerId;
+      final designation = profileState.profile?.designation;
+      final isConsultant = designation == 'Consultant';
+      final hasReviewerAccess =
+          designation == 'Reviewer' || isConsultant;
 
     if (!_seededSelection && widget.recipients.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1405,9 +1453,13 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
       });
     }
 
-    final isAssignedReviewer = widget.recipients.any(
-      (r) => r.recipientId == authId && r.canReview,
-    );
+      final isAssignedReviewer = widget.recipients.any(
+        (r) => r.recipientId == authId && r.canReview,
+      );
+      final canScore = (isConsultant &&
+              authId != null &&
+              authId != widget.caseOwnerId) ||
+          (designation == 'Reviewer' && isAssignedReviewer);
 
     return Container(
       color: const Color(0xFFF7F9FC),
@@ -1590,11 +1642,13 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
               ),
             ),
           ],
-          if (!isOwner && widget.recipients.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+            if (!isOwner &&
+                widget.recipients.isNotEmpty &&
+                !canScore) ...[
+              const SizedBox(height: 12),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1613,36 +1667,43 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
               ),
             ),
           ],
-          if (hasReviewerAccess && isAssignedReviewer) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  final item = ReviewItem(
-                    entityType: 'clinical_case',
-                    entityId: widget.caseId,
-                    traineeId: widget.caseOwnerId,
-                    title: widget.patientName,
-                    subtitle:
-                        'UID ${widget.uidNumber} | MR ${widget.mrNumber}',
-                    updatedAt: DateTime.now(),
-                  );
-                  context.push(
-                    '/reviewer/pending/assess/clinical_case/${widget.caseId}',
-                    extra: item,
+            if (hasReviewerAccess && canScore) ...[
+              const SizedBox(height: 12),
+              myAssessmentAsync.when(
+                data: (assessment) {
+                  final score = assessment?.score ?? 0;
+                  final remarks = assessment?.remarks ?? '';
+                  final hasScore = assessment?.score != null;
+                  return _ReviewerScoreCard(
+                    score: score,
+                    remarks: remarks,
+                    onEdit: () => _showCaseScoreSheet(
+                      context: context,
+                      ref: ref,
+                      caseId: widget.caseId,
+                      traineeId: widget.caseOwnerId,
+                      initialRating: score,
+                      initialRemarks: remarks,
+                    ),
+                    hasScore: hasScore,
                   );
                 },
-                icon: const Icon(Icons.rate_review, color: Colors.white),
-                label: const Text('Open Review'),
+                loading: () => const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                error: (e, _) => Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text('Failed to load score: $e'),
+                  ),
+                ),
               ),
-            ),
+            ],
           ],
-        ],
-      ),
-    );
+        ),
+      );
+    }
   }
-}
 
 class _StatusPill extends StatelessWidget {
   const _StatusPill({required this.status});
@@ -1678,6 +1739,257 @@ class _StatusPill extends StatelessWidget {
           fontSize: 11,
           fontWeight: FontWeight.w700,
           color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class _ReviewerScoreCard extends StatelessWidget {
+  const _ReviewerScoreCard({
+    required this.score,
+    required this.remarks,
+    required this.onEdit,
+    required this.hasScore,
+  });
+
+  final int score;
+  final String remarks;
+  final VoidCallback onEdit;
+  final bool hasScore;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  'Your Score',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit, size: 18),
+                  label: Text(hasScore ? 'Edit Score' : 'Score Now'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _RatingStars(rating: score),
+            if (remarks.trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                remarks,
+                style: const TextStyle(
+                  color: Color(0xFF475569),
+                  height: 1.4,
+                ),
+              ),
+            ],
+            if (!hasScore)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'No score submitted yet.',
+                  style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RatingStars extends StatelessWidget {
+  const _RatingStars({required this.rating});
+
+  final int rating;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: List.generate(5, (index) {
+        final isSelected = rating >= index + 1;
+        return Icon(
+          isSelected ? Icons.star : Icons.star_border,
+          color: Colors.amber[600],
+        );
+      }),
+    );
+  }
+}
+
+  Future<void> _showCaseScoreSheet({
+    required BuildContext context,
+    required WidgetRef ref,
+    required String caseId,
+    required String traineeId,
+    int initialRating = 0,
+    String initialRemarks = '',
+  }) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (sheetContext) {
+      return _CaseScoreSheet(
+        caseId: caseId,
+        traineeId: traineeId,
+        initialRating: initialRating,
+        initialRemarks: initialRemarks,
+      );
+    },
+  );
+}
+
+class _CaseScoreSheet extends ConsumerStatefulWidget {
+  const _CaseScoreSheet({
+    required this.caseId,
+    required this.traineeId,
+    required this.initialRating,
+    required this.initialRemarks,
+  });
+
+  final String caseId;
+  final String traineeId;
+  final int initialRating;
+  final String initialRemarks;
+
+  @override
+  ConsumerState<_CaseScoreSheet> createState() => _CaseScoreSheetState();
+}
+
+class _CaseScoreSheetState extends ConsumerState<_CaseScoreSheet> {
+  final TextEditingController _remarksController = TextEditingController();
+  int _rating = 0;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _rating = widget.initialRating.clamp(0, 5);
+    _remarksController.text = widget.initialRemarks;
+  }
+
+  @override
+  void dispose() {
+    _remarksController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    setState(() => _isSaving = true);
+    try {
+      await ref.read(reviewerMutationProvider.notifier).submitClinicalCase(
+            caseId: widget.caseId,
+            traineeId: widget.traineeId,
+            score: _rating,
+            remarks: _remarksController.text.trim(),
+          );
+      if (!mounted) return;
+      Navigator.pop(context);
+      ref.invalidate(reviewerCaseAssessmentProvider(widget.caseId));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Score submitted')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to submit score: $e')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Score Case',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Rating (0-5)',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFF64748B),
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                ...List.generate(5, (index) {
+                  final isSelected = _rating >= index + 1;
+                  return IconButton(
+                    onPressed: () => setState(() => _rating = index + 1),
+                    icon: Icon(
+                      isSelected ? Icons.star : Icons.star_border,
+                      color: Colors.amber[600],
+                    ),
+                  );
+                }),
+                TextButton(
+                  onPressed: _rating == 0 ? null : () => setState(() => _rating = 0),
+                  child: const Text('Clear'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _remarksController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Remarks',
+                hintText: 'Add remarks for this case',
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _isSaving ? null : () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isSaving ? null : _submit,
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Submit'),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

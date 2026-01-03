@@ -1,45 +1,57 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/supabase_client.dart';
+import '../../clinical_cases/data/clinical_cases_repository.dart';
 import '../../community/data/community_repository.dart';
 import '../../logbook/data/entries_repository.dart';
-import '../../logbook/domain/elog_entry.dart';
+import '../../logbook/domain/logbook_sections.dart';
+import '../../portfolio/data/portfolio_repository.dart';
 import '../../profile/data/profile_model.dart';
-import '../data/assignments_repository.dart';
+import '../../submissions/data/logbook_submission_repository.dart';
 
 class TraineeAssessmentGroup {
   TraineeAssessmentGroup({
     required this.profile,
-    required this.entries,
+    required this.count,
   });
 
   final Profile profile;
-  final List<ElogEntry> entries;
-
-  int get count => entries.length;
+  final int count;
 }
 
-const _submittedStatuses = [
-  statusSubmitted,
-  statusApproved,
-  statusNeedsRevision,
-  statusRejected,
-];
+class SubmissionItemDetail {
+  SubmissionItemDetail({
+    required this.entityType,
+    required this.entityId,
+    required this.moduleKey,
+    required this.moduleLabel,
+    required this.title,
+    required this.subtitle,
+    required this.updatedAt,
+  });
+
+  final String entityType;
+  final String entityId;
+  final String moduleKey;
+  final String moduleLabel;
+  final String title;
+  final String subtitle;
+  final DateTime updatedAt;
+}
 
 final consultantPendingProfilesProvider =
     FutureProvider.autoDispose<List<TraineeAssessmentGroup>>((ref) async {
-  final assignmentsRepo = ref.watch(assignmentsRepositoryProvider);
-  final entriesRepo = ref.watch(entriesRepositoryProvider);
+  final submissionsRepo = ref.watch(logbookSubmissionRepositoryProvider);
   final communityRepo = ref.watch(communityRepositoryProvider);
 
-  final traineeIds = await assignmentsRepo.traineeIdsForConsultant();
-  if (traineeIds.isEmpty) return [];
+  final submissions = await submissionsRepo.listSubmissionsForRecipient();
+  if (submissions.isEmpty) return [];
 
-  final entries = await entriesRepo.listEntriesForTrainees(
-    traineeIds: traineeIds,
-    statuses: [statusSubmitted],
-  );
-  return _buildGroups(communityRepo, entries);
+  final counts = <String, int>{};
+  for (final submission in submissions) {
+    counts[submission.createdBy] = (counts[submission.createdBy] ?? 0) + 1;
+  }
+  return _buildGroupsFromCounts(communityRepo, counts);
 });
 
 final consultantReviewedProfilesProvider =
@@ -48,45 +60,151 @@ final consultantReviewedProfilesProvider =
   final reviewerId = client.auth.currentUser?.id;
   if (reviewerId == null) return [];
 
-  final assignmentsRepo = ref.watch(assignmentsRepositoryProvider);
   final entriesRepo = ref.watch(entriesRepositoryProvider);
   final communityRepo = ref.watch(communityRepositoryProvider);
 
-  final traineeIds = await assignmentsRepo.traineeIdsForConsultant();
-  if (traineeIds.isEmpty) return [];
-
-  final entries = await entriesRepo.listEntriesForTrainees(
-    traineeIds: traineeIds,
-    reviewedBy: reviewerId,
-  );
-  return _buildGroups(communityRepo, entries);
-});
-
-final traineeSubmittedEntriesProvider =
-    FutureProvider.family.autoDispose<List<ElogEntry>, String>((ref, traineeId) {
-  final entriesRepo = ref.watch(entriesRepositoryProvider);
-  return entriesRepo.listEntriesForTrainees(
-    traineeIds: [traineeId],
-    statuses: _submittedStatuses,
-  );
-});
-
-Future<List<TraineeAssessmentGroup>> _buildGroups(
-  CommunityRepository communityRepo,
-  List<ElogEntry> entries,
-) async {
+  final entries = await entriesRepo.listEntriesReviewedBy(reviewerId);
   if (entries.isEmpty) return [];
 
-  final byTrainee = <String, List<ElogEntry>>{};
+  final counts = <String, int>{};
   for (final entry in entries) {
-    byTrainee.putIfAbsent(entry.createdBy, () => []).add(entry);
+    counts[entry.createdBy] = (counts[entry.createdBy] ?? 0) + 1;
   }
-  for (final list in byTrainee.values) {
-    list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+  return _buildGroupsFromCounts(communityRepo, counts);
+});
+
+final traineeSubmissionItemsProvider =
+    FutureProvider.family.autoDispose<List<SubmissionItemDetail>, String>((
+  ref,
+  traineeId,
+) async {
+  final submissionsRepo = ref.watch(logbookSubmissionRepositoryProvider);
+  final submissions = await submissionsRepo.listSubmissionsForRecipient();
+  if (submissions.isEmpty) return [];
+
+  final traineeSubmissions =
+      submissions.where((s) => s.createdBy == traineeId).toList();
+  if (traineeSubmissions.isEmpty) return [];
+
+  final submissionIds = traineeSubmissions.map((s) => s.id).toList();
+  final items = await submissionsRepo.listSubmissionItems(submissionIds);
+  if (items.isEmpty) return [];
+
+  final entryIds = <String>{};
+  final caseIds = <String>{};
+  final publicationIds = <String>{};
+  for (final item in items) {
+    switch (item.entityType) {
+      case 'elog_entry':
+        entryIds.add(item.entityId);
+        break;
+      case 'clinical_case':
+        caseIds.add(item.entityId);
+        break;
+      case 'publication':
+        publicationIds.add(item.entityId);
+        break;
+    }
   }
 
+  final entriesRepo = ref.watch(entriesRepositoryProvider);
+  final casesRepo = ref.watch(clinicalCasesRepositoryProvider);
+  final portfolioRepo = ref.watch(portfolioRepositoryProvider);
+
+  final entries = await entriesRepo.listEntriesByIds(entryIds.toList());
+  final cases = await casesRepo.listCasesByIds(caseIds.toList());
+  final publications =
+      await portfolioRepo.listPublicationsByIds(publicationIds.toList());
+
+  final entryMap = {for (final entry in entries) entry.id: entry};
+  final caseMap = {for (final c in cases) c.id: c};
+  final publicationMap = {for (final p in publications) p.id: p};
+
+  final sectionLabels = {
+    for (final section in logbookSections) section.key: section.label,
+  };
+
+  final details = <SubmissionItemDetail>[];
+  for (final item in items) {
+    final moduleLabel = sectionLabels[item.moduleKey] ?? item.moduleKey;
+    switch (item.entityType) {
+      case 'elog_entry':
+        final entry = entryMap[item.entityId];
+        details.add(
+          SubmissionItemDetail(
+            entityType: item.entityType,
+            entityId: item.entityId,
+            moduleKey: item.moduleKey,
+            moduleLabel: moduleLabel,
+            title: entry?.patientUniqueId ?? 'Logbook entry',
+            subtitle: entry == null
+                ? 'Entry ${item.entityId}'
+                : 'MRN ${entry.mrn} | ${entry.moduleType}',
+            updatedAt: entry?.updatedAt ?? entry?.createdAt ?? item.createdAt,
+          ),
+        );
+        break;
+      case 'clinical_case':
+        final clinicalCase = caseMap[item.entityId];
+        details.add(
+          SubmissionItemDetail(
+            entityType: item.entityType,
+            entityId: item.entityId,
+            moduleKey: item.moduleKey,
+            moduleLabel: moduleLabel,
+            title: clinicalCase?.patientName ?? 'Case',
+            subtitle: clinicalCase == null
+                ? 'Case ${item.entityId}'
+                : 'UID ${clinicalCase.uidNumber} | MR ${clinicalCase.mrNumber}',
+            updatedAt: clinicalCase?.updatedAt ??
+                clinicalCase?.dateOfExamination ??
+                item.createdAt,
+          ),
+        );
+        break;
+      case 'publication':
+        final publication = publicationMap[item.entityId];
+        details.add(
+          SubmissionItemDetail(
+            entityType: item.entityType,
+            entityId: item.entityId,
+            moduleKey: item.moduleKey,
+            moduleLabel: moduleLabel,
+            title: publication?.title ?? 'Publication',
+            subtitle: publication == null
+                ? 'Publication ${item.entityId}'
+                : publication.type,
+            updatedAt: publication?.updatedAt ?? item.createdAt,
+          ),
+        );
+        break;
+      default:
+        details.add(
+          SubmissionItemDetail(
+            entityType: item.entityType,
+            entityId: item.entityId,
+            moduleKey: item.moduleKey,
+            moduleLabel: moduleLabel,
+            title: 'Submitted item',
+            subtitle: item.entityId,
+            updatedAt: item.createdAt,
+          ),
+        );
+    }
+  }
+
+  details.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+  return details;
+});
+
+Future<List<TraineeAssessmentGroup>> _buildGroupsFromCounts(
+  CommunityRepository communityRepo,
+  Map<String, int> counts,
+) async {
+  if (counts.isEmpty) return [];
+
   final profiles = await communityRepo.listProfilesByIds(
-    byTrainee.keys.toList(),
+    counts.keys.toList(),
   );
   if (profiles.isEmpty) return [];
 
@@ -95,10 +213,15 @@ Future<List<TraineeAssessmentGroup>> _buildGroups(
   };
 
   final groups = <TraineeAssessmentGroup>[];
-  for (final entry in byTrainee.entries) {
+  for (final entry in counts.entries) {
     final profile = profileMap[entry.key];
     if (profile == null) continue;
-    groups.add(TraineeAssessmentGroup(profile: profile, entries: entry.value));
+    groups.add(
+      TraineeAssessmentGroup(
+        profile: profile,
+        count: entry.value,
+      ),
+    );
   }
   groups.sort((a, b) => a.profile.name.compareTo(b.profile.name));
   return groups;

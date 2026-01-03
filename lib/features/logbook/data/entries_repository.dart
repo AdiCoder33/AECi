@@ -135,6 +135,28 @@ class EntriesRepository {
     final rows = (response as List).cast<Map<String, dynamic>>();
     return rows.map(ElogEntry.fromMap).toList();
   }
+
+  Future<List<ElogEntry>> listEntriesByIds(List<String> entryIds) async {
+    if (entryIds.isEmpty) return [];
+    final quoted = entryIds.toSet().map((id) => '"$id"').join(',');
+    final response = await _client
+        .from('elog_entries')
+        .select('*')
+        .filter('id', 'in', '($quoted)')
+        .order('updated_at', ascending: false);
+    final rows = (response as List).cast<Map<String, dynamic>>();
+    return rows.map(ElogEntry.fromMap).toList();
+  }
+
+  Future<List<ElogEntry>> listEntriesReviewedBy(String reviewerId) async {
+    final response = await _client
+        .from('elog_entries')
+        .select('*')
+        .eq('reviewed_by', reviewerId)
+        .order('updated_at', ascending: false);
+    final rows = (response as List).cast<Map<String, dynamic>>();
+    return rows.map(ElogEntry.fromMap).toList();
+  }
 }
 
 final entriesRepositoryProvider = Provider<EntriesRepository>((ref) {
