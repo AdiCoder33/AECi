@@ -93,10 +93,14 @@ class _CaseFollowupFormScreenState
                 followups.isNotEmpty ? followups.last : null;
             final previousDate = lastFollowup?.dateOfExamination ??
                 caseData.dateOfExamination;
+            final isUvea = caseData.keywords.any(
+              (k) => k.toLowerCase() == 'uvea',
+            );
             final prevAnterior = lastFollowup?.anteriorSegmentFindings ??
-                _formatAnterior(caseData.anteriorSegment);
+                _formatAnterior(caseData.anteriorSegment, isUvea: isUvea);
             final prevFundus =
-                lastFollowup?.fundusFindings ?? _formatFundus(caseData.fundus);
+                lastFollowup?.fundusFindings ??
+                    _formatFundus(caseData.fundus, isUvea: isUvea);
             final laser =
                 Map<String, dynamic>.from(caseData.anteriorSegment?['laser'] as Map? ?? {});
             final bcvaPre =
@@ -382,7 +386,13 @@ class _CaseFollowupFormScreenState
     return '$days days';
   }
 
-  String _formatAnterior(Map<String, dynamic>? anterior) {
+  String _formatAnterior(
+    Map<String, dynamic>? anterior, {
+    bool isUvea = false,
+  }) {
+    if (isUvea) {
+      return _formatUveaAnterior(anterior);
+    }
     if (anterior == null || anterior.isEmpty) return '-';
     final lines = <String>[];
     for (final eyeKey in ['RE', 'LE']) {
@@ -432,7 +442,13 @@ class _CaseFollowupFormScreenState
     return '';
   }
 
-  String _formatFundus(Map<String, dynamic>? fundus) {
+  String _formatFundus(
+    Map<String, dynamic>? fundus, {
+    bool isUvea = false,
+  }) {
+    if (isUvea) {
+      return _formatUveaFundus(fundus);
+    }
     if (fundus == null || fundus.isEmpty) return '-';
     if (fundus.containsKey('RE') || fundus.containsKey('LE')) {
       final lines = <String>[];
@@ -467,6 +483,166 @@ class _CaseFollowupFormScreenState
       lines.add('Remarks: $remarks');
     }
     return lines.join('\n');
+  }
+
+  String _formatUveaAnterior(Map<String, dynamic>? anterior) {
+    if (anterior == null || anterior.isEmpty) return '-';
+    final uvea = Map<String, dynamic>.from(anterior['uvea'] as Map? ?? {});
+    if (uvea.isEmpty) return '-';
+    final lines = <String>[];
+    for (final eyeKey in ['RE', 'LE']) {
+      final eye = Map<String, dynamic>.from(uvea[eyeKey] as Map? ?? {});
+      if (eye.isEmpty) continue;
+      final conjunctiva =
+          _formatOtherValue(eye['conjunctiva'], eye['conjunctiva_other']);
+      if (conjunctiva.isNotEmpty) {
+        lines.add('$eyeKey Conjunctiva: $conjunctiva');
+      }
+      final corneaParts = <String>[];
+      final keratitis = _boolLabel(eye['corneal_keratitis']);
+      if (keratitis.isNotEmpty) {
+        corneaParts.add('Keratitis $keratitis');
+      }
+      final kpsType = _stringValue(eye['kps_type']);
+      final kpsDistribution = _stringValue(eye['kps_distribution']);
+      if (kpsType.isNotEmpty || kpsDistribution.isNotEmpty) {
+        final kps = [
+          if (kpsType.isNotEmpty) kpsType,
+          if (kpsDistribution.isNotEmpty) kpsDistribution,
+        ].join(', ');
+        corneaParts.add('KPs: $kps');
+      }
+      if (corneaParts.isNotEmpty) {
+        lines.add('$eyeKey Cornea: ${corneaParts.join('; ')}');
+      }
+      final acCells = _stringValue(eye['ac_cells']);
+      if (acCells.isNotEmpty) {
+        lines.add('$eyeKey AC cells: $acCells');
+      }
+      final flare = _stringValue(eye['flare']);
+      if (flare.isNotEmpty) {
+        lines.add('$eyeKey Flare: $flare');
+      }
+      final fm = _boolLabel(eye['fm']);
+      if (fm.isNotEmpty) {
+        lines.add('$eyeKey FM: $fm');
+      }
+      final hypopyon = _boolLabel(eye['hypopyon']);
+      if (hypopyon.isNotEmpty) {
+        final height = _stringValue(eye['hypopyon_height_mm']);
+        final suffix = height.isNotEmpty ? ' (${height} mm)' : '';
+        lines.add('$eyeKey Hypopyon: $hypopyon$suffix');
+      }
+      final glaucoma =
+          _formatOtherValue(eye['glaucoma'], eye['glaucoma_other']);
+      if (glaucoma.isNotEmpty) {
+        lines.add('$eyeKey Glaucoma: $glaucoma');
+      }
+      final lensStatus = _stringValue(eye['lens_status']);
+      if (lensStatus.isNotEmpty) {
+        lines.add('$eyeKey Lens status: $lensStatus');
+      }
+    }
+    if (lines.isEmpty) return '-';
+    return lines.join('\n');
+  }
+
+  String _formatUveaFundus(Map<String, dynamic>? fundus) {
+    if (fundus == null || fundus.isEmpty) return '-';
+    final uvea = Map<String, dynamic>.from(fundus['uvea'] as Map? ?? {});
+    if (uvea.isEmpty) return '-';
+    final lines = <String>[];
+    for (final eyeKey in ['RE', 'LE']) {
+      final eye = Map<String, dynamic>.from(uvea[eyeKey] as Map? ?? {});
+      if (eye.isEmpty) continue;
+      final avf = _stringValue(eye['avf_vitreous']);
+      if (avf.isNotEmpty) {
+        lines.add('$eyeKey AVF/Vitreous opacities: $avf');
+      }
+      final opticDisc = _stringValue(eye['optic_disc']);
+      if (opticDisc.isNotEmpty) {
+        lines.add('$eyeKey Optic disc: $opticDisc');
+      }
+      final vessels = _stringValue(eye['vessels']);
+      if (vessels.isNotEmpty) {
+        lines.add('$eyeKey Vessels: $vessels');
+      }
+      final backgroundParts = <String>[];
+      final retinitis = _stringValue(eye['background_retinitis']);
+      if (retinitis.isNotEmpty) {
+        backgroundParts.add('Retinitis: $retinitis');
+      }
+      final choroiditis = _stringValue(eye['background_choroiditis']);
+      if (choroiditis.isNotEmpty) {
+        backgroundParts.add('Choroiditis: $choroiditis');
+      }
+      final vasculitis = _stringValue(eye['background_vasculitis']);
+      if (vasculitis.isNotEmpty) {
+        backgroundParts.add('Vasculitis: $vasculitis');
+      }
+      final snowbanking = _boolLabel(eye['background_snowbanking']);
+      if (snowbanking.isNotEmpty) {
+        backgroundParts.add('Snowbanking: $snowbanking');
+      }
+      final snowballing = _boolLabel(eye['background_snowballing']);
+      if (snowballing.isNotEmpty) {
+        backgroundParts.add('Snowballing: $snowballing');
+      }
+      final exudative = _boolLabel(eye['background_exudative_rd']);
+      if (exudative.isNotEmpty) {
+        backgroundParts.add('Exudative RD: $exudative');
+      }
+      final backgroundOther = _stringValue(eye['background_other']);
+      if (backgroundOther.isNotEmpty) {
+        backgroundParts.add('Other: $backgroundOther');
+      }
+      if (backgroundParts.isNotEmpty) {
+        lines.add('$eyeKey Background: ${backgroundParts.join('; ')}');
+      }
+      final maculaParts = <String>[];
+      final cme = _boolLabel(eye['macula_cme']);
+      if (cme.isNotEmpty) {
+        maculaParts.add('Cystoid macular edema: $cme');
+      }
+      final exudates = _boolLabel(eye['macula_exudates']);
+      if (exudates.isNotEmpty) {
+        maculaParts.add('Exudates: $exudates');
+      }
+      final maculaOther = _stringValue(eye['macula_other']);
+      if (maculaOther.isNotEmpty) {
+        maculaParts.add('Other: $maculaOther');
+      }
+      if (maculaParts.isNotEmpty) {
+        lines.add('$eyeKey Macula: ${maculaParts.join('; ')}');
+      }
+      final extraNotes = _stringValue(eye['extra_notes']);
+      if (extraNotes.isNotEmpty) {
+        lines.add('$eyeKey Extra notes: $extraNotes');
+      }
+    }
+    if (lines.isEmpty) return '-';
+    return lines.join('\n');
+  }
+
+  String _stringValue(dynamic value) {
+    if (value == null) return '';
+    return value.toString().trim();
+  }
+
+  String _formatOtherValue(dynamic value, dynamic other) {
+    final text = _stringValue(value);
+    if (text.isEmpty) return '';
+    if (text == 'Other') {
+      final otherText = _stringValue(other);
+      return otherText.isNotEmpty ? 'Other: $otherText' : 'Other';
+    }
+    return text;
+  }
+
+  String _boolLabel(dynamic value) {
+    if (value == true) return 'Yes';
+    if (value == false) return 'No';
+    return '';
   }
 
   String _formatSection(Map<String, dynamic> sectionData) {

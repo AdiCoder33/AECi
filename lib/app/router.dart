@@ -375,6 +375,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                 ),
               ),
               GoRoute(
+                path: 'uvea/:id',
+                name: 'uveaDetail',
+                builder: (context, state) => ClinicalCaseDetailScreen(
+                  caseId: state.pathParameters['id']!,
+                ),
+              ),
+              GoRoute(
                 path: ':id/edit',
                 name: 'caseEdit',
                 builder: (context, state) {
