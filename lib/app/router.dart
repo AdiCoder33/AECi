@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:async/async.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -128,7 +129,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           final profile = ref.watch(profileControllerProvider).profile;
           final authNotifier = ref.read(authControllerProvider.notifier);
           return _MainShell(
-            location: state.matchedLocation,
+            location: state.uri.path,
             child: child,
             name: profile?.name,
             designation: profile?.designation,
@@ -584,68 +585,137 @@ class _MainShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: _AppDrawer(
-        current: location,
-        name: name,
-        designation: designation,
-        centre: centre,
-        onNavigate: (route) => context.go(route),
-        onSignOut: onSignOut,
-      ),
-      body: child,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _index,
-        onTap: (i) => _onTap(context, i),
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFF0B5FFF),
-        unselectedItemColor: const Color(0xFF64748B),
-        selectedFontSize: 12,
-        unselectedFontSize: 11,
-        elevation: 8,
-        items: isReviewer
-            ? const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.assignment_outlined),
-                  activeIcon: Icon(Icons.assignment),
-                  label: 'To Assess',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.check_circle_outline),
-                  activeIcon: Icon(Icons.check_circle),
-                  label: 'Reviewed',
-                ),
-              ]
-            : const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.home_outlined),
-                  activeIcon: Icon(Icons.home),
-                  label: 'Home',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.menu_book_outlined),
-                  activeIcon: Icon(Icons.menu_book),
-                  label: 'Logbook',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.groups_outlined),
-                  activeIcon: Icon(Icons.groups),
-                  label: 'Community',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.insights_outlined),
-                  activeIcon: Icon(Icons.insights),
-                  label: 'Analytics',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.person_outline),
-                  activeIcon: Icon(Icons.person),
-                  label: 'Profile',
-                ),
-              ],
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        final router = GoRouter.of(context);
+        if (router.canPop()) {
+          router.pop();
+          return;
+        }
+        final fallback = _fallbackLocation(location);
+        if (fallback != null && fallback != location) {
+          context.go(fallback);
+          return;
+        }
+        final exitRoute = _exitRoute();
+        if (location != exitRoute) {
+          context.go(exitRoute);
+          return;
+        }
+        SystemNavigator.pop();
+      },
+      child: Scaffold(
+        drawer: _AppDrawer(
+          current: location,
+          name: name,
+          designation: designation,
+          centre: centre,
+          onNavigate: (route) => context.go(route),
+          onSignOut: onSignOut,
+        ),
+        body: child,
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _index,
+          onTap: (i) => _onTap(context, i),
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          selectedItemColor: const Color(0xFF0B5FFF),
+          unselectedItemColor: const Color(0xFF64748B),
+          selectedFontSize: 12,
+          unselectedFontSize: 11,
+          elevation: 8,
+          items: isReviewer
+              ? const [
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.assignment_outlined),
+                    activeIcon: Icon(Icons.assignment),
+                    label: 'To Assess',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.check_circle_outline),
+                    activeIcon: Icon(Icons.check_circle),
+                    label: 'Reviewed',
+                  ),
+                ]
+              : const [
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.home_outlined),
+                    activeIcon: Icon(Icons.home),
+                    label: 'Home',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.menu_book_outlined),
+                    activeIcon: Icon(Icons.menu_book),
+                    label: 'Logbook',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.groups_outlined),
+                    activeIcon: Icon(Icons.groups),
+                    label: 'Community',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.insights_outlined),
+                    activeIcon: Icon(Icons.insights),
+                    label: 'Analytics',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.person_outline),
+                    activeIcon: Icon(Icons.person),
+                    label: 'Profile',
+                  ),
+                ],
+        ),
       ),
     );
+  }
+
+  String _exitRoute() {
+    return isReviewer ? '/reviewer/pending' : '/home';
+  }
+
+  String? _fallbackLocation(String current) {
+    if (isReviewer) {
+      if (current.startsWith('/reviewer/reviewed')) return '/reviewer/pending';
+      if (current.startsWith('/reviewer/')) return '/reviewer/pending';
+      return null;
+    }
+
+    if (current.startsWith('/logbook/')) return '/logbook';
+    if (current == '/logbook') return '/home';
+
+    if (current.startsWith('/cases/')) return '/cases';
+    if (current == '/cases') return '/home';
+
+    if (current.startsWith('/publications/')) return '/publications';
+    if (current == '/publications') return '/home';
+
+    if (current.startsWith('/research/')) return '/research';
+    if (current == '/research') return '/home';
+
+    if (current.startsWith('/community/')) return '/community';
+    if (current == '/community') return '/home';
+
+    if (current.startsWith('/analytics')) return '/home';
+    if (current.startsWith('/profile/')) return '/profile';
+    if (current == '/profile') return '/home';
+
+    if (current.startsWith('/review/')) return '/review-queue';
+    if (current == '/review-queue') return '/home';
+
+    if (current.startsWith('/assessments/')) return '/assessments';
+    if (current == '/assessments') return '/home';
+
+    if (current.startsWith('/teaching/')) return '/teaching';
+    if (current == '/teaching') return '/home';
+
+    if (current.startsWith('/search')) return '/home';
+    if (current.startsWith('/submit')) return '/home';
+    if (current.startsWith('/export')) return '/home';
+    if (current.startsWith('/taxonomy')) return '/home';
+
+    return null;
   }
 }
 
