@@ -54,17 +54,18 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
     final entries = isEntrySection ? ref.watch(entriesListProvider) : null;
     final AsyncValue<List<ClinicalCase>>? cases = isCaseSection
         ? (section == logbookSectionRetinoblastoma
-            ? ref.watch(clinicalCaseListByKeywordProvider('retinoblastoma'))
-            : section == logbookSectionRop
-                ? ref.watch(clinicalCaseListByKeywordProvider('rop'))
-                : section == logbookSectionLaser
-                    ? ref.watch(clinicalCaseListByKeywordProvider('laser'))
-                    : section == logbookSectionUvea
-                      ? ref.watch(clinicalCaseListByKeywordProvider('uvea'))
-                    : ref.watch(clinicalCaseListProvider))
+              ? ref.watch(clinicalCaseListByKeywordProvider('retinoblastoma'))
+              : section == logbookSectionRop
+              ? ref.watch(clinicalCaseListByKeywordProvider('rop'))
+              : section == logbookSectionLaser
+              ? ref.watch(clinicalCaseListByKeywordProvider('laser'))
+              : section == logbookSectionUvea
+              ? ref.watch(clinicalCaseListByKeywordProvider('uvea'))
+              : ref.watch(clinicalCaseListProvider))
         : null;
-                    final AsyncValue<List<PublicationItem>>? publications =
-                  isPublications ? ref.watch(publicationListProvider) : null;
+    final AsyncValue<List<PublicationItem>>? publications = isPublications
+        ? ref.watch(publicationListProvider)
+        : null;
     final reviews = isReviews ? ref.watch(reviewControllerProvider) : null;
     final showMine = ref.watch(showMineProvider);
     final showDrafts = ref.watch(showDraftsProvider);
@@ -165,11 +166,7 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
         },
         backgroundColor: const Color(0xFF3B82F6),
         elevation: 4,
-        child: const Icon(
-          Icons.add_rounded,
-          color: Colors.white,
-          size: 28,
-        ),
+        child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
       ),
       body: Column(
         children: [
@@ -363,18 +360,16 @@ class _ModuleChip extends StatelessWidget {
                     width: 1,
                   ),
                 ),
-                child: Center(
-                  child: Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: selected ? Colors.white : const Color(0xFF64748B),
-                      fontSize: selected ? 13 : 12,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                      letterSpacing: 0.3,
-                    ),
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: selected ? Colors.white : const Color(0xFF64748B),
+                    fontSize: selected ? 13 : 12,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                    letterSpacing: 0.3,
                   ),
                 ),
               ),
@@ -427,9 +422,7 @@ class _FilterChip extends StatelessWidget {
         color: selected ? const Color(0xFF3B82F6) : const Color(0xFFE2E8F0),
         width: selected ? 2 : 1,
       ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       elevation: selected ? 2 : 0,
       shadowColor: selected ? const Color(0xFF3B82F6).withOpacity(0.3) : null,
@@ -531,7 +524,7 @@ class _SectionBody extends StatelessWidget {
       return cases!.when(
         data: (list) {
           final filtered = _filterCasesForSection(list);
-          
+
           if (filtered.isEmpty) {
             return _EmptyState(
               icon: Icons.medical_information_outlined,
@@ -539,12 +532,12 @@ class _SectionBody extends StatelessWidget {
               subtitle: 'Tap "New Entry" to create your first case',
             );
           }
-          
+
           // For OPD cases, show diagnosis groups
           if (section == logbookSectionOpdCases) {
             return _OpdCasesList(cases: filtered);
           }
-          
+
           // For other case sections, show normal list
           return ListView.separated(
             padding: const EdgeInsets.all(16),
@@ -644,78 +637,73 @@ class _SectionBody extends StatelessWidget {
                         // Content
                         Padding(
                           padding: const EdgeInsets.all(16),
-                          child: Row(
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
                             children: [
-                              Expanded(
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(
+                                    0xFF3B82F6,
+                                  ).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(
+                                      0xFF3B82F6,
+                                    ).withOpacity(0.2),
+                                  ),
+                                ),
                                 child: Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    // UID Badge
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF3B82F6).withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: const Color(0xFF3B82F6).withOpacity(0.2),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.fingerprint,
-                                            size: 14,
-                                            color: Color(0xFF3B82F6),
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'UID ${c.uidNumber}',
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Color(0xFF3B82F6),
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                        ],
+                                    const Icon(
+                                      Icons.fingerprint,
+                                      size: 14,
+                                      color: Color(0xFF3B82F6),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'UID ${c.uidNumber}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF3B82F6),
+                                        fontWeight: FontWeight.w700,
                                       ),
                                     ),
-
-                                    const SizedBox(width: 8),
-
-                                    // MR Badge
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFF1F5F9),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: const Color(0xFFE2E8F0),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.badge_outlined,
-                                            size: 14,
-                                            color: Color(0xFF64748B),
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'MR ${c.mrNumber}',
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Color(0xFF64748B),
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(0xFFE2E8F0),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.badge_outlined,
+                                      size: 14,
+                                      color: Color(0xFF64748B),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'MR ${c.mrNumber}',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF64748B),
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ],
@@ -869,11 +857,7 @@ class _EmptyState extends StatelessWidget {
                 ),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                icon,
-                size: 64,
-                color: const Color(0xFF94A3B8),
-              ),
+              child: Icon(icon, size: 64, color: const Color(0xFF94A3B8)),
             ),
             const SizedBox(height: 24),
             Text(
@@ -925,8 +909,8 @@ class _OpdCasesList extends ConsumerWidget {
     final filteredDiagnoses = searchQuery.isEmpty
         ? sortedDiagnoses
         : sortedDiagnoses
-            .where((d) => d.toLowerCase().contains(searchQuery.toLowerCase()))
-            .toList();
+              .where((d) => d.toLowerCase().contains(searchQuery.toLowerCase()))
+              .toList();
 
     return Column(
       children: [
@@ -946,20 +930,14 @@ class _OpdCasesList extends ConsumerWidget {
                 size: 22,
               ),
               hintText: 'Search diagnosis...',
-              hintStyle: TextStyle(
-                color: Color(0xFF94A3B8),
-                fontSize: 14,
-              ),
+              hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 14,
               ),
             ),
-            style: const TextStyle(
-              color: Color(0xFF1E293B),
-              fontSize: 14,
-            ),
+            style: const TextStyle(color: Color(0xFF1E293B), fontSize: 14),
             onChanged: (value) =>
                 ref.read(diagnosisSearchProvider.notifier).state = value,
           ),
@@ -970,10 +948,7 @@ class _OpdCasesList extends ConsumerWidget {
               ? const Center(
                   child: Text(
                     'No diagnosis found',
-                    style: TextStyle(
-                      color: Color(0xFF94A3B8),
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
                   ),
                 )
               : ListView.separated(
@@ -1009,29 +984,46 @@ class _OpdCasesList extends ConsumerWidget {
                                 topRight: Radius.circular(16),
                               ),
                               onTap: () {
-                                final updated = Set<String>.from(expandedDiagnoses);
+                                final updated = Set<String>.from(
+                                  expandedDiagnoses,
+                                );
                                 if (isExpanded) {
                                   updated.remove(diagnosis);
                                 } else {
                                   updated.add(diagnosis);
                                 }
-                                ref.read(expandedDiagnosisProvider.notifier).state = updated;
+                                ref
+                                        .read(
+                                          expandedDiagnosisProvider.notifier,
+                                        )
+                                        .state =
+                                    updated;
                               },
                               child: Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: isExpanded
-                                        ? [const Color(0xFF3B82F6), const Color(0xFF60A5FA)]
-                                        : [const Color(0xFFF8FAFC), const Color(0xFFF1F5F9)],
+                                        ? [
+                                            const Color(0xFF3B82F6),
+                                            const Color(0xFF60A5FA),
+                                          ]
+                                        : [
+                                            const Color(0xFFF8FAFC),
+                                            const Color(0xFFF1F5F9),
+                                          ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
                                   borderRadius: BorderRadius.only(
                                     topLeft: const Radius.circular(16),
                                     topRight: const Radius.circular(16),
-                                    bottomLeft: isExpanded ? Radius.zero : const Radius.circular(16),
-                                    bottomRight: isExpanded ? Radius.zero : const Radius.circular(16),
+                                    bottomLeft: isExpanded
+                                        ? Radius.zero
+                                        : const Radius.circular(16),
+                                    bottomRight: isExpanded
+                                        ? Radius.zero
+                                        : const Radius.circular(16),
                                   ),
                                 ),
                                 child: Row(
@@ -1041,12 +1033,15 @@ class _OpdCasesList extends ConsumerWidget {
                                       decoration: BoxDecoration(
                                         color: isExpanded
                                             ? Colors.white
-                                            : const Color(0xFF3B82F6).withOpacity(0.1),
+                                            : const Color(
+                                                0xFF3B82F6,
+                                              ).withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(12),
                                         boxShadow: isExpanded
                                             ? [
                                                 BoxShadow(
-                                                  color: Colors.black.withOpacity(0.1),
+                                                  color: Colors.black
+                                                      .withOpacity(0.1),
                                                   blurRadius: 4,
                                                   offset: const Offset(0, 2),
                                                 ),
@@ -1062,7 +1057,8 @@ class _OpdCasesList extends ConsumerWidget {
                                     const SizedBox(width: 16),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             diagnosis,
@@ -1071,7 +1067,9 @@ class _OpdCasesList extends ConsumerWidget {
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w700,
-                                              color: isExpanded ? Colors.white : const Color(0xFF1E293B),
+                                              color: isExpanded
+                                                  ? Colors.white
+                                                  : const Color(0xFF1E293B),
                                               letterSpacing: 0.3,
                                             ),
                                           ),
@@ -1083,16 +1081,23 @@ class _OpdCasesList extends ConsumerWidget {
                                             ),
                                             decoration: BoxDecoration(
                                               color: isExpanded
-                                                  ? Colors.white.withOpacity(0.25)
-                                                  : const Color(0xFF3B82F6).withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(6),
+                                                  ? Colors.white.withOpacity(
+                                                      0.25,
+                                                    )
+                                                  : const Color(
+                                                      0xFF3B82F6,
+                                                    ).withOpacity(0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
                                             ),
                                             child: Text(
                                               '${diagnosisCases.length} ${diagnosisCases.length == 1 ? 'case' : 'cases'}',
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w700,
-                                                color: isExpanded ? Colors.white : const Color(0xFF3B82F6),
+                                                color: isExpanded
+                                                    ? Colors.white
+                                                    : const Color(0xFF3B82F6),
                                               ),
                                             ),
                                           ),
@@ -1103,7 +1108,9 @@ class _OpdCasesList extends ConsumerWidget {
                                       isExpanded
                                           ? Icons.expand_less_rounded
                                           : Icons.expand_more_rounded,
-                                      color: isExpanded ? Colors.white : const Color(0xFF94A3B8),
+                                      color: isExpanded
+                                          ? Colors.white
+                                          : const Color(0xFF94A3B8),
                                       size: 28,
                                     ),
                                   ],
@@ -1119,13 +1126,17 @@ class _OpdCasesList extends ConsumerWidget {
                               physics: const NeverScrollableScrollPhysics(),
                               padding: const EdgeInsets.all(12),
                               itemCount: diagnosisCases.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 8),
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 8),
                               itemBuilder: (context, caseIndex) {
                                 final c = diagnosisCases[caseIndex];
                                 return Container(
                                   decoration: BoxDecoration(
                                     gradient: const LinearGradient(
-                                      colors: [Color(0xFFF8FAFC), Color(0xFFFFFFFF)],
+                                      colors: [
+                                        Color(0xFFF8FAFC),
+                                        Color(0xFFFFFFFF),
+                                      ],
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                     ),
@@ -1146,7 +1157,8 @@ class _OpdCasesList extends ConsumerWidget {
                                     color: Colors.transparent,
                                     child: InkWell(
                                       borderRadius: BorderRadius.circular(12),
-                                      onTap: () => context.push('/cases/${c.id}'),
+                                      onTap: () =>
+                                          context.push('/cases/${c.id}'),
                                       child: Padding(
                                         padding: const EdgeInsets.all(12),
                                         child: Row(
@@ -1155,14 +1167,20 @@ class _OpdCasesList extends ConsumerWidget {
                                               padding: const EdgeInsets.all(10),
                                               decoration: BoxDecoration(
                                                 gradient: const LinearGradient(
-                                                  colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+                                                  colors: [
+                                                    Color(0xFF3B82F6),
+                                                    Color(0xFF60A5FA),
+                                                  ],
                                                   begin: Alignment.topLeft,
                                                   end: Alignment.bottomRight,
                                                 ),
-                                                borderRadius: BorderRadius.circular(10),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
                                                 boxShadow: [
                                                   BoxShadow(
-                                                    color: const Color(0xFF3B82F6).withOpacity(0.3),
+                                                    color: const Color(
+                                                      0xFF3B82F6,
+                                                    ).withOpacity(0.3),
                                                     blurRadius: 4,
                                                     offset: const Offset(0, 2),
                                                   ),
@@ -1177,15 +1195,18 @@ class _OpdCasesList extends ConsumerWidget {
                                             const SizedBox(width: 12),
                                             Expanded(
                                               child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
                                                 children: [
                                                   Text(
                                                     c.patientName,
                                                     maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                     style: const TextStyle(
                                                       fontSize: 14,
-                                                      fontWeight: FontWeight.w700,
+                                                      fontWeight:
+                                                          FontWeight.w700,
                                                       color: Color(0xFF1E293B),
                                                     ),
                                                   ),
@@ -1193,32 +1214,49 @@ class _OpdCasesList extends ConsumerWidget {
                                                   Row(
                                                     children: [
                                                       Container(
-                                                        padding: const EdgeInsets.symmetric(
-                                                          horizontal: 8,
-                                                          vertical: 4,
-                                                        ),
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 8,
+                                                              vertical: 4,
+                                                            ),
                                                         decoration: BoxDecoration(
-                                                          color: const Color(0xFF3B82F6).withOpacity(0.1),
-                                                          borderRadius: BorderRadius.circular(6),
+                                                          color: const Color(
+                                                            0xFF3B82F6,
+                                                          ).withOpacity(0.1),
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                6,
+                                                              ),
                                                           border: Border.all(
-                                                            color: const Color(0xFF3B82F6).withOpacity(0.2),
+                                                            color: const Color(
+                                                              0xFF3B82F6,
+                                                            ).withOpacity(0.2),
                                                           ),
                                                         ),
                                                         child: Row(
-                                                          mainAxisSize: MainAxisSize.min,
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
                                                           children: [
                                                             const Icon(
                                                               Icons.fingerprint,
                                                               size: 12,
-                                                              color: Color(0xFF3B82F6),
+                                                              color: Color(
+                                                                0xFF3B82F6,
+                                                              ),
                                                             ),
-                                                            const SizedBox(width: 3),
+                                                            const SizedBox(
+                                                              width: 3,
+                                                            ),
                                                             Text(
                                                               c.uidNumber,
                                                               style: const TextStyle(
                                                                 fontSize: 11,
-                                                                color: Color(0xFF3B82F6),
-                                                                fontWeight: FontWeight.w700,
+                                                                color: Color(
+                                                                  0xFF3B82F6,
+                                                                ),
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
                                                               ),
                                                             ),
                                                           ],
@@ -1226,32 +1264,50 @@ class _OpdCasesList extends ConsumerWidget {
                                                       ),
                                                       const SizedBox(width: 6),
                                                       Container(
-                                                        padding: const EdgeInsets.symmetric(
-                                                          horizontal: 8,
-                                                          vertical: 4,
-                                                        ),
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 8,
+                                                              vertical: 4,
+                                                            ),
                                                         decoration: BoxDecoration(
-                                                          color: const Color(0xFFF1F5F9),
-                                                          borderRadius: BorderRadius.circular(6),
+                                                          color: const Color(
+                                                            0xFFF1F5F9,
+                                                          ),
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                6,
+                                                              ),
                                                           border: Border.all(
-                                                            color: const Color(0xFFE2E8F0),
+                                                            color: const Color(
+                                                              0xFFE2E8F0,
+                                                            ),
                                                           ),
                                                         ),
                                                         child: Row(
-                                                          mainAxisSize: MainAxisSize.min,
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
                                                           children: [
                                                             const Icon(
-                                                              Icons.badge_outlined,
+                                                              Icons
+                                                                  .badge_outlined,
                                                               size: 12,
-                                                              color: Color(0xFF64748B),
+                                                              color: Color(
+                                                                0xFF64748B,
+                                                              ),
                                                             ),
-                                                            const SizedBox(width: 3),
+                                                            const SizedBox(
+                                                              width: 3,
+                                                            ),
                                                             Text(
                                                               c.mrNumber,
                                                               style: const TextStyle(
                                                                 fontSize: 11,
-                                                                color: Color(0xFF64748B),
-                                                                fontWeight: FontWeight.w600,
+                                                                color: Color(
+                                                                  0xFF64748B,
+                                                                ),
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600,
                                                               ),
                                                             ),
                                                           ],
@@ -1267,8 +1323,11 @@ class _OpdCasesList extends ConsumerWidget {
                                             Container(
                                               padding: const EdgeInsets.all(6),
                                               decoration: BoxDecoration(
-                                                color: const Color(0xFF3B82F6).withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(8),
+                                                color: const Color(
+                                                  0xFF3B82F6,
+                                                ).withOpacity(0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                               ),
                                               child: const Icon(
                                                 Icons.chevron_right_rounded,
@@ -1344,10 +1403,7 @@ class _ErrorState extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.red[50],
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Colors.red[200]!,
-                  width: 1,
-                ),
+                border: Border.all(color: Colors.red[200]!, width: 1),
               ),
               child: Text(
                 message,
