@@ -51,6 +51,8 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
   String? _burnIntensityLe;
   bool _uploadingRe = false;
   bool _uploadingLe = false;
+  bool _uploadingVideoRe = false;
+  bool _uploadingVideoLe = false;
 
   static const _laserTypes = [
     'Pan retinal photocoagulation',
@@ -313,6 +315,21 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
                   ),
                 ),
               _buildLaserImagesSection(),
+              const SizedBox(height: 16),
+              const Text(
+                'Laser videos',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              if (widget.caseId == null)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    'Save the entry first to upload videos.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+              _buildLaserVideosSection(),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -607,6 +624,27 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
     return _buildLaserImageColumn(showRe ? 'RE' : 'LE');
   }
 
+  Widget _buildLaserVideosSection() {
+    final showRe = _isLaserActive(_laserTypeRe);
+    final showLe = _isLaserActive(_laserTypeLe);
+    if (!showRe && !showLe) {
+      return const SizedBox.shrink();
+    }
+
+    if (showRe && showLe) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: _buildLaserVideoColumn('RE')),
+          const SizedBox(width: 12),
+          Expanded(child: _buildLaserVideoColumn('LE')),
+        ],
+      );
+    }
+
+    return _buildLaserVideoColumn(showRe ? 'RE' : 'LE');
+  }
+
   Widget _buildLaserImageColumn(String eye) {
     final isRe = eye == 'RE';
     final uploading = isRe ? _uploadingRe : _uploadingLe;
@@ -630,6 +668,34 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
                 )
               : const Icon(Icons.image_outlined),
           label: Text(uploading ? 'Uploading...' : 'Upload image'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLaserVideoColumn(String eye) {
+    final isRe = eye == 'RE';
+    final uploading = isRe ? _uploadingVideoRe : _uploadingVideoLe;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          eye,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: widget.caseId == null || uploading
+              ? null
+              : () => _pickLaserVideo(eye),
+          icon: uploading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.videocam_outlined),
+          label: Text(uploading ? 'Uploading...' : 'Upload video'),
         ),
       ],
     );
@@ -677,6 +743,54 @@ class _LaserFormScreenState extends ConsumerState<LaserFormScreen> {
             _uploadingRe = false;
           } else {
             _uploadingLe = false;
+          }
+        });
+      }
+    }
+  }
+
+  Future<void> _pickLaserVideo(String eye) async {
+    if (widget.caseId == null) {
+      _showError('Save the entry first to upload videos.');
+      return;
+    }
+    final picker = ImagePicker();
+    final file = await picker.pickVideo(source: ImageSource.gallery);
+    if (file == null) return;
+
+    final ext = p.extension(file.path).toLowerCase();
+    const allowedVideos = ['.mp4', '.avi'];
+    if (!allowedVideos.contains(ext)) {
+      _showError('Only MP4 or AVI videos are allowed.');
+      return;
+    }
+
+    setState(() {
+      if (eye == 'RE') {
+        _uploadingVideoRe = true;
+      } else {
+        _uploadingVideoLe = true;
+      }
+    });
+
+    try {
+      await ref.read(clinicalCasesRepositoryProvider).uploadMedia(
+            caseId: widget.caseId!,
+            category: _laserMediaCategory,
+            mediaType: 'video',
+            file: File(file.path),
+            note: 'Laser $eye',
+          );
+      ref.invalidate(caseMediaProvider(widget.caseId!));
+    } catch (e) {
+      _showError('Upload failed: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          if (eye == 'RE') {
+            _uploadingVideoRe = false;
+          } else {
+            _uploadingVideoLe = false;
           }
         });
       }

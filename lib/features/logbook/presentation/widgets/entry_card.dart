@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/elog_entry.dart';
-import '../../application/logbook_providers.dart';
 
 class EntryCard extends ConsumerWidget {
   const EntryCard({super.key, required this.entry, this.onTap});
@@ -15,12 +14,13 @@ class EntryCard extends ConsumerWidget {
     final summary = _summaryText(entry);
     final keywordChips = entry.keywords.take(3).toList();
     final extra = entry.keywords.length - keywordChips.length;
-    final signedCache = ref.read(signedUrlCacheProvider.notifier);
-    
-    // Get image paths for atlas entries
-    final imagePaths = entry.moduleType == moduleImages
-        ? List<String>.from(entry.payload['uploadImagePaths'] ?? [])
+    final filePaths = entry.moduleType == moduleImages
+        ? [
+            ...List<String>.from(entry.payload['uploadImagePaths'] ?? []),
+            ...List<String>.from(entry.payload['videoPaths'] ?? []),
+          ]
         : <String>[];
+    final fileNames = filePaths.map(_fileNameFromPath).toList();
 
     return Container(
       decoration: BoxDecoration(
@@ -294,11 +294,9 @@ class EntryCard extends ConsumerWidget {
                         ],
                       ],
                     ),
-                    // Image Preview for Atlas Entries - Larger and Clickable
-                    if (imagePaths.isNotEmpty) ...[
+                    if (fileNames.isNotEmpty) ...[
                       const SizedBox(height: 12),
-                      // Description if available
-                      if (entry.payload['briefDescription'] != null && 
+                      if (entry.payload['briefDescription'] != null &&
                           entry.payload['briefDescription'].toString().isNotEmpty) ...[
                         Container(
                           padding: const EdgeInsets.all(10),
@@ -336,125 +334,76 @@ class EntryCard extends ConsumerWidget {
                         ),
                         const SizedBox(height: 10),
                       ],
-                      // Image Grid
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: imagePaths.length == 1 ? 1 : 2,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                          childAspectRatio: 1.2,
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                          ),
                         ),
-                        itemCount: imagePaths.length > 4 ? 4 : imagePaths.length,
-                        itemBuilder: (context, index) {
-                          final path = imagePaths[index];
-                          return FutureBuilder(
-                            future: signedCache.getUrl(path),
-                            builder: (context, snapshot) {
-                              return InkWell(
-                                onTap: snapshot.hasData
-                                    ? () => _showImageDialog(context, snapshot.data!)
-                                    : null,
-                                borderRadius: BorderRadius.circular(10),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: const Color(0xFF10B981),
-                                      width: 2,
-                                    ),
-                                    borderRadius: BorderRadius.circular(10),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFF10B981).withOpacity(0.2),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(8),
-                                    child: Stack(
-                                      fit: StackFit.expand,
-                                      children: [
-                                        snapshot.hasData
-                                            ? Image.network(
-                                                snapshot.data!,
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (_, __, ___) => Container(
-                                                  color: const Color(0xFFF1F5F9),
-                                                  child: const Center(
-                                                    child: Icon(
-                                                      Icons.broken_image,
-                                                      size: 32,
-                                                      color: Color(0xFF94A3B8),
-                                                    ),
-                                                  ),
-                                                ),
-                                              )
-                                            : Container(
-                                                color: const Color(0xFFF1F5F9),
-                                                child: const Center(
-                                                  child: SizedBox(
-                                                    width: 20,
-                                                    height: 20,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: Color(0xFF10B981),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                        if (snapshot.hasData)
-                                          Positioned(
-                                            bottom: 4,
-                                            right: 4,
-                                            child: Container(
-                                              padding: const EdgeInsets.all(4),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black.withOpacity(0.6),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: const Icon(
-                                                Icons.zoom_in,
-                                                color: Colors.white,
-                                                size: 14,
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.insert_drive_file_outlined,
+                                  size: 14,
+                                  color: Color(0xFF64748B),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Files (${fileNames.length})',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF475569),
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                      if (imagePaths.length > 4)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Center(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF10B981).withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: const Color(0xFF10B981).withOpacity(0.3),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            ...fileNames.take(2).map(
+                              (name) => Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _fileIconForName(name),
+                                      size: 14,
+                                      color: const Color(0xFF10B981),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF475569),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              child: Text(
-                                '+${imagePaths.length - 4} more images • Tap to view all',
+                            ),
+                            if (fileNames.length > 2)
+                              Text(
+                                '+${fileNames.length - 2} more files',
                                 style: const TextStyle(
                                   fontSize: 11,
                                   color: Color(0xFF10B981),
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
-                            ),
-                          ),
+                          ],
                         ),
+                      ),
                     ],
                   ],
                 ),
@@ -511,6 +460,35 @@ class EntryCard extends ConsumerWidget {
     }
   }
 
+  String _fileNameFromPath(String path) {
+    final normalized = path.replaceAll('\\', '/');
+    final parts = normalized.split('/');
+    return parts.isNotEmpty ? parts.last : path;
+  }
+
+  IconData _fileIconForName(String fileName) {
+    final ext = fileName.split('.').last.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic'].contains(ext)) {
+      return Icons.image_outlined;
+    }
+    if (['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp', 'm4v'].contains(ext)) {
+      return Icons.videocam_outlined;
+    }
+    if (['pdf'].contains(ext)) {
+      return Icons.picture_as_pdf_outlined;
+    }
+    if (['doc', 'docx', 'rtf', 'txt'].contains(ext)) {
+      return Icons.description_outlined;
+    }
+    if (['xls', 'xlsx', 'csv'].contains(ext)) {
+      return Icons.table_chart_outlined;
+    }
+    if (['ppt', 'pptx'].contains(ext)) {
+      return Icons.slideshow_outlined;
+    }
+    return Icons.insert_drive_file_outlined;
+  }
+
   String _summaryText(ElogEntry entry) {
     final payload = entry.payload;
     switch (entry.moduleType) {
@@ -520,7 +498,7 @@ class EntryCard extends ConsumerWidget {
         return payload['diagnosis'] ??
             payload['briefDescription'] ??
             payload['keyDescriptionOrPathology'] ??
-            'Image';
+            'File';
       case moduleLearning:
         return payload['stepName'] ??
             payload['teachingPoint'] ??
@@ -536,81 +514,6 @@ class EntryCard extends ConsumerWidget {
     }
   }
 
-  void _showImageDialog(BuildContext context, String imageUrl) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 500,
-            maxHeight: 500,
-          ),
-          child: Stack(
-            children: [
-              InteractiveViewer(
-                minScale: 0.5,
-                maxScale: 4.0,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    imageUrl,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: const Color(0xFFF1F5F9),
-                      child: const Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.broken_image,
-                              size: 64,
-                              color: Color(0xFF94A3B8),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'Failed to load image',
-                              style: TextStyle(
-                                color: Color(0xFF64748B),
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _StatusBadge extends StatelessWidget {

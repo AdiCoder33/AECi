@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -140,6 +141,7 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
         _atlasDiagnosisController.text = payload['diagnosis'] ?? payload['keyDescriptionOrPathology'] ?? '';
         _atlasBriefController.text = payload['briefDescription'] ?? payload['additionalInformation'] ?? '';
         _existingAtlasImagePaths = List<String>.from(payload['uploadImagePaths'] ?? []);
+        _existingVideosPaths = List<String>.from(payload['videoPaths'] ?? []);
         break;
     }
   }
@@ -222,9 +224,14 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
           final path = await mediaRepo.uploadImage(entryId: widget.entryId, file: file);
           _existingAtlasImagePaths.add(path);
         }
+        for (final file in _newVideos) {
+          final path = await mediaRepo.uploadImage(entryId: widget.entryId, file: file);
+          _existingVideosPaths.add(path);
+        }
         
         payload = {
           'uploadImagePaths': _existingAtlasImagePaths,
+          'videoPaths': _existingVideosPaths,
           'mediaType': _mediaType,
           'diagnosis': _atlasDiagnosisController.text.trim(),
           'briefDescription': _atlasBriefController.text.trim(),
@@ -381,13 +388,13 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
               child: const Row(
                 children: [
                   Icon(
-                    Icons.photo_library_outlined,
+                    Icons.insert_drive_file_outlined,
                     color: Colors.white,
                     size: 20,
                   ),
                   SizedBox(width: 12),
                   Text(
-                    'Atlas / Images',
+                    'Atlas / Files',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -410,10 +417,16 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
               maxLines: 3,
               validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
             ),
-            _ImagePickerSection(
-              title: 'Images',
+            _FilePickerSection(
+              title: 'Files',
               existingPaths: _existingAtlasImagePaths,
-              newImages: _newAtlasImages,
+              newFiles: _newAtlasImages,
+              onChanged: () => setState(() {}),
+            ),
+            _VideoPickerSection(
+              title: 'Videos',
+              existingPaths: _existingVideosPaths,
+              newVideos: _newVideos,
               onChanged: () => setState(() {}),
             ),
           ],
@@ -1426,13 +1439,14 @@ class _ImagesView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final payload = entry.payload;
     final signedCache = ref.read(signedUrlCacheProvider.notifier);
-    
-    final imagePaths = [
+
+    final filePaths = [
       ...List<String>.from(payload['uploadImagePaths'] ?? []),
       ...List<String>.from(payload['followUpVisitImagingPaths'] ?? []),
     ];
+    final videoPaths = List<String>.from(payload['videoPaths'] ?? []);
 
-    if (imagePaths.isEmpty) return const SizedBox.shrink();
+    if (filePaths.isEmpty && videoPaths.isEmpty) return const SizedBox.shrink();
 
     return Card(
       elevation: 3,
@@ -1457,13 +1471,13 @@ class _ImagesView extends ConsumerWidget {
             child: Row(
               children: [
                 const Icon(
-                  Icons.collections_outlined,
+                  Icons.insert_drive_file_outlined,
                   color: Colors.white,
                   size: 20,
                 ),
                 const SizedBox(width: 10),
                 const Text(
-                  'Atlas Images',
+                  'Atlas Files',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -1479,7 +1493,7 @@ class _ImagesView extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${imagePaths.length} ${imagePaths.length == 1 ? 'image' : 'images'}',
+                    '${filePaths.length} ${filePaths.length == 1 ? 'file' : 'files'}',
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -1490,182 +1504,137 @@ class _ImagesView extends ConsumerWidget {
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                childAspectRatio: 1.0,
-              ),
-              itemCount: imagePaths.length,
-              itemBuilder: (context, index) {
-                final path = imagePaths[index];
-                return FutureBuilder(
-                  future: signedCache.getUrl(path),
-                  builder: (context, snapshot) {
-                    return InkWell(
-                      onTap: snapshot.hasData
-                          ? () => _showImageDialog(context, snapshot.data!)
-                          : null,
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: const Color(0xFF10B981),
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF10B981).withOpacity(0.15),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
+          if (filePaths.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filePaths.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 6),
+                itemBuilder: (context, index) {
+                  final path = filePaths[index];
+                  return FutureBuilder(
+                    future: signedCache.getUrl(path),
+                    builder: (context, snapshot) {
+                      final fileName = _fileNameFromPath(path);
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(
+                          _fileIconForName(fileName),
+                          color: const Color(0xFF10B981),
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Stack(
-                            fit: StackFit.expand,
+                        title: Text(
+                          fileName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: TextButton(
+                          onPressed: snapshot.hasData
+                              ? () => launchUrl(Uri.parse(snapshot.data!))
+                              : null,
+                          child: const Text('Open'),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          if (videoPaths.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.fromLTRB(16, filePaths.isEmpty ? 16 : 0, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Videos',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF475569),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...videoPaths.map(
+                    (path) => FutureBuilder(
+                      future: signedCache.getUrl(path),
+                      builder: (context, snapshot) {
+                        final fileName = _fileNameFromPath(path);
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: const Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          child: Row(
                             children: [
-                              snapshot.hasData
-                                  ? Image.network(
-                                      snapshot.data!,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Container(
-                                        color: const Color(0xFFF1F5F9),
-                                        child: const Center(
-                                          child: Icon(
-                                            Icons.broken_image,
-                                            size: 28,
-                                            color: Color(0xFF94A3B8),
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                  : Container(
-                                      color: const Color(0xFFF1F5F9),
-                                      child: const Center(
-                                        child: SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Color(0xFF10B981),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                              if (snapshot.hasData)
-                                Positioned(
-                                  bottom: 4,
-                                  right: 4,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.6),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.zoom_in,
-                                      color: Colors.white,
-                                      size: 12,
-                                    ),
+                              const Icon(
+                                Icons.videocam_outlined,
+                                color: Color(0xFF0B5FFF),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  fileName,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF1E293B),
                                   ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
+                              ),
+                              TextButton(
+                                onPressed: snapshot.hasData
+                                    ? () => launchUrl(Uri.parse(snapshot.data!))
+                                    : null,
+                                child: const Text('Open'),
+                              ),
                             ],
                           ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
   }
 
-  void _showImageDialog(BuildContext context, String imageUrl) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(20),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 600,
-            maxHeight: 600,
-          ),
-          child: Stack(
-            children: [
-              InteractiveViewer(
-                minScale: 0.5,
-                maxScale: 4.0,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.network(
-                    imageUrl,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: const Color(0xFFF1F5F9),
-                      child: const Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.broken_image,
-                              size: 64,
-                              color: Color(0xFF94A3B8),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'Failed to load image',
-                              style: TextStyle(
-                                color: Color(0xFF64748B),
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  String _fileNameFromPath(String path) {
+    final normalized = path.replaceAll('\\', '/');
+    final parts = normalized.split('/');
+    return parts.isNotEmpty ? parts.last : path;
+  }
+
+  IconData _fileIconForName(String fileName) {
+    final ext = fileName.split('.').last.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic'].contains(ext)) {
+      return Icons.image_outlined;
+    }
+    if (['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp', 'm4v'].contains(ext)) {
+      return Icons.videocam_outlined;
+    }
+    if (['pdf'].contains(ext)) {
+      return Icons.picture_as_pdf_outlined;
+    }
+    if (['doc', 'docx', 'rtf', 'txt'].contains(ext)) {
+      return Icons.description_outlined;
+    }
+    if (['xls', 'xlsx', 'csv'].contains(ext)) {
+      return Icons.table_chart_outlined;
+    }
+    if (['ppt', 'pptx'].contains(ext)) {
+      return Icons.slideshow_outlined;
+    }
+    return Icons.insert_drive_file_outlined;
   }
 }
 
@@ -2003,6 +1972,216 @@ class _LearningVideosView extends ConsumerWidget {
         ],
       ),
     );
+  }
+}
+
+class _FilePickerSection extends ConsumerWidget {
+  const _FilePickerSection({
+    required this.title,
+    required this.existingPaths,
+    required this.newFiles,
+    required this.onChanged,
+  });
+
+  final String title;
+  final List<String> existingPaths;
+  final List<File> newFiles;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final signedCache = ref.read(signedUrlCacheProvider.notifier);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () async {
+                try {
+                  final result = await FilePicker.platform.pickFiles(
+                    allowMultiple: true,
+                    type: FileType.any,
+                  );
+                  if (result == null) return;
+                  final files = result.files
+                      .where((file) => file.path != null)
+                      .map((file) => File(file.path!))
+                      .toList();
+                  if (files.isNotEmpty) {
+                    newFiles.addAll(files);
+                    onChanged();
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to pick file: $e')),
+                  );
+                }
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Add'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (existingPaths.isEmpty && newFiles.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: Text('No files added'),
+            ),
+          )
+        else
+          Column(
+            children: [
+              ...existingPaths.map(
+                (path) => FutureBuilder(
+                  future: signedCache.getUrl(path),
+                  builder: (context, snapshot) {
+                    final fileName = _fileNameFromPath(path);
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFFE2E8F0),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _fileIconForName(fileName),
+                            color: const Color(0xFF0B5FFF),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              fileName,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF1E293B),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: snapshot.hasData
+                                ? () => launchUrl(Uri.parse(snapshot.data!))
+                                : null,
+                            icon: const Icon(Icons.open_in_new, size: 18),
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              existingPaths.remove(path);
+                              onChanged();
+                            },
+                            icon: const Icon(
+                              Icons.close,
+                              size: 18,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              ...newFiles.map(
+                (file) {
+                  final fileName = _fileNameFromPath(file.path);
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          _fileIconForName(fileName),
+                          color: const Color(0xFF0B5FFF),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            fileName,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF1E293B),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            newFiles.remove(file);
+                            onChanged();
+                          },
+                          icon: const Icon(
+                            Icons.close,
+                            size: 18,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  String _fileNameFromPath(String path) {
+    final normalized = path.replaceAll('\\', '/');
+    final parts = normalized.split('/');
+    return parts.isNotEmpty ? parts.last : path;
+  }
+
+  IconData _fileIconForName(String fileName) {
+    final ext = fileName.split('.').last.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic'].contains(ext)) {
+      return Icons.image_outlined;
+    }
+    if (['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp', 'm4v'].contains(ext)) {
+      return Icons.videocam_outlined;
+    }
+    if (['pdf'].contains(ext)) {
+      return Icons.picture_as_pdf_outlined;
+    }
+    if (['doc', 'docx', 'rtf', 'txt'].contains(ext)) {
+      return Icons.description_outlined;
+    }
+    if (['xls', 'xlsx', 'csv'].contains(ext)) {
+      return Icons.table_chart_outlined;
+    }
+    if (['ppt', 'pptx'].contains(ext)) {
+      return Icons.slideshow_outlined;
+    }
+    return Icons.insert_drive_file_outlined;
   }
 }
 
