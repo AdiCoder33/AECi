@@ -1697,6 +1697,7 @@ class _SummaryTab extends StatelessWidget {
     if (meta.isEmpty) return rows;
     final gestational = meta['gestational_age']?.toString();
     final postConception = meta['post_conceptional_age']?.toString();
+    final birthWeight = meta['birth_weight'];
     if ((gestational ?? '').isNotEmpty) {
       rows.add(_InfoRow(label: 'Gestational age', value: '$gestational weeks'));
     }
@@ -1705,6 +1706,14 @@ class _SummaryTab extends StatelessWidget {
         _InfoRow(
           label: 'Post conceptional age',
           value: '$postConception weeks',
+        ),
+      );
+    }
+    if (birthWeight != null) {
+      rows.add(
+        _InfoRow(
+          label: 'Birth weight',
+          value: '$birthWeight grams',
         ),
       );
     }
@@ -1728,7 +1737,7 @@ class _SummaryTab extends StatelessWidget {
     addEyePair('Zone', meta['zone'] as Map?);
     addEyePair('Stage', meta['stage'] as Map?);
     addEyePair('Plus disease', _boolEyeMap(meta['plus_disease']));
-    addEyePair('AGROP', _boolEyeMap(meta['agrop']));
+    addEyePair('A-ROP', _boolEyeMap(meta['agrop']));
     if (rows.isNotEmpty) {
       rows.removeLast();
     }
@@ -2165,6 +2174,12 @@ class _RopSummary extends StatelessWidget {
                 label: 'Post conceptional age',
                 value: ropMeta['post_conceptional_age']?.toString() ?? '-',
               ),
+              _InfoRow(
+                label: 'Birth weight',
+                value: ropMeta['birth_weight'] != null
+                    ? '${ropMeta['birth_weight']} grams'
+                    : '-',
+              ),
               const SizedBox(height: 8),
               _EyePairRow(
                 label: 'Zone',
@@ -2185,7 +2200,7 @@ class _RopSummary extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               _EyePairRow(
-                label: 'AGROP',
+                label: 'A-ROP',
                 right: _boolLabel(_eyeMapBool(ropMeta['agrop'], 'RE')),
                 left: _boolLabel(_eyeMapBool(ropMeta['agrop'], 'LE')),
               ),
@@ -2599,9 +2614,9 @@ class _MediaTab extends ConsumerWidget {
                 ),
               ),
             ),
-            ],
-          );
-        },
+          ],
+        );
+      },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Failed to load media: $e')),
     );

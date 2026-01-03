@@ -45,6 +45,8 @@ class _ClinicalCaseWizardScreenState
   final _iopReController = TextEditingController();
   final _iopLeController = TextEditingController();
   final _diagnosisController = TextEditingController();
+  final _diagnosisReController = TextEditingController();
+  final _diagnosisLeController = TextEditingController();
   final _keywordsController = TextEditingController();
   int _stepIndex = 0;
   bool _prefilled = false;
@@ -84,6 +86,8 @@ WidgetsBinding.instance.addPostFrameCallback((_) {
     _iopReController.dispose();
     _iopLeController.dispose();
     _diagnosisController.dispose();
+    _diagnosisReController.dispose();
+    _diagnosisLeController.dispose();
     _keywordsController.dispose();
     super.dispose();
   }
@@ -331,10 +335,18 @@ if (isUvea)
       Step8DiagnosisKeywords(
         formKey: _formKeys[isUvea ? 8 : 7],
         diagnosisController: _diagnosisController,
+        diagnosisReController: _diagnosisReController,
+        diagnosisLeController: _diagnosisLeController,
         keywordsController: _keywordsController,
         diagnoses: _parseDiagnoses(wizard.diagnosis),
+        diagnosesRe: _parseDiagnoses(wizard.diagnosisRe),
+        diagnosesLe: _parseDiagnoses(wizard.diagnosisLe),
         onDiagnosesChanged: (value) =>
             notifier.update(diagnosis: value.join(', ')),
+        onDiagnosesReChanged: (value) =>
+            notifier.update(diagnosisRe: value.join(', ')),
+        onDiagnosesLeChanged: (value) =>
+            notifier.update(diagnosisLe: value.join(', ')),
         keywords: wizard.keywords,
         onKeywordsChanged: (value) => notifier.update(keywords: value),
       ),

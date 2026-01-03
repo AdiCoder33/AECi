@@ -55,10 +55,14 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   String? _moduleType;
   String _currentStatus = statusDraft;
   List<String> _existingImagePaths = [];
+  List<String> _existingImagePathsRE = []; // Right Eye images for Atlas
+  List<String> _existingImagePathsLE = []; // Left Eye images for Atlas
   List<String> _existingVideoPaths = [];
   List<String> _existingRecordPreOpImagePaths = [];
   List<String> _existingRecordPostOpImagePaths = [];
   final List<File> _newImages = [];
+  final List<File> _newImagesRE = []; // Right Eye images for Atlas
+  final List<File> _newImagesLE = []; // Left Eye images for Atlas
   final List<File> _newVideos = [];
   final List<File> _newRecordPreOpImages = [];
   final List<File> _newRecordPostOpImages = [];
@@ -112,6 +116,10 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
               '';
           _keyDescriptionController.text = _atlasDiagnosisController.text;
           _additionalInfoController.text = _atlasBriefController.text;
+          // Load separate RE and LE images
+          _existingImagePathsRE = List<String>.from(payload['uploadImagePathsRE'] ?? []);
+          _existingImagePathsLE = List<String>.from(payload['uploadImagePathsLE'] ?? []);
+          // For backward compatibility, load old images without eye specification
           _existingImagePaths = [
             ...List<String>.from(payload['uploadImagePaths'] ?? []),
             ...List<String>.from(payload['followUpVisitImagingPaths'] ?? []),
@@ -338,9 +346,17 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                                 _buildSectionHeader('Upload Images', Icons.photo_library_outlined),
                                 const SizedBox(height: 16),
                                 _ImagePickerSection(
-                                  title: 'Images',
-                                  existingPaths: _existingImagePaths,
-                                  newImages: _newImages,
+                                  title: 'Right Eye Images',
+                                  existingPaths: _existingImagePathsRE,
+                                  newImages: _newImagesRE,
+                                  onChanged: () => setState(() {}),
+                                  enabled: _canEditStatus,
+                                ),
+                                const SizedBox(height: 16),
+                                _ImagePickerSection(
+                                  title: 'Left Eye Images',
+                                  existingPaths: _existingImagePathsLE,
+                                  newImages: _newImagesLE,
                                   onChanged: () => setState(() {}),
                                   enabled: _canEditStatus,
                                 ),
@@ -857,6 +873,14 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
         if (newPaths.isNotEmpty) {
           payload = _withNewPaths(module, payload, newPaths);
         }
+        // Upload separate RE and LE images for Atlas
+        if (module == moduleImages) {
+          final newPathsRE = await _uploadNewImages(mediaRepo, entryId, _newImagesRE);
+          final newPathsLE = await _uploadNewImages(mediaRepo, entryId, _newImagesLE);
+          if (newPathsRE.isNotEmpty || newPathsLE.isNotEmpty) {
+            payload = _withNewEyeImagePaths(payload, newPathsRE, newPathsLE);
+          }
+        }
         if (module == moduleRecords) {
           final prePaths = await _uploadNewImages(
             mediaRepo,
@@ -955,6 +979,8 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
         final uploadPaths = _existingImagePaths;
         return {
           'uploadImagePaths': uploadPaths,
+          'uploadImagePathsRE': _existingImagePathsRE,
+          'uploadImagePathsLE': _existingImagePathsLE,
           'mediaType': _mediaType,
           'diagnosis': _atlasDiagnosisController.text.trim(),
           'briefDescription': _atlasBriefController.text.trim(),
@@ -1034,6 +1060,19 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     final updated = Map<String, dynamic>.from(payload);
     final existing = List<String>.from(updated['videoPaths'] ?? []);
     updated['videoPaths'] = [...existing, ...newPaths];
+    return updated;
+  }
+
+  Map<String, dynamic> _withNewEyeImagePaths(
+    Map<String, dynamic> payload,
+    List<String> newPathsRE,
+    List<String> newPathsLE,
+  ) {
+    final updated = Map<String, dynamic>.from(payload);
+    final existingRE = List<String>.from(updated['uploadImagePathsRE'] ?? []);
+    final existingLE = List<String>.from(updated['uploadImagePathsLE'] ?? []);
+    updated['uploadImagePathsRE'] = [...existingRE, ...newPathsRE];
+    updated['uploadImagePathsLE'] = [...existingLE, ...newPathsLE];
     return updated;
   }
 

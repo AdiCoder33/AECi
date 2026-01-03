@@ -66,11 +66,15 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
   List<String> _existingRecordPostOpImagePaths = [];
   List<String> _existingVideosPaths = [];
   List<String> _existingAtlasImagePaths = [];
+  List<String> _existingAtlasImagePathsRE = [];
+  List<String> _existingAtlasImagePathsLE = [];
   
   final List<File> _newRecordPreOpImages = [];
   final List<File> _newRecordPostOpImages = [];
   final List<File> _newVideos = [];
   final List<File> _newAtlasImages = [];
+  final List<File> _newAtlasImagesRE = [];
+  final List<File> _newAtlasImagesLE = [];
   
   final List<String> _surgeryOptions = [
     'SOR',
@@ -140,6 +144,8 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
         _atlasDiagnosisController.text = payload['diagnosis'] ?? payload['keyDescriptionOrPathology'] ?? '';
         _atlasBriefController.text = payload['briefDescription'] ?? payload['additionalInformation'] ?? '';
         _existingAtlasImagePaths = List<String>.from(payload['uploadImagePaths'] ?? []);
+        _existingAtlasImagePathsRE = List<String>.from(payload['uploadImagePathsRE'] ?? []);
+        _existingAtlasImagePathsLE = List<String>.from(payload['uploadImagePathsLE'] ?? []);
         break;
     }
   }
@@ -222,9 +228,19 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
           final path = await mediaRepo.uploadImage(entryId: widget.entryId, file: file);
           _existingAtlasImagePaths.add(path);
         }
+        for (final file in _newAtlasImagesRE) {
+          final path = await mediaRepo.uploadImage(entryId: widget.entryId, file: file);
+          _existingAtlasImagePathsRE.add(path);
+        }
+        for (final file in _newAtlasImagesLE) {
+          final path = await mediaRepo.uploadImage(entryId: widget.entryId, file: file);
+          _existingAtlasImagePathsLE.add(path);
+        }
         
         payload = {
           'uploadImagePaths': _existingAtlasImagePaths,
+          'uploadImagePathsRE': _existingAtlasImagePathsRE,
+          'uploadImagePathsLE': _existingAtlasImagePathsLE,
           'mediaType': _mediaType,
           'diagnosis': _atlasDiagnosisController.text.trim(),
           'briefDescription': _atlasBriefController.text.trim(),
@@ -411,9 +427,16 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
               validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
             ),
             _ImagePickerSection(
-              title: 'Images',
-              existingPaths: _existingAtlasImagePaths,
-              newImages: _newAtlasImages,
+              title: 'Right Eye Images',
+              existingPaths: _existingAtlasImagePathsRE,
+              newImages: _newAtlasImagesRE,
+              onChanged: () => setState(() {}),
+            ),
+            const SizedBox(height: 16),
+            _ImagePickerSection(
+              title: 'Left Eye Images',
+              existingPaths: _existingAtlasImagePathsLE,
+              newImages: _newAtlasImagesLE,
               onChanged: () => setState(() {}),
             ),
           ],
@@ -1431,8 +1454,12 @@ class _ImagesView extends ConsumerWidget {
       ...List<String>.from(payload['uploadImagePaths'] ?? []),
       ...List<String>.from(payload['followUpVisitImagingPaths'] ?? []),
     ];
+    final imagePathsRE = List<String>.from(payload['uploadImagePathsRE'] ?? []);
+    final imagePathsLE = List<String>.from(payload['uploadImagePathsLE'] ?? []);
 
-    if (imagePaths.isEmpty) return const SizedBox.shrink();
+    if (imagePaths.isEmpty && imagePathsRE.isEmpty && imagePathsLE.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Card(
       elevation: 3,
@@ -1479,7 +1506,7 @@ class _ImagesView extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '${imagePaths.length} ${imagePaths.length == 1 ? 'image' : 'images'}',
+                    '${imagePaths.length + imagePathsRE.length + imagePathsLE.length} ${(imagePaths.length + imagePathsRE.length + imagePathsLE.length) == 1 ? 'image' : 'images'}',
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -1492,7 +1519,226 @@ class _ImagesView extends ConsumerWidget {
           ),
           Padding(
             padding: const EdgeInsets.all(16),
-            child: GridView.builder(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Right Eye Images
+                if (imagePathsRE.isNotEmpty) ...[
+                  Text(
+                    'Right Eye',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green[700],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 1.0,
+                    ),
+                    itemCount: imagePathsRE.length,
+                    itemBuilder: (context, index) {
+                      final path = imagePathsRE[index];
+                      return FutureBuilder(
+                        future: signedCache.getUrl(path),
+                        builder: (context, snapshot) {
+                          return InkWell(
+                            onTap: snapshot.hasData
+                                ? () => _showImageDialog(context, snapshot.data!)
+                                : null,
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colors.green,
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.green.withOpacity(0.15),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    snapshot.hasData
+                                        ? Image.network(
+                                            snapshot.data!,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) => Container(
+                                              color: const Color(0xFFF1F5F9),
+                                              child: const Center(
+                                                child: Icon(
+                                                  Icons.broken_image,
+                                                  size: 28,
+                                                  color: Color(0xFF94A3B8),
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                        : Container(
+                                            color: const Color(0xFFF1F5F9),
+                                            child: const Center(
+                                              child: SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: Colors.green,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                    if (snapshot.hasData)
+                                      Positioned(
+                                        bottom: 4,
+                                        right: 4,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(0.6),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.zoom_in,
+                                            color: Colors.white,
+                                            size: 12,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                // Left Eye Images
+                if (imagePathsLE.isNotEmpty) ...[
+                  Text(
+                    'Left Eye',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue[700],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 1.0,
+                    ),
+                    itemCount: imagePathsLE.length,
+                    itemBuilder: (context, index) {
+                      final path = imagePathsLE[index];
+                      return FutureBuilder(
+                        future: signedCache.getUrl(path),
+                        builder: (context, snapshot) {
+                          return InkWell(
+                            onTap: snapshot.hasData
+                                ? () => _showImageDialog(context, snapshot.data!)
+                                : null,
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colors.blue,
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.blue.withOpacity(0.15),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    snapshot.hasData
+                                        ? Image.network(
+                                            snapshot.data!,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) => Container(
+                                              color: const Color(0xFFF1F5F9),
+                                              child: const Center(
+                                                child: Icon(
+                                                  Icons.broken_image,
+                                                  size: 28,
+                                                  color: Color(0xFF94A3B8),
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                        : Container(
+                                            color: const Color(0xFFF1F5F9),
+                                            child: const Center(
+                                              child: SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: Colors.blue,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                    if (snapshot.hasData)
+                                      Positioned(
+                                        bottom: 4,
+                                        right: 4,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(0.6),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.zoom_in,
+                                            color: Colors.white,
+                                            size: 12,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                // Old images (for backward compatibility)
+                if (imagePaths.isNotEmpty)
+                  GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -1585,6 +1831,8 @@ class _ImagesView extends ConsumerWidget {
                   },
                 );
               },
+            ),
+              ],
             ),
           ),
         ],
