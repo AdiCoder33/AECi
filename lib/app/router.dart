@@ -22,6 +22,8 @@ import '../features/export/presentation/export_screen.dart';
 import '../features/profile/tools/storage_management_screen.dart';
 import '../features/review/presentation/review_queue_screen.dart';
 import '../features/review/presentation/review_detail_screen.dart';
+import '../features/review/presentation/consultant_assessments_screen.dart';
+import '../features/review/presentation/consultant_assessment_profile_screen.dart';
 import '../features/portfolio/presentation/research_screens.dart';
 import '../features/portfolio/presentation/publication_screens.dart';
 import '../features/teaching/presentation/teaching_list_screen.dart';
@@ -263,6 +265,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/review-queue',
             name: 'reviewQueue',
             builder: (context, state) => const ReviewQueueScreen(),
+          ),
+          GoRoute(
+            path: '/assessments',
+            name: 'assessments',
+            builder: (context, state) => const ConsultantAssessmentsScreen(),
+            routes: [
+              GoRoute(
+                path: ':id',
+                name: 'consultantAssessmentProfile',
+                builder: (context, state) => ConsultantAssessmentProfileScreen(
+                  traineeId: state.pathParameters['id']!,
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: '/review/:id',
