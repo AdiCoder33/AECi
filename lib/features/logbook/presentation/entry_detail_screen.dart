@@ -673,6 +673,8 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                               children: [
                                 Text(
                                   entry.patientUniqueId,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,
@@ -682,6 +684,8 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                                 const SizedBox(height: 2),
                                 Text(
                                   'MRN: ${entry.mrn}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                     fontSize: 12,
                                     color: Color(0xFF64748B),
@@ -741,11 +745,15 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                             ),
                           ),
                           const Spacer(),
-                          Text(
-                            'Updated ${_formatDate(entry.updatedAt)}',
-                            style: const TextStyle(
-                              color: Color(0xFF64748B),
-                              fontSize: 12,
+                          Flexible(
+                            child: Text(
+                              'Updated ${_formatDate(entry.updatedAt)}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF64748B),
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         ],

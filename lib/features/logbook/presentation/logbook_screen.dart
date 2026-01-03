@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/shimmer_loading.dart';
+
 import '../../clinical_cases/application/clinical_cases_controller.dart';
 import '../../clinical_cases/data/clinical_cases_repository.dart';
 import '../../portfolio/application/portfolio_controller.dart';
@@ -498,11 +500,7 @@ class _SectionBody extends StatelessWidget {
             },
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF0B5FFF),
-          ),
-        ),
+        loading: () => const ShimmerLoadingList(),
         error: (e, _) => _ErrorState(message: e.toString()),
       );
     }
@@ -618,11 +616,7 @@ class _SectionBody extends StatelessWidget {
             },
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF0B5FFF),
-          ),
-        ),
+        loading: () => const ShimmerLoadingList(),
         error: (e, _) => _ErrorState(message: e.toString()),
       );
     }
@@ -657,14 +651,14 @@ class _SectionBody extends StatelessWidget {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const ShimmerLoadingList(itemCount: 3),
         error: (e, _) => _ErrorState(message: e.toString()),
       );
     }
 
     if (isReviews && reviews != null) {
       if (reviews!.isLoading) {
-        return const Center(child: CircularProgressIndicator());
+        return const ShimmerLoadingList(itemCount: 3);
       }
       if (reviews!.error != null) {
         return _ErrorState(message: reviews!.error!);
@@ -905,6 +899,8 @@ class _OpdCasesList extends ConsumerWidget {
                                         children: [
                                           Text(
                                             diagnosis,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
                                             style: const TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w700,
@@ -981,20 +977,27 @@ class _OpdCasesList extends ConsumerWidget {
                                                 children: [
                                                   Text(
                                                     c.patientName,
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
                                                     style: const TextStyle(
                                                       fontSize: 14,
                                                       fontWeight: FontWeight.w600,
                                                       color: Color(0xFF1E293B),
                                                     ),
                                                   ),
-                                                  const SizedBox(height: 2),
+                                                  const SizedBox(height: 4),
                                                   Text(
                                                     'UID ${c.uidNumber} | MR ${c.mrNumber}',
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
                                                     style: const TextStyle(
-                                                      fontSize: 12,
+                                                      fontSize: 11,
                                                       color: Color(0xFF64748B),
                                                     ),
                                                   ),
+                                                  const SizedBox(height: 8),
+                                                  // Eye information side by side
+                                                  // ...existing code...
                                                 ],
                                               ),
                                             ),
