@@ -12,7 +12,9 @@ import '../domain/logbook_sections.dart';
 import 'widgets/entry_card.dart';
 
 class LogbookScreen extends ConsumerStatefulWidget {
-  const LogbookScreen({super.key});
+  const LogbookScreen({super.key, this.initialSection});
+
+  final String? initialSection;
 
   @override
   ConsumerState<LogbookScreen> createState() => _LogbookScreenState();
@@ -21,6 +23,21 @@ class LogbookScreen extends ConsumerStatefulWidget {
 class _LogbookScreenState extends ConsumerState<LogbookScreen> {
   @override
   Widget build(BuildContext context) {
+    // Update section immediately if initialSection is provided
+    if (widget.initialSection != null) {
+      final validSections = logbookSections.map((s) => s.key).toList();
+      if (validSections.contains(widget.initialSection)) {
+        final currentSection = ref.read(logbookSectionProvider);
+        if (currentSection != widget.initialSection) {
+          // Update synchronously if different
+          Future.microtask(() {
+            ref.read(logbookSectionProvider.notifier).state =
+                widget.initialSection!;
+          });
+        }
+      }
+    }
+
     final section = ref.watch(logbookSectionProvider);
     final module = ref.watch(moduleSelectionProvider);
     final isEntrySection = logbookEntrySections.contains(section);
@@ -30,15 +47,16 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
     final entries = isEntrySection ? ref.watch(entriesListProvider) : null;
     final AsyncValue<List<ClinicalCase>>? cases = isCaseSection
         ? (section == logbookSectionRetinoblastoma
-            ? ref.watch(clinicalCaseListByKeywordProvider('retinoblastoma'))
-            : section == logbookSectionRop
-                ? ref.watch(clinicalCaseListByKeywordProvider('rop'))
-                : section == logbookSectionLaser
-                    ? ref.watch(clinicalCaseListByKeywordProvider('laser'))
-                : ref.watch(clinicalCaseListProvider))
+              ? ref.watch(clinicalCaseListByKeywordProvider('retinoblastoma'))
+              : section == logbookSectionRop
+              ? ref.watch(clinicalCaseListByKeywordProvider('rop'))
+              : section == logbookSectionLaser
+              ? ref.watch(clinicalCaseListByKeywordProvider('laser'))
+              : ref.watch(clinicalCaseListProvider))
         : null;
-    final publications =
-        isPublications ? ref.watch(publicationListProvider) : null;
+    final publications = isPublications
+        ? ref.watch(publicationListProvider)
+        : null;
     final reviews = isReviews ? ref.watch(reviewControllerProvider) : null;
     final showMine = ref.watch(showMineProvider);
     final showDrafts = ref.watch(showDraftsProvider);
@@ -109,10 +127,7 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text(
           'New Entry',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         ),
       ),
       body: Column(
@@ -332,9 +347,13 @@ class _ModuleChip extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: selected ? Colors.white : const Color(0xFF64748B),
+                          color: selected
+                              ? Colors.white
+                              : const Color(0xFF64748B),
                           fontSize: selected ? 12 : 11,
-                          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
                         ),
                       ),
                     ),
@@ -395,9 +414,7 @@ class _FilterChip extends StatelessWidget {
         color: selected ? const Color(0xFF0B5FFF) : Colors.grey[300]!,
         width: 1.5,
       ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
     );
   }
@@ -423,20 +440,14 @@ class _SearchBar extends StatelessWidget {
             size: 22,
           ),
           hintText: 'Search by patient, MRN or keyword...',
-          hintStyle: const TextStyle(
-            color: Color(0xFF94A3B8),
-            fontSize: 14,
-          ),
+          hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
             vertical: 14,
           ),
         ),
-        style: const TextStyle(
-          color: Color(0xFF1E293B),
-          fontSize: 14,
-        ),
+        style: const TextStyle(color: Color(0xFF1E293B), fontSize: 14),
         onChanged: onChanged,
       ),
     );
@@ -495,9 +506,7 @@ class _SectionBody extends StatelessWidget {
           );
         },
         loading: () => const Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF0B5FFF),
-          ),
+          child: CircularProgressIndicator(color: Color(0xFF0B5FFF)),
         ),
         error: (e, _) => _ErrorState(message: e.toString()),
       );
@@ -532,9 +541,7 @@ class _SectionBody extends StatelessWidget {
           );
         },
         loading: () => const Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF0B5FFF),
-          ),
+          child: CircularProgressIndicator(color: Color(0xFF0B5FFF)),
         ),
         error: (e, _) => _ErrorState(message: e.toString()),
       );
@@ -616,9 +623,7 @@ class _SectionBody extends StatelessWidget {
   List<ClinicalCase> _filterCasesForSection(List<ClinicalCase> list) {
     switch (section) {
       case logbookSectionRetinoblastoma:
-        return list
-            .where((c) => _hasKeyword(c, 'retinoblastoma'))
-            .toList();
+        return list.where((c) => _hasKeyword(c, 'retinoblastoma')).toList();
       case logbookSectionRop:
         return list.where((c) => _hasKeyword(c, 'rop')).toList();
       case logbookSectionLaser:
@@ -672,10 +677,7 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF94A3B8),
-            ),
+            style: const TextStyle(fontSize: 14, color: Color(0xFF94A3B8)),
             textAlign: TextAlign.center,
           ),
         ],
@@ -695,11 +697,7 @@ class _ErrorState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 60,
-            color: Colors.red[300],
-          ),
+          Icon(Icons.error_outline, size: 60, color: Colors.red[300]),
           const SizedBox(height: 16),
           Text(
             'Failed to load',
@@ -712,10 +710,7 @@ class _ErrorState extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             message,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF64748B),
-            ),
+            style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
             textAlign: TextAlign.center,
           ),
         ],

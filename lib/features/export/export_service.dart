@@ -68,7 +68,7 @@ class ExportService {
         ),
         build: (context) {
           return [
-            pw.Text('Aravind E-Logbook', style: pw.TextStyle(fontSize: 20)),
+            pw.Text('RetiNotes', style: pw.TextStyle(fontSize: 20)),
             if (profile != null) ...[
               pw.Text(
                 '${profile.name} • ${profile.designation} • ${profile.centre} • ${profile.employeeId}',

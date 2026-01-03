@@ -60,25 +60,141 @@ class HomeScreen extends ConsumerWidget {
                   child: _SubmissionCard(),
                 ),
                 const SizedBox(height: 24),
-                // Quick Actions Section
+                // Daily Clinical Work Section
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Quick Actions',
+                        'Daily Clinical Work',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF1E293B),
-                            ),
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1E293B),
+                        ),
                       ),
                       const SizedBox(height: 16),
-                      _ActionGrid(isConsultant: isConsultant),
-                      const SizedBox(height: 32),
+                      _HorizontalCard(
+                        title: 'OPD Cases',
+                        description: 'View & manage OPD patients',
+                        assetPath: 'assets/OpdCases.png',
+                        color: const Color(0xFF0B5FFF),
+                        route: '/logbook?section=opd_cases',
+                      ),
+                      const SizedBox(height: 12),
+                      _HorizontalCard(
+                        title: 'Surgical Records',
+                        description: 'Log & review procedures',
+                        assetPath: 'assets/SurgicalRecords.png',
+                        color: const Color(0xFF0B5FFF),
+                        route: '/logbook?section=surgical_record',
+                      ),
+                      const SizedBox(height: 12),
+                      _HorizontalCard(
+                        title: 'Retinoblastoma',
+                        description: 'Screening & cases',
+                        assetPath: 'assets/RBScreening.png',
+                        color: const Color(0xFFEC4899),
+                        route: '/logbook?section=retinoblastoma_screening',
+                      ),
+                      const SizedBox(height: 12),
+                      _HorizontalCard(
+                        title: 'ROP',
+                        description: 'Screening & cases',
+                        assetPath: 'assets/ROPScreening.png',
+                        color: const Color(0xFF06B6D4),
+                        route: '/logbook?section=rop_screening',
+                      ),
                     ],
                   ),
                 ),
+                const SizedBox(height: 32),
+                // Knowledge & Tools Section
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Knowledge & Tools',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _SmallCard(
+                              title: 'Learning',
+                              description: 'Teaching resources',
+                              assetPath: 'assets/Learning.png',
+                              color: const Color(0xFFFEF3C7),
+                              iconColor: const Color(0xFFF59E0B),
+                              route: '/logbook?section=learning',
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _SmallCard(
+                              title: 'Atlas',
+                              description: 'Medical atlas',
+                              assetPath: 'assets/Atlas.png',
+                              color: const Color(0xFFDDD6FE),
+                              iconColor: const Color(0xFF8B5CF6),
+                              route: '/logbook?section=atlas',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                // Academic Section
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Academic',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _SmallCard(
+                              title: 'Publications',
+                              description: 'Research output',
+                              assetPath: 'assets/Publications.png',
+                              color: const Color(0xFFCFFAFE),
+                              iconColor: const Color(0xFF14B8A6),
+                              route: '/logbook?section=publications',
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _SmallCard(
+                              title: 'Reviews',
+                              description: 'Case validation',
+                              assetPath: 'assets/Reviews.png',
+                              color: const Color(0xFFE0E7FF),
+                              iconColor: const Color(0xFF6366F1),
+                              route: '/logbook?section=reviews',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
               ],
             ),
           ),
@@ -98,56 +214,56 @@ class _ActionGrid extends StatelessWidget {
     final actions = <_ActionData>[
       _ActionData(
         title: 'OPD Cases',
-        icon: Icons.local_hospital,
+        assetPath: 'assets/OpdCases.png',
         color: const Color(0xFF10B981),
         route: '/cases',
         description: 'Manage outpatient cases',
       ),
       _ActionData(
         title: 'Atlas',
-        icon: Icons.collections,
+        assetPath: 'assets/Atlas.png',
         color: const Color(0xFF8B5CF6),
         route: '/atlas',
         description: 'Browse medical atlas',
       ),
       _ActionData(
         title: 'Surgical Record',
-        icon: Icons.medical_services,
+        assetPath: 'assets/SurgicalRecords.png',
         color: const Color(0xFFEF4444),
         route: '/surgical',
         description: 'Log surgical procedures',
       ),
       _ActionData(
         title: 'Learning',
-        icon: Icons.school,
+        assetPath: 'assets/Learning.png',
         color: const Color(0xFFF59E0B),
         route: '/teaching',
         description: 'Educational resources',
       ),
       _ActionData(
         title: 'RB Screening',
-        icon: Icons.child_care,
+        assetPath: 'assets/RBScreening.png',
         color: const Color(0xFFEC4899),
         route: '/screening/rb',
         description: 'Retinoblastoma screening',
       ),
       _ActionData(
         title: 'ROP Screening',
-        icon: Icons.baby_changing_station,
+        assetPath: 'assets/ROPScreening.png',
         color: const Color(0xFF06B6D4),
         route: '/screening/rop',
         description: 'Retinopathy of prematurity',
       ),
       _ActionData(
         title: 'Publications',
-        icon: Icons.article,
+        assetPath: 'assets/Publications.png',
         color: const Color(0xFF14B8A6),
         route: '/publications',
         description: 'Research publications',
       ),
       _ActionData(
         title: 'Reviews',
-        icon: Icons.rate_review,
+        assetPath: 'assets/Reviews.png',
         color: const Color(0xFF6366F1),
         route: '/review-queue',
         description: 'Review submissions',
@@ -161,7 +277,7 @@ class _ActionGrid extends StatelessWidget {
         crossAxisCount: 2,
         mainAxisSpacing: 14,
         crossAxisSpacing: 14,
-        childAspectRatio: 1.15,
+        childAspectRatio: 0.9,
       ),
       itemCount: actions.length,
       itemBuilder: (context, index) => _ActionCard(action: actions[index]),
@@ -173,14 +289,14 @@ class _ActionGrid extends StatelessWidget {
 class _ActionData {
   const _ActionData({
     required this.title,
-    required this.icon,
-    required this.color,
+    this.assetPath,
+    this.color = const Color(0xFF64748B),
     required this.route,
     required this.description,
   });
 
   final String title;
-  final IconData icon;
+  final String? assetPath;
   final Color color;
   final String route;
   final String description;
@@ -215,36 +331,47 @@ class _ActionCard extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
               children: [
-                // Icon container
+                // Image container
                 Container(
-                  width: 52,
-                  height: 52,
+                  width: 64,
+                  height: 64,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        action.color,
-                        action.color.withOpacity(0.7),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
+                    color: action.color.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: action.color.withOpacity(0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                        color: action.color.withOpacity(0.15),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: Icon(
-                    action.icon,
-                    color: Colors.white,
-                    size: 26,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: action.assetPath != null
+                        ? Image.asset(
+                            action.assetPath!,
+                            width: 64,
+                            height: 64,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              print('❌ Failed to load: ${action.assetPath}');
+                              print('Error: $error');
+                              return Icon(
+                                Icons.broken_image_outlined,
+                                color: action.color,
+                                size: 32,
+                              );
+                            },
+                          )
+                        : Icon(
+                            Icons.image_outlined,
+                            color: action.color,
+                            size: 32,
+                          ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -258,6 +385,7 @@ class _ActionCard extends StatelessWidget {
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 4),
                 // Description
@@ -270,6 +398,7 @@ class _ActionCard extends StatelessWidget {
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -324,10 +453,7 @@ class _GreetingCard extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [
-                Color(0xFF0B5FFF),
-                Color(0xFF0A47B8),
-              ],
+              colors: [Color(0xFF0B5FFF), Color(0xFF0A47B8)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -467,10 +593,7 @@ class _SubmissionCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            const Color(0xFF10B981),
-            const Color(0xFF059669),
-          ],
+          colors: [const Color(0xFF10B981), const Color(0xFF059669)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -590,14 +713,19 @@ class _SubmissionCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 // Submit Button
                 ElevatedButton(
-                  onPressed: isSubmissionDay ? () => context.go('/submit') : null,
+                  onPressed: isSubmissionDay
+                      ? () => context.go('/submit')
+                      : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: const Color(0xFF10B981),
                     disabledBackgroundColor: Colors.white.withOpacity(0.3),
                     disabledForegroundColor: Colors.white.withOpacity(0.6),
                     elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -629,7 +757,203 @@ class _SubmissionCard extends StatelessWidget {
   }
 
   String _getMonthAbbr(int month) {
-    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const months = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
     return months[month - 1];
+  }
+}
+
+// Horizontal Card Component
+class _HorizontalCard extends StatelessWidget {
+  const _HorizontalCard({
+    required this.title,
+    required this.description,
+    required this.assetPath,
+    required this.color,
+    required this.route,
+  });
+
+  final String title;
+  final String description;
+  final String assetPath;
+  final Color color;
+  final String route;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => context.go(route),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.withOpacity(0.2), width: 1),
+          ),
+          child: Row(
+            children: [
+              // Icon
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    assetPath,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(Icons.image_outlined, color: color, size: 28);
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Text
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ),
+              // Arrow
+              Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Small Card Component
+class _SmallCard extends StatelessWidget {
+  const _SmallCard({
+    required this.title,
+    required this.description,
+    required this.assetPath,
+    required this.color,
+    required this.iconColor,
+    required this.route,
+  });
+
+  final String title;
+  final String description;
+  final String assetPath;
+  final Color color;
+  final Color iconColor;
+  final String route;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => context.go(route),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Icon
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    assetPath,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        Icons.image_outlined,
+                        color: iconColor,
+                        size: 24,
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Title
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              // Description
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      description,
+                      style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 12,
+                    color: Colors.grey[600],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
