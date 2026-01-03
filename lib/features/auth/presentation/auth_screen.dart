@@ -34,31 +34,27 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     final state = ref.watch(authControllerProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: const Color.fromARGB(245, 255, 255, 255),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 56),
+          child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Logo
-                Container(
-                  width: 90,
-                  height: 90,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEAF2FF),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Icon(Icons.book, size: 48, color: Color(0xFF0B5FFF)),
+                // GIF above app name
+                SizedBox(
+                  height: 110,
+                  child: Image.asset(
+                    'assets/AppLaunch.gif',
+                    fit: BoxFit.contain,
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 12),
                 // App Name
                 const Text(
-                  'Aravind E-Logbook',
+                  'RetiNotes',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -71,28 +67,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                   'Sign in securely with your Aravind account',
                   style: TextStyle(fontSize: 16, color: Color(0xFF475569)),
                   textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                // Illustration (placeholder)
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(60),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 12,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.emoji_people,
-                    size: 64,
-                    color: Color(0xFFB0B8C1),
-                  ),
                 ),
                 const SizedBox(height: 32),
                 // Card with form
@@ -265,19 +239,29 @@ class _EmailPasswordFields extends StatelessWidget {
           width: double.infinity,
           child: ElevatedButton(
             onPressed: isLoading ? null : onSubmit,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 29, 114, 250),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+              ),
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              textStyle: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             child: isLoading
                 ? const SizedBox(
                     height: 18,
                     width: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.black,
+                      color: Colors.white,
                     ),
                   )
-                : Text(
-                    primaryLabel,
-                    style: const TextStyle(color: Colors.black),
-                  ),
+                : Text(primaryLabel),
           ),
         ),
       ],
@@ -292,84 +276,100 @@ class _GoogleButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ElevatedButton.icon(
-      onPressed: isLoading
-          ? null
-          : () => ref.read(authControllerProvider.notifier).signInWithGoogle(),
-      icon: isLoading
-          ? const SizedBox(
-              height: 18,
-              width: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.black,
+    return SizedBox(
+      width: double.infinity,
+      height: 55,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(28),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(28),
+            onTap: isLoading
+                ? null
+                : () => ref
+                      .read(authControllerProvider.notifier)
+                      .signInWithGoogle(),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  isLoading
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xFF4285F4),
+                            ),
+                          ),
+                        )
+                      : Image.asset(
+                          'assets/google_logo.png',
+                          height: 24,
+                          width: 24,
+                        ),
+                  const SizedBox(width: 16),
+                  Flexible(
+                    child: Text(
+                      isLoading ? 'Signing in...' : 'Google',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFF4285F4),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            )
-          : const Icon(Icons.login, color: Colors.black),
-      label: Text(
-        isLoading ? 'Signing in...' : 'Continue with Google',
-        style: const TextStyle(color: Colors.black),
+            ),
+          ),
+        ),
       ),
-      style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
     );
   }
 }
 
 class _ErrorBanner extends StatelessWidget {
-  const _ErrorBanner({required this.message});
-
   final String message;
+  const _ErrorBanner({required this.message});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.redAccent.withValues(alpha: 0.15),
-        border: Border.all(color: Colors.redAccent),
+        color: Colors.red.shade100,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: Colors.redAccent),
+          const Icon(Icons.error_outline, color: Colors.red),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(color: Colors.redAccent),
+              style: const TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FeaturePill extends StatelessWidget {
-  const _FeaturePill({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Theme.of(context).dividerColor),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 2)),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: const Color(0xFF0B5FFF), size: 18),
-          const SizedBox(width: 8),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
         ],
       ),
     );
