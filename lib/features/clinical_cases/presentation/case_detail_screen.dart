@@ -267,7 +267,7 @@ class _SummaryTab extends StatelessWidget {
               Container(
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
+                    colors: [Color(0xFF10B981), Color(0xFF34D399)],
                   ),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(16),

@@ -604,7 +604,7 @@ class _SectionBody extends StatelessWidget {
                           padding: const EdgeInsets.all(16),
                           decoration: const BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [Color(0xFF10B981), Color(0xFF34D399)],
+                              colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
@@ -623,7 +623,7 @@ class _SectionBody extends StatelessWidget {
                                 ),
                                 child: const Icon(
                                   Icons.medical_information_outlined,
-                                  color: Color(0xFF10B981),
+                                  color: Color(0xFF3B82F6),
                                   size: 24,
                                 ),
                               ),
@@ -1025,7 +1025,7 @@ class _OpdCasesList extends ConsumerWidget {
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: isExpanded
-                                        ? [const Color(0xFF10B981), const Color(0xFF34D399)]
+                                        ? [const Color(0xFF3B82F6), const Color(0xFF60A5FA)]
                                         : [const Color(0xFFF8FAFC), const Color(0xFFF1F5F9)],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
@@ -1044,7 +1044,7 @@ class _OpdCasesList extends ConsumerWidget {
                                       decoration: BoxDecoration(
                                         color: isExpanded
                                             ? Colors.white
-                                            : const Color(0xFF10B981).withOpacity(0.1),
+                                            : const Color(0xFF3B82F6).withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(12),
                                         boxShadow: isExpanded
                                             ? [
@@ -1058,7 +1058,7 @@ class _OpdCasesList extends ConsumerWidget {
                                       ),
                                       child: Icon(
                                         Icons.local_hospital_rounded,
-                                        color: const Color(0xFF10B981),
+                                        color: const Color(0xFF3B82F6),
                                         size: 24,
                                       ),
                                     ),
@@ -1087,7 +1087,7 @@ class _OpdCasesList extends ConsumerWidget {
                                             decoration: BoxDecoration(
                                               color: isExpanded
                                                   ? Colors.white.withOpacity(0.25)
-                                                  : const Color(0xFF10B981).withOpacity(0.1),
+                                                  : const Color(0xFF3B82F6).withOpacity(0.1),
                                               borderRadius: BorderRadius.circular(6),
                                             ),
                                             child: Text(
@@ -1095,7 +1095,7 @@ class _OpdCasesList extends ConsumerWidget {
                                               style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w700,
-                                                color: isExpanded ? Colors.white : const Color(0xFF10B981),
+                                                color: isExpanded ? Colors.white : const Color(0xFF3B82F6),
                                               ),
                                             ),
                                           ),
@@ -1270,12 +1270,12 @@ class _OpdCasesList extends ConsumerWidget {
                                             Container(
                                               padding: const EdgeInsets.all(6),
                                               decoration: BoxDecoration(
-                                                color: const Color(0xFF10B981).withOpacity(0.1),
+                                                color: const Color(0xFF3B82F6).withOpacity(0.1),
                                                 borderRadius: BorderRadius.circular(8),
                                               ),
                                               child: const Icon(
                                                 Icons.chevron_right_rounded,
-                                                color: Color(0xFF10B981),
+                                                color: Color(0xFF3B82F6),
                                                 size: 20,
                                               ),
                                             ),

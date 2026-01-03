@@ -41,38 +41,139 @@ class Step6Anterior extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: _EyeSection(
-                      title: 'RE',
-                      eyeKey: 'RE',
-                      anterior: anterior,
-                      onSelectionChanged: onSelectionChanged,
-                      onDescriptionChanged: onDescriptionChanged,
-                      onOtherChanged: onOtherChanged,
-                      onRemarksChanged: onRemarksChanged,
-                    ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _EyeSection(
-                      title: 'LE',
-                      eyeKey: 'LE',
-                      anterior: anterior,
-                      onSelectionChanged: onSelectionChanged,
-                      onDescriptionChanged: onDescriptionChanged,
-                      onOtherChanged: onOtherChanged,
-                      onRemarksChanged: onRemarksChanged,
-                    ),
+                  child: Column(
+                    children: [
+                      // Gradient Header for RE
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF6366F1), Color(0xFF818CF8)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(16),
+                          ),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(
+                              Icons.remove_red_eye,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              'Right Eye (RE)',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Content
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: _EyeSection(
+                          title: 'RE',
+                          eyeKey: 'RE',
+                          anterior: anterior,
+                          onSelectionChanged: onSelectionChanged,
+                          onDescriptionChanged: onDescriptionChanged,
+                          onOtherChanged: onOtherChanged,
+                          onRemarksChanged: onRemarksChanged,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      // Gradient Header for LE
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Color(0xFF06B6D4), Color(0xFF22D3EE)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(16),
+                          ),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(
+                              Icons.remove_red_eye,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              'Left Eye (LE)',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Content
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: _EyeSection(
+                          title: 'LE',
+                          eyeKey: 'LE',
+                          anterior: anterior,
+                          onSelectionChanged: onSelectionChanged,
+                          onDescriptionChanged: onDescriptionChanged,
+                          onOtherChanged: onOtherChanged,
+                          onRemarksChanged: onRemarksChanged,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -158,13 +259,6 @@ class _EyeSectionState extends State<_EyeSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-        ),
-        const SizedBox(height: 12),
         ...anteriorSegmentSections.map((section) {
           final sectionData =
               Map<String, dynamic>.from(eye[section.key] as Map? ?? {});

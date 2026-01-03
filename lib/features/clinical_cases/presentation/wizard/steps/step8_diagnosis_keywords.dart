@@ -157,7 +157,8 @@ class _Step8DiagnosisKeywordsState extends State<Step8DiagnosisKeywords> {
                           runSpacing: 10,
                           children: _selectedDiagnoses.map((d) {
                             return Container(
-                              padding: const EdgeInsets.symmetric(\n                                horizontal: 14,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
                                 vertical: 10,
                               ),
                               decoration: BoxDecoration(

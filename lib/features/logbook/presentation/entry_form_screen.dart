@@ -975,27 +975,235 @@ class _ModuleFields extends StatelessWidget {
           ],
         );
       case moduleImages:
-        return Column(
-          children: [
-            _buildMediaTypeDropdown(
-              value: mediaType,
-              onChanged: enabled ? onMediaTypeChanged : null,
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            _buildField(
-              controller: atlasDiagnosisController,
-              label: 'Diagnosis',
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
-              enabled: enabled,
-            ),
-            _buildField(
-              controller: atlasBriefController,
-              label: 'Brief description',
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
-              enabled: enabled,
-            ),
-          ],
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF8B5CF6).withOpacity(0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Gradient Header Section
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.25),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.5),
+                          width: 2,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.collections_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Atlas Media',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Clinical imaging documentation',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.camera_alt,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'MEDIA',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // White Content Card
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Media Type with Custom Icon
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)],
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.category_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Media Type',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF64748B),
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildMediaTypeDropdown(
+                      value: mediaType,
+                      onChanged: enabled ? onMediaTypeChanged : null,
+                    ),
+                    const SizedBox(height: 20),
+                    // Diagnosis Field
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFEC4899), Color(0xFFF472B6)],
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.medical_information_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Diagnosis',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF64748B),
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildField(
+                      controller: atlasDiagnosisController,
+                      label: 'Enter diagnosis',
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? 'Required' : null,
+                      enabled: enabled,
+                    ),
+                    const SizedBox(height: 20),
+                    // Brief Description Field
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF14B8A6), Color(0xFF2DD4BF)],
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.description_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Description',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF64748B),
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildField(
+                      controller: atlasBriefController,
+                      label: 'Enter brief description',
+                      validator: (v) =>
+                          v == null || v.trim().isEmpty ? 'Required' : null,
+                      enabled: enabled,
+                      maxLines: 3,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         );
       case moduleLearning:
         return Column(
@@ -1070,15 +1278,44 @@ class _ModuleFields extends StatelessWidget {
     required String label,
     String? Function(String?)? validator,
     bool enabled = true,
+    int maxLines = 1,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextFormField(
-        controller: controller,
-        enabled: enabled,
-        decoration: InputDecoration(labelText: label),
-        validator: validator,
+    return TextFormField(
+      controller: controller,
+      enabled: enabled,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: const Color(0xFFF8FAFC),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 2.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        labelStyle: const TextStyle(
+          fontSize: 14,
+          color: Color(0xFF64748B),
+          fontWeight: FontWeight.w500,
+        ),
       ),
+      validator: validator,
     );
   }
 
@@ -1114,19 +1351,64 @@ class _ModuleFields extends StatelessWidget {
     if (value != null && value.isNotEmpty && !options.contains(value)) {
       options.insert(0, value);
     }
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: DropdownButtonFormField<String>(
-        value: value == null || value.isEmpty ? null : value,
-        items: options
-            .map((o) => DropdownMenuItem(value: o, child: Text(o)))
-            .toList(),
-        decoration: const InputDecoration(labelText: 'Type of media'),
-        validator: (v) =>
-            v == null || v.trim().isEmpty ? 'Required' : null,
-        onChanged: onChanged,
+    return DropdownButtonFormField<String>(
+      value: value == null || value.isEmpty ? null : value,
+      items: options
+          .map((o) => DropdownMenuItem(
+                value: o,
+                child: Row(
+                  children: [
+                    Icon(
+                      _getMediaIcon(o),
+                      size: 18,
+                      color: const Color(0xFF8B5CF6),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(o),
+                  ],
+                ),
+              ))
+          .toList(),
+      decoration: InputDecoration(
+        labelText: 'Select media type',
+        filled: true,
+        fillColor: const Color(0xFFF8FAFC),
+        prefixIcon: const Icon(
+          Icons.category_rounded,
+          color: Color(0xFF8B5CF6),
+          size: 20,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.5),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF8B5CF6), width: 2.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        labelStyle: const TextStyle(
+          fontSize: 14,
+          color: Color(0xFF64748B),
+          fontWeight: FontWeight.w500,
+        ),
       ),
+      validator: (v) =>
+          v == null || v.trim().isEmpty ? 'Required' : null,
+      onChanged: onChanged,
     );
+  }
+
+  IconData _getMediaIcon(String mediaType) {
+    if (mediaType.toLowerCase().contains('photo')) return Icons.photo_camera;
+    if (mediaType.toLowerCase().contains('video')) return Icons.videocam;
+    if (mediaType.toLowerCase().contains('xray')) return Icons.scanner;
+    if (mediaType.toLowerCase().contains('scan')) return Icons.medical_information;
+    return Icons.image;
   }
 }
 
