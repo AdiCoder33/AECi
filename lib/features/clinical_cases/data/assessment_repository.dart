@@ -166,10 +166,12 @@ class AssessmentRepository {
     final inserts = recipientIds.map((id) {
       final profile = Map<String, dynamic>.from(byId[id] as Map? ?? {});
       final designation = (profile['designation'] as String?) ?? '';
+      final normalized = designation.toLowerCase();
+      final canReview = normalized == 'reviewer' || normalized == 'consultant';
       return {
         'case_id': caseId,
         'recipient_id': id,
-        'can_review': designation == 'Reviewer',
+        'can_review': canReview,
       };
     }).toList();
 

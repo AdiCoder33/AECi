@@ -1390,7 +1390,9 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
     final doctorsAsync = ref.watch(assessmentDoctorsProvider);
     final authId = authState.session?.user.id;
     final isOwner = authId != null && authId == widget.caseOwnerId;
-    final isReviewer = profileState.profile?.designation == 'Reviewer';
+    final designation = profileState.profile?.designation;
+    final hasReviewerAccess =
+        designation == 'Reviewer' || designation == 'Consultant';
 
     if (!_seededSelection && widget.recipients.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1600,7 +1602,7 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'You have view access to this case. Only reviewers can submit scores.',
+                        'You have view access to this case. Only assigned consultants can submit scores.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: const Color(0xFF64748B),
                             ),
@@ -1611,7 +1613,7 @@ class _AssessmentTabState extends ConsumerState<_AssessmentTab> {
               ),
             ),
           ],
-          if (isReviewer && isAssignedReviewer) ...[
+          if (hasReviewerAccess && isAssignedReviewer) ...[
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
