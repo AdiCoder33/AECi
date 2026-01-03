@@ -39,6 +39,7 @@ import '../features/clinical_cases/presentation/wizard/clinical_case_wizard_scre
 import '../features/clinical_cases/presentation/retinoblastoma_form_screen.dart';
 import '../features/clinical_cases/presentation/rop_screening_form_screen.dart';
 import '../features/clinical_cases/presentation/laser_form_screen.dart';
+import '../features/clinical_cases/presentation/uvea_form_screen.dart';
 import '../features/clinical_cases/presentation/rop_detail_screen.dart';
 import '../features/clinical_cases/presentation/retinoblastoma_detail_screen.dart';
 import '../features/clinical_cases/presentation/laser_detail_screen.dart';
@@ -343,6 +344,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                   if (type == 'laser') {
                     return const LaserFormScreen();
                   }
+                  if (type == 'uvea') {
+                    return const UveaFormScreen();
+                  }
                   return ClinicalCaseWizardScreen(caseType: type);
                 },
               ),
@@ -398,6 +402,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                   }
                   if (type == 'laser') {
                     return LaserFormScreen(
+                      caseId: state.pathParameters['id']!,
+                    );
+                  }
+                  if (type == 'uvea') {
+                    return UveaFormScreen(
                       caseId: state.pathParameters['id']!,
                     );
                   }

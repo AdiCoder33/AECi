@@ -663,6 +663,23 @@ class _SummaryTab extends StatelessWidget {
         final suffix = height.isNotEmpty ? ' (${height} mm)' : '';
         lines.add('$eyeKey Hypopyon: $hypopyon$suffix');
       }
+      final irisParts = <String>[];
+      final nodules =
+          _formatOtherValue(eye['iris_nodules'], eye['iris_nodules_other']);
+      if (nodules.isNotEmpty) {
+        irisParts.add('Nodules: $nodules');
+      }
+      final synechiae = _stringValue(eye['iris_synechiae']);
+      if (synechiae.isNotEmpty) {
+        irisParts.add('Synechiae: $synechiae');
+      }
+      final rubeosis = _boolLabel(eye['iris_rubeosis']);
+      if (rubeosis.isNotEmpty) {
+        irisParts.add('Rubeosis: $rubeosis');
+      }
+      if (irisParts.isNotEmpty) {
+        lines.add('$eyeKey Iris: ${irisParts.join('; ')}');
+      }
       final glaucoma =
           _formatOtherValue(eye['glaucoma'], eye['glaucoma_other']);
       if (glaucoma.isNotEmpty) {
@@ -689,13 +706,22 @@ class _SummaryTab extends StatelessWidget {
       if (avf.isNotEmpty) {
         lines.add('$eyeKey AVF/Vitreous opacities: $avf');
       }
+      final snowballs = _presenceLabel(eye['media_snowballs']);
+      if (snowballs.isNotEmpty) {
+        lines.add('$eyeKey Snowballs: $snowballs');
+      }
       final opticDisc = _stringValue(eye['optic_disc']);
       if (opticDisc.isNotEmpty) {
         lines.add('$eyeKey Optic disc: $opticDisc');
       }
       final vessels = _stringValue(eye['vessels']);
-      if (vessels.isNotEmpty) {
-        lines.add('$eyeKey Vessels: $vessels');
+      final vesselsType = _stringValue(eye['vessels_type']);
+      final vesselText = [
+        if (vessels.isNotEmpty) vessels,
+        if (vesselsType.isNotEmpty) '($vesselsType)',
+      ].join(' ');
+      if (vesselText.trim().isNotEmpty) {
+        lines.add('$eyeKey Vessels: $vesselText');
       }
       final backgroundParts = <String>[];
       final retinitis = _stringValue(eye['background_retinitis']);
@@ -788,6 +814,12 @@ class _SummaryTab extends StatelessWidget {
   String _boolLabel(dynamic value) {
     if (value == true) return 'Yes';
     if (value == false) return 'No';
+    return '';
+  }
+
+  String _presenceLabel(dynamic value) {
+    if (value == true) return 'Present';
+    if (value == false) return 'Absent';
     return '';
   }
 
