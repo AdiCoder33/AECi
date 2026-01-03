@@ -108,7 +108,7 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
           const SizedBox(width: 4),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () {
           switch (section) {
             case logbookSectionOpdCases:
@@ -138,26 +138,10 @@ class _LogbookScreenState extends ConsumerState<LogbookScreen> {
         },
         backgroundColor: const Color(0xFF3B82F6),
         elevation: 4,
-        icon: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.25),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            Icons.add_rounded,
-            color: Colors.white,
-            size: 20,
-          ),
-        ),
-        label: const Text(
-          'New Entry',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-            fontSize: 15,
-            letterSpacing: 0.3,
-          ),
+        child: const Icon(
+          Icons.add_rounded,
+          color: Colors.white,
+          size: 28,
         ),
       ),
       body: Column(
