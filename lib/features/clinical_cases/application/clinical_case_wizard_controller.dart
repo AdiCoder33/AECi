@@ -29,8 +29,6 @@ class ClinicalCaseWizardState {
     required this.anteriorSegment,
     required this.fundus,
     required this.diagnosis,
-    required this.diagnosisRe,
-    required this.diagnosisLe,
     required this.keywords,
     required this.status,
   });
@@ -57,8 +55,6 @@ class ClinicalCaseWizardState {
   final Map<String, dynamic> anteriorSegment;
   final Map<String, dynamic> fundus;
   final String diagnosis;
-  final String diagnosisRe;
-  final String diagnosisLe;
   final List<String> keywords;
   final String status;
 
@@ -85,8 +81,6 @@ class ClinicalCaseWizardState {
     anteriorSegment: _initialAnterior(),
     fundus: _initialFundus(),
     diagnosis: '',
-    diagnosisRe: '',
-    diagnosisLe: '',
     keywords: const [],
     status: 'draft',
   );
@@ -114,8 +108,6 @@ class ClinicalCaseWizardState {
     Map<String, dynamic>? anteriorSegment,
     Map<String, dynamic>? fundus,
     String? diagnosis,
-    String? diagnosisRe,
-    String? diagnosisLe,
     List<String>? keywords,
     String? status,
   }) {
@@ -144,8 +136,6 @@ class ClinicalCaseWizardState {
       anteriorSegment: anteriorSegment ?? this.anteriorSegment,
       fundus: fundus ?? this.fundus,
       diagnosis: diagnosis ?? this.diagnosis,
-      diagnosisRe: diagnosisRe ?? this.diagnosisRe,
-      diagnosisLe: diagnosisLe ?? this.diagnosisLe,
       keywords: keywords ?? this.keywords,
       status: status ?? this.status,
     );
@@ -175,8 +165,8 @@ class ClinicalCaseWizardState {
       'iop_le': iopLe.isEmpty ? null : num.tryParse(iopLe),
       'anterior_segment': anteriorSegment,
       'fundus': fundus,
-      'diagnosis': diagnosis.trim(),      'diagnosis_re': diagnosisRe.trim(),
-      'diagnosis_le': diagnosisLe.trim(),      'keywords': cleanedKeywords,
+      'diagnosis': diagnosis.trim(),
+      'keywords': cleanedKeywords,
       'status': statusValue,
     };
   }
@@ -228,8 +218,6 @@ class ClinicalCaseWizardController
         ),
         fundus: _normalizeFundus(data.fundus ?? _initialFundus()),
         diagnosis: data.diagnosis,
-        diagnosisRe: data.diagnosisRe ?? '',
-        diagnosisLe: data.diagnosisLe ?? '',
         keywords: _applyCaseTypeKeywords(
           data.keywords,
           state.caseType ?? _detectCaseType(data.keywords),
@@ -262,8 +250,6 @@ class ClinicalCaseWizardController
     Map<String, dynamic>? anteriorSegment,
     Map<String, dynamic>? fundus,
     String? diagnosis,
-    String? diagnosisRe,
-    String? diagnosisLe,
     List<String>? keywords,
     String? status,
     String? caseType,
@@ -291,8 +277,6 @@ class ClinicalCaseWizardController
       anteriorSegment: anteriorSegment,
       fundus: fundus,
       diagnosis: diagnosis,
-      diagnosisRe: diagnosisRe,
-      diagnosisLe: diagnosisLe,
       keywords: nextKeywords,
       status: status,
       caseType: nextCaseType,

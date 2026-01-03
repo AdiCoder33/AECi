@@ -95,20 +95,25 @@ class Step6Anterior extends StatelessWidget {
                             top: Radius.circular(16),
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.remove_red_eye,
                               color: Colors.white,
                               size: 22,
                             ),
-                            SizedBox(width: 10),
-                            Text(
-                              'Right Eye (RE)',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                'Right Eye (RE)',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                             ),
                           ],
@@ -160,20 +165,25 @@ class Step6Anterior extends StatelessWidget {
                             top: Radius.circular(16),
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.remove_red_eye,
                               color: Colors.white,
                               size: 22,
                             ),
-                            SizedBox(width: 10),
-                            Text(
-                              'Left Eye (LE)',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                'Left Eye (LE)',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                             ),
                           ],
