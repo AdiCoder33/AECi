@@ -286,7 +286,8 @@ class _EyeFundus extends StatelessWidget {
         }),
         const SizedBox(height: 8),
         TextFormField(
-          key: ValueKey('$eyeKey-fundus-remarks-$remarks'),
+          // Use a stable key per eye so typing doesn't rebuild the field.
+          key: ValueKey('$eyeKey-fundus-remarks'),
           initialValue: remarks,
           decoration: const InputDecoration(labelText: 'Remarks (optional)'),
           maxLines: 3,

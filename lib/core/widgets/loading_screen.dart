@@ -21,13 +21,24 @@ class _LoadingScreenState extends State<LoadingScreen> {
   Future<void> _initLaunchFlow() async {
     final prefs = await SharedPreferences.getInstance();
     final hasShown = prefs.getBool('launch_animation_shown') ?? false;
+     final lastRoute = prefs.getString('last_route');
+
+    String _resolveTargetRoute() {
+      if (lastRoute != null &&
+          lastRoute.isNotEmpty &&
+          lastRoute != '/loading') {
+        return lastRoute;
+      }
+      // Fall back to normal auth/home flow; router redirects as needed.
+      return '/auth';
+    }
 
     if (hasShown) {
       if (!mounted) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          // Skip GIF and go straight into the normal auth/home flow.
-          GoRouter.of(context).go('/auth');
+          // Skip GIF and go straight to where the user last was (or auth).
+          GoRouter.of(context).go(_resolveTargetRoute());
         }
       });
       return;
@@ -47,7 +58,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
     // And navigate after 5 seconds on first launch only
     Future.delayed(const Duration(seconds: 5), () {
       if (mounted) {
-        GoRouter.of(context).go('/auth');
+        GoRouter.of(context).go(_resolveTargetRoute());
       }
     });
   }
