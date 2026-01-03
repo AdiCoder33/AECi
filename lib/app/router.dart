@@ -22,6 +22,8 @@ import '../features/export/presentation/export_screen.dart';
 import '../features/profile/tools/storage_management_screen.dart';
 import '../features/review/presentation/review_queue_screen.dart';
 import '../features/review/presentation/review_detail_screen.dart';
+import '../features/review/presentation/consultant_assessments_screen.dart';
+import '../features/review/presentation/consultant_assessment_profile_screen.dart';
 import '../features/portfolio/presentation/research_screens.dart';
 import '../features/portfolio/presentation/publication_screens.dart';
 import '../features/teaching/presentation/teaching_list_screen.dart';
@@ -39,6 +41,7 @@ import '../features/clinical_cases/presentation/wizard/clinical_case_wizard_scre
 import '../features/clinical_cases/presentation/retinoblastoma_form_screen.dart';
 import '../features/clinical_cases/presentation/rop_screening_form_screen.dart';
 import '../features/clinical_cases/presentation/laser_form_screen.dart';
+import '../features/clinical_cases/presentation/uvea_form_screen.dart';
 import '../features/clinical_cases/presentation/rop_detail_screen.dart';
 import '../features/clinical_cases/presentation/retinoblastoma_detail_screen.dart';
 import '../features/clinical_cases/presentation/laser_detail_screen.dart';
@@ -270,6 +273,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const ReviewQueueScreen(),
           ),
           GoRoute(
+            path: '/assessments',
+            name: 'assessments',
+            builder: (context, state) => const ConsultantAssessmentsScreen(),
+            routes: [
+              GoRoute(
+                path: ':id',
+                name: 'consultantAssessmentProfile',
+                builder: (context, state) => ConsultantAssessmentProfileScreen(
+                  traineeId: state.pathParameters['id']!,
+                ),
+              ),
+            ],
+          ),
+          GoRoute(
             path: '/review/:id',
             name: 'reviewDetail',
             builder: (context, state) {
@@ -349,16 +366,20 @@ final routerProvider = Provider<GoRouter>((ref) {
                   if (type == 'laser') {
                     return const LaserFormScreen();
                   }
+                  if (type == 'uvea') {
+                    return const UveaFormScreen();
+                  }
                   return ClinicalCaseWizardScreen(caseType: type);
                 },
               ),
-              GoRoute(
-                path: ':id',
-                name: 'caseDetail',
-                builder: (context, state) => ClinicalCaseDetailScreen(
-                  caseId: state.pathParameters['id']!,
-                ),
-              ),
+          GoRoute(
+            path: ':id',
+            name: 'caseDetail',
+            builder: (context, state) => ClinicalCaseDetailScreen(
+              caseId: state.pathParameters['id']!,
+              readOnly: state.uri.queryParameters['readonly'] == '1',
+            ),
+          ),
               GoRoute(
                 path: 'rop/:id',
                 name: 'ropDetail',
@@ -380,6 +401,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                   caseId: state.pathParameters['id']!,
                 ),
               ),
+          GoRoute(
+            path: 'uvea/:id',
+            name: 'uveaDetail',
+            builder: (context, state) => ClinicalCaseDetailScreen(
+              caseId: state.pathParameters['id']!,
+              readOnly: state.uri.queryParameters['readonly'] == '1',
+            ),
+          ),
               GoRoute(
                 path: ':id/edit',
                 name: 'caseEdit',
@@ -397,6 +426,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                   }
                   if (type == 'laser') {
                     return LaserFormScreen(caseId: state.pathParameters['id']!);
+                  }
+                  if (type == 'uvea') {
+                    return UveaFormScreen(
+                      caseId: state.pathParameters['id']!,
+                    );
                   }
                   return ClinicalCaseWizardScreen(
                     caseId: state.pathParameters['id']!,

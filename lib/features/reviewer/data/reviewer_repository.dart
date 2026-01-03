@@ -129,6 +129,34 @@ class ReviewerRepository {
         .toList();
   }
 
+  Future<ReviewerAssessment?> getMyClinicalCaseAssessment(String caseId) async {
+    final uid = _client.auth.currentUser?.id;
+    if (uid == null) return null;
+    final row = await _client
+        .from('reviewer_assessments')
+        .select('*')
+        .eq('reviewer_id', uid)
+        .eq('entity_type', 'clinical_case')
+        .eq('entity_id', caseId)
+        .maybeSingle();
+    if (row == null) return null;
+    return ReviewerAssessment.fromMap(Map<String, dynamic>.from(row));
+  }
+
+  Future<ReviewerAssessment?> getMyElogEntryAssessment(String entryId) async {
+    final uid = _client.auth.currentUser?.id;
+    if (uid == null) return null;
+    final row = await _client
+        .from('reviewer_assessments')
+        .select('*')
+        .eq('reviewer_id', uid)
+        .eq('entity_type', 'elog_entry')
+        .eq('entity_id', entryId)
+        .maybeSingle();
+    if (row == null) return null;
+    return ReviewerAssessment.fromMap(Map<String, dynamic>.from(row));
+  }
+
   Future<List<ReviewItem>> listPendingItems({int sinceDays = 90}) async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) return [];
@@ -286,7 +314,7 @@ class ReviewerRepository {
         subtitle: entryData == null
             ? 'Entry ${assessment.entityId}'
             : 'Patient ${entryData['patient_unique_id']} | MR ${entryData['mrn']}',
-        score: assessment.oscarTotal,
+        score: assessment.oscarTotal ?? assessment.score,
         remarks: assessment.remarks,
         updatedAt: assessment.updatedAt,
       );
@@ -301,15 +329,64 @@ class ReviewerRepository {
   }) async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) throw AuthException('Not signed in');
-    await _client.from('reviewer_assessments').upsert({
-      'reviewer_id': uid,
-      'trainee_id': traineeId,
-      'entity_type': 'clinical_case',
-      'entity_id': caseId,
-      'score': score,
-      'remarks': remarks,
-      'status': 'completed',
-    });
+    await _client.from('reviewer_assessments').upsert(
+      {
+        'reviewer_id': uid,
+        'trainee_id': traineeId,
+        'entity_type': 'clinical_case',
+        'entity_id': caseId,
+        'score': score,
+        'remarks': remarks,
+        'status': 'completed',
+      },
+      onConflict: 'reviewer_id,entity_type,entity_id',
+    );
+  }
+
+  Future<void> submitElogEntryScore({
+    required String entryId,
+    required String traineeId,
+    required int score,
+    required String remarks,
+  }) async {
+    final uid = _client.auth.currentUser?.id;
+    if (uid == null) throw AuthException('Not signed in');
+    await _client.from('reviewer_assessments').upsert(
+      {
+        'reviewer_id': uid,
+        'trainee_id': traineeId,
+        'entity_type': 'elog_entry',
+        'entity_id': entryId,
+        'score': score,
+        'remarks': remarks,
+        'status': 'completed',
+      },
+      onConflict: 'reviewer_id,entity_type,entity_id',
+    );
+  }
+
+  Future<void> submitElogEntryStepScore({
+    required String entryId,
+    required String traineeId,
+    required List<Map<String, dynamic>> stepScores,
+    required int totalScore,
+    required String remarks,
+  }) async {
+    final uid = _client.auth.currentUser?.id;
+    if (uid == null) throw AuthException('Not signed in');
+    await _client.from('reviewer_assessments').upsert(
+      {
+        'reviewer_id': uid,
+        'trainee_id': traineeId,
+        'entity_type': 'elog_entry',
+        'entity_id': entryId,
+        'oscar_scores': stepScores,
+        'oscar_total': totalScore,
+        'remarks': remarks,
+        'status': 'completed',
+      },
+      onConflict: 'reviewer_id,entity_type,entity_id',
+    );
   }
 
   Future<void> submitSurgicalVideoReview({
@@ -321,16 +398,19 @@ class ReviewerRepository {
   }) async {
     final uid = _client.auth.currentUser?.id;
     if (uid == null) throw AuthException('Not signed in');
-    await _client.from('reviewer_assessments').upsert({
-      'reviewer_id': uid,
-      'trainee_id': traineeId,
-      'entity_type': 'elog_entry',
-      'entity_id': entryId,
-      'oscar_scores': oscarScores,
-      'oscar_total': totalScore,
-      'remarks': remarks,
-      'status': 'completed',
-    });
+    await _client.from('reviewer_assessments').upsert(
+      {
+        'reviewer_id': uid,
+        'trainee_id': traineeId,
+        'entity_type': 'elog_entry',
+        'entity_id': entryId,
+        'oscar_scores': oscarScores,
+        'oscar_total': totalScore,
+        'remarks': remarks,
+        'status': 'completed',
+      },
+      onConflict: 'reviewer_id,entity_type,entity_id',
+    );
   }
 }
 

@@ -5,7 +5,6 @@ import '../../profile/data/profile_model.dart';
 
 const communityDesignationOrder = [
   'Consultant',
-  'Reviewer',
   'Fellow',
   'Resident',
 ];

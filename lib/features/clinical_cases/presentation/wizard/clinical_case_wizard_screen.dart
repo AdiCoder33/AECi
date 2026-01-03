@@ -12,7 +12,10 @@ import 'steps/step3_systemic.dart';
 import 'steps/step4_bcva.dart';
 import 'steps/step5_iop.dart';
 import 'steps/step6_anterior.dart';
+import 'steps/step6_uvea_anterior.dart';
 import 'steps/step7_fundus.dart';
+import 'steps/step7_uvea_fundus.dart';
+import 'steps/step8_uvea_location.dart';
 import 'steps/step8_diagnosis_keywords.dart';
 import 'widgets/wizard_footer.dart';
 import 'widgets/wizard_header.dart';
@@ -30,7 +33,7 @@ class ClinicalCaseWizardScreen extends ConsumerStatefulWidget {
 
 class _ClinicalCaseWizardScreenState
     extends ConsumerState<ClinicalCaseWizardScreen> {
-  final _formKeys = List.generate(8, (_) => GlobalKey<FormState>());
+  final _formKeys = List.generate(9, (_) => GlobalKey<FormState>());
   final _patientNameController = TextEditingController();
   final _uidController = TextEditingController();
   final _mrController = TextEditingController();
@@ -50,9 +53,12 @@ class _ClinicalCaseWizardScreenState
     super.initState();
     _bindControllers();
     if (widget.caseType != null) {
-      ref.read(clinicalCaseWizardProvider.notifier).setCaseType(
-            widget.caseType,
-          );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(clinicalCaseWizardProvider.notifier).setCaseType(
+              widget.caseType,
+            );
+      });
       if (widget.caseId == null) {
         _keywordsController.text = widget.caseType!;
       }
@@ -149,16 +155,30 @@ class _ClinicalCaseWizardScreenState
       );
     }
 
-    final titles = [
-      'Patient Details',
-      'Chief Complaints',
-      'Systemic History',
-      'BCVA',
-      'IOP',
-      'Anterior Segment',
-      'Fundus Examination',
-      'Diagnosis & Keywords',
-    ];
+    final isUvea =
+        (wizard.caseType ?? widget.caseType ?? '').toLowerCase() == 'uvea';
+    final titles = isUvea
+        ? [
+            'Patient Details',
+            'Chief Complaints',
+            'Systemic History',
+            'BCVA',
+            'IOP',
+            'Uvea Anterior Segment',
+            'Uvea Fundus Examination',
+            'Uveitis Location',
+            'Diagnosis & Keywords',
+          ]
+        : [
+            'Patient Details',
+            'Chief Complaints',
+            'Systemic History',
+            'BCVA',
+            'IOP',
+            'Anterior Segment',
+            'Fundus Examination',
+            'Diagnosis & Keywords',
+          ];
 
     final steps = <Widget>[
       Step1Patient(
@@ -213,58 +233,89 @@ class _ClinicalCaseWizardScreenState
         iopReController: _iopReController,
         iopLeController: _iopLeController,
       ),
-      Step6Anterior(
-        formKey: _formKeys[5],
-        anterior: wizard.anteriorSegment,
-        onSelectionChanged: (eye, sectionKey, selected) =>
-            notifier.setAnteriorSegmentSelection(
-              eye: eye,
-              sectionKey: sectionKey,
-              selectedList: selected,
-            ),
-        onDescriptionChanged: (eye, sectionKey, option, description) =>
-            notifier.setAnteriorSegmentDescription(
-              eye: eye,
-              sectionKey: sectionKey,
-              option: option,
-              description: description,
-            ),
-        onOtherChanged: (eye, sectionKey, other) =>
-            notifier.setAnteriorSegmentOther(
-              eye: eye,
-              sectionKey: sectionKey,
-              otherText: other,
-            ),
-        onRemarksChanged: (eye, remarks) =>
-            notifier.setAnteriorSegmentRemarks(eye: eye, remarks: remarks),
-      ),
-      Step7Fundus(
-        formKey: _formKeys[6],
-        fundus: wizard.fundus,
-        onSelectionChanged: (eye, sectionKey, selected) =>
-            notifier.setFundusSelection(
-              eye: eye,
-              sectionKey: sectionKey,
-              selectedList: selected,
-            ),
-        onDescriptionChanged: (eye, sectionKey, option, description) =>
-            notifier.setFundusDescription(
-              eye: eye,
-              sectionKey: sectionKey,
-              option: option,
-              description: description,
-            ),
-        onOtherChanged: (eye, sectionKey, other) =>
-            notifier.setFundusOther(
-              eye: eye,
-              sectionKey: sectionKey,
-              otherText: other,
-            ),
-        onRemarksChanged: (eye, remarks) =>
-            notifier.setFundusRemarks(eye: eye, remarks: remarks),
-      ),
+      if (isUvea)
+        Step6UveaAnterior(
+          formKey: _formKeys[5],
+          uveaAnterior: _uveaMap(wizard.anteriorSegment),
+          onChanged: (eye, field, value) =>
+              notifier.setUveaAnteriorField(
+                eye: eye,
+                field: field,
+                value: value,
+              ),
+        )
+      else
+        Step6Anterior(
+          formKey: _formKeys[5],
+          anterior: wizard.anteriorSegment,
+          onSelectionChanged: (eye, sectionKey, selected) =>
+              notifier.setAnteriorSegmentSelection(
+                eye: eye,
+                sectionKey: sectionKey,
+                selectedList: selected,
+              ),
+          onDescriptionChanged: (eye, sectionKey, option, description) =>
+              notifier.setAnteriorSegmentDescription(
+                eye: eye,
+                sectionKey: sectionKey,
+                option: option,
+                description: description,
+              ),
+          onOtherChanged: (eye, sectionKey, other) =>
+              notifier.setAnteriorSegmentOther(
+                eye: eye,
+                sectionKey: sectionKey,
+                otherText: other,
+              ),
+          onRemarksChanged: (eye, remarks) =>
+              notifier.setAnteriorSegmentRemarks(eye: eye, remarks: remarks),
+        ),
+      if (isUvea)
+        Step7UveaFundus(
+          formKey: _formKeys[6],
+          uveaFundus: _uveaMap(wizard.fundus),
+          onChanged: (eye, field, value) =>
+              notifier.setUveaFundusField(
+                eye: eye,
+                field: field,
+                value: value,
+              ),
+        )
+      else
+        Step7Fundus(
+          formKey: _formKeys[6],
+          fundus: wizard.fundus,
+          onSelectionChanged: (eye, sectionKey, selected) =>
+              notifier.setFundusSelection(
+                eye: eye,
+                sectionKey: sectionKey,
+                selectedList: selected,
+              ),
+          onDescriptionChanged: (eye, sectionKey, option, description) =>
+              notifier.setFundusDescription(
+                eye: eye,
+                sectionKey: sectionKey,
+                option: option,
+                description: description,
+              ),
+          onOtherChanged: (eye, sectionKey, other) =>
+              notifier.setFundusOther(
+                eye: eye,
+                sectionKey: sectionKey,
+                otherText: other,
+              ),
+          onRemarksChanged: (eye, remarks) =>
+              notifier.setFundusRemarks(eye: eye, remarks: remarks),
+        ),
+      if (isUvea)
+        Step8UveaLocation(
+          formKey: _formKeys[7],
+          locations: _uveaLocationMap(wizard.fundus),
+          onChanged: (eye, value) =>
+              notifier.setUveaLocation(eye: eye, location: value),
+        ),
       Step8DiagnosisKeywords(
-        formKey: _formKeys[7],
+        formKey: _formKeys[isUvea ? 8 : 7],
         diagnosisController: _diagnosisController,
         keywordsController: _keywordsController,
         diagnoses: _parseDiagnoses(wizard.diagnosis),
@@ -349,15 +400,22 @@ class _ClinicalCaseWizardScreenState
 
   void _goBack() {
     setState(() {
-      _stepIndex = (_stepIndex - 1).clamp(0, 7);
+      _stepIndex = (_stepIndex - 1).clamp(0, _maxStepIndex());
     });
   }
 
   void _goNext() {
     if (!_validateStep(showErrors: true)) return;
     setState(() {
-      _stepIndex = (_stepIndex + 1).clamp(0, 7);
+      _stepIndex = (_stepIndex + 1).clamp(0, _maxStepIndex());
     });
+  }
+
+  int _maxStepIndex() {
+    final wizard = ref.read(clinicalCaseWizardProvider);
+    final isUvea =
+        (wizard.caseType ?? widget.caseType ?? '').toLowerCase() == 'uvea';
+    return isUvea ? 8 : 7;
   }
 
   bool _canProceed(ClinicalCaseWizardState wizard) {
@@ -367,6 +425,8 @@ class _ClinicalCaseWizardScreenState
   bool _validateStep({ClinicalCaseWizardState? wizard, bool showErrors = false}) {
     final ClinicalCaseWizardState state =
         wizard ?? ref.read(clinicalCaseWizardProvider);
+    final isUvea =
+        (state.caseType ?? widget.caseType ?? '').toLowerCase() == 'uvea';
     if (showErrors) {
       final formKey = _formKeys[_stepIndex];
       if (formKey.currentState != null) {
@@ -391,32 +451,67 @@ class _ClinicalCaseWizardScreenState
       }
     }
 
-    if (_stepIndex == 5) {
-      final issues = _anteriorIssues(state.anteriorSegment);
-      if (issues.isNotEmpty) {
-        if (showErrors) {
-          _showError('Complete anterior segment selections.');
+    if (isUvea) {
+      if (_stepIndex == 5) {
+        final issues = _uveaAnteriorIssues(state.anteriorSegment);
+        if (issues.isNotEmpty) {
+          if (showErrors) {
+            _showError('Complete uvea anterior segment selections.');
+          }
+          return false;
         }
-        return false;
       }
-    }
-
-    if (_stepIndex == 6) {
-      final issues = _fundusIssues(state.fundus);
-      if (issues.isNotEmpty) {
-        if (showErrors) {
-          _showError('Complete fundus selections for both eyes.');
+      if (_stepIndex == 6) {
+        final issues = _uveaFundusIssues(state.fundus);
+        if (issues.isNotEmpty) {
+          if (showErrors) {
+            _showError('Complete uvea fundus selections for both eyes.');
+          }
+          return false;
         }
-        return false;
       }
-    }
-
-    if (_stepIndex == 7) {
-      if (state.keywords.isEmpty || state.keywords.length > 5) {
-        if (showErrors) {
-          _showError('Enter 1-5 keywords.');
+      if (_stepIndex == 7) {
+        if (!_uveaLocationComplete(state.fundus)) {
+          if (showErrors) {
+            _showError('Select uveitis location for both eyes.');
+          }
+          return false;
         }
-        return false;
+      }
+      if (_stepIndex == 8) {
+        if (state.keywords.isEmpty || state.keywords.length > 5) {
+          if (showErrors) {
+            _showError('Enter 1-5 keywords.');
+          }
+          return false;
+        }
+      }
+    } else {
+      if (_stepIndex == 5) {
+        final issues = _anteriorIssues(state.anteriorSegment);
+        if (issues.isNotEmpty) {
+          if (showErrors) {
+            _showError('Complete anterior segment selections.');
+          }
+          return false;
+        }
+      }
+      if (_stepIndex == 6) {
+        final issues = _fundusIssues(state.fundus);
+        if (issues.isNotEmpty) {
+          if (showErrors) {
+            _showError('Complete fundus selections for both eyes.');
+          }
+          return false;
+        }
+      }
+      if (_stepIndex == 7) {
+        if (state.keywords.isEmpty || state.keywords.length > 5) {
+          if (showErrors) {
+            _showError('Enter 1-5 keywords.');
+          }
+          return false;
+        }
       }
     }
 
@@ -424,6 +519,8 @@ class _ClinicalCaseWizardScreenState
   }
 
   bool _isStepComplete(ClinicalCaseWizardState state) {
+    final isUvea =
+        (state.caseType ?? widget.caseType ?? '').toLowerCase() == 'uvea';
     switch (_stepIndex) {
       case 0:
         return _patientNameController.text.trim().isNotEmpty &&
@@ -447,13 +544,27 @@ class _ClinicalCaseWizardScreenState
         return num.tryParse(_iopReController.text) != null &&
             num.tryParse(_iopLeController.text) != null;
       case 5:
-        return _anteriorIssues(state.anteriorSegment).isEmpty;
+        return isUvea
+            ? _uveaAnteriorIssues(state.anteriorSegment).isEmpty
+            : _anteriorIssues(state.anteriorSegment).isEmpty;
       case 6:
-        return _fundusIssues(state.fundus).isEmpty;
+        return isUvea
+            ? _uveaFundusIssues(state.fundus).isEmpty
+            : _fundusIssues(state.fundus).isEmpty;
       case 7:
+        if (isUvea) {
+          return _uveaLocationComplete(state.fundus);
+        }
         return _parseDiagnoses(state.diagnosis).isNotEmpty &&
             state.keywords.isNotEmpty &&
             state.keywords.length <= 5;
+      case 8:
+        if (isUvea) {
+          return _parseDiagnoses(state.diagnosis).isNotEmpty &&
+              state.keywords.isNotEmpty &&
+              state.keywords.length <= 5;
+        }
+        return true;
       default:
         return true;
     }
@@ -550,6 +661,115 @@ class _ClinicalCaseWizardScreenState
       }
     }
     return issues;
+  }
+
+  Map<String, dynamic> _uveaMap(Map<String, dynamic> source) {
+    return Map<String, dynamic>.from(source['uvea'] as Map? ?? {});
+  }
+
+  Map<String, dynamic> _uveaLocationMap(Map<String, dynamic> fundus) {
+    return Map<String, dynamic>.from(
+      fundus['uvea_location'] as Map? ?? {},
+    );
+  }
+
+  Map<String, dynamic> _uveaEye(Map<String, dynamic> uvea, String eyeKey) {
+    return Map<String, dynamic>.from(uvea[eyeKey] as Map? ?? {});
+  }
+
+  List<String> _uveaAnteriorIssues(Map<String, dynamic> anterior) {
+    final issues = <String>[];
+    final uvea = _uveaMap(anterior);
+    for (final eyeKey in ['RE', 'LE']) {
+      final eye = _uveaEye(uvea, eyeKey);
+      if (!_hasText(eye['conjunctiva'])) {
+        issues.add('$eyeKey conjunctiva');
+      } else if (eye['conjunctiva'] == 'Other' &&
+          !_hasText(eye['conjunctiva_other'])) {
+        issues.add('$eyeKey conjunctiva other');
+      }
+      if (eye['corneal_keratitis'] is! bool) {
+        issues.add('$eyeKey keratitis');
+      }
+      if (!_hasText(eye['kps_type'])) {
+        issues.add('$eyeKey KPs type');
+      }
+      if (!_hasText(eye['kps_distribution'])) {
+        issues.add('$eyeKey KPs distribution');
+      }
+      if (!_hasText(eye['ac_cells'])) {
+        issues.add('$eyeKey AC cells');
+      }
+      if (!_hasText(eye['flare'])) {
+        issues.add('$eyeKey flare');
+      }
+      if (eye['fm'] is! bool) {
+        issues.add('$eyeKey FM');
+      }
+      if (eye['hypopyon'] is! bool) {
+        issues.add('$eyeKey hypopyon');
+      } else if (eye['hypopyon'] == true &&
+          !_hasText(eye['hypopyon_height_mm'])) {
+        issues.add('$eyeKey hypopyon height');
+      }
+      if (!_hasText(eye['glaucoma'])) {
+        issues.add('$eyeKey glaucoma');
+      } else if (eye['glaucoma'] == 'Other' &&
+          !_hasText(eye['glaucoma_other'])) {
+        issues.add('$eyeKey glaucoma other');
+      }
+      if (!_hasText(eye['lens_status'])) {
+        issues.add('$eyeKey lens status');
+      }
+    }
+    return issues;
+  }
+
+  List<String> _uveaFundusIssues(Map<String, dynamic> fundus) {
+    final issues = <String>[];
+    final uvea = _uveaMap(fundus);
+    for (final eyeKey in ['RE', 'LE']) {
+      final eye = _uveaEye(uvea, eyeKey);
+      if (!_hasText(eye['background_retinitis'])) {
+        issues.add('$eyeKey retinitis');
+      }
+      if (!_hasText(eye['background_choroiditis'])) {
+        issues.add('$eyeKey choroiditis');
+      }
+      if (!_hasText(eye['background_vasculitis'])) {
+        issues.add('$eyeKey vasculitis');
+      }
+      if (eye['background_snowbanking'] is! bool) {
+        issues.add('$eyeKey snowbanking');
+      }
+      if (eye['background_snowballing'] is! bool) {
+        issues.add('$eyeKey snowballing');
+      }
+      if (eye['background_exudative_rd'] is! bool) {
+        issues.add('$eyeKey exudative RD');
+      }
+      if (eye['macula_cme'] is! bool) {
+        issues.add('$eyeKey macula CME');
+      }
+      if (eye['macula_exudates'] is! bool) {
+        issues.add('$eyeKey macula exudates');
+      }
+    }
+    return issues;
+  }
+
+  bool _uveaLocationComplete(Map<String, dynamic> fundus) {
+    final locations = _uveaLocationMap(fundus);
+    for (final eyeKey in ['RE', 'LE']) {
+      final value = locations[eyeKey];
+      if (value == null || value.toString().trim().isEmpty) return false;
+    }
+    return true;
+  }
+
+  bool _hasText(dynamic value) {
+    if (value == null) return false;
+    return value.toString().trim().isNotEmpty;
   }
 
   String _normalOptionForFundus(FundusSection section) {

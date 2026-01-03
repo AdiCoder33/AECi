@@ -1,4 +1,4 @@
-const profileDesignations = ['Fellow', 'Resident', 'Consultant', 'Reviewer'];
+const profileDesignations = ['Fellow', 'Resident', 'Consultant'];
 const profileCentres = [
   'Madurai',
   'Chennai',

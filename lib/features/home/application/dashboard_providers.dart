@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../logbook/data/entries_repository.dart';
 import '../../logbook/domain/elog_entry.dart';
 import '../../review/data/assignments_repository.dart';
+import '../../submissions/data/logbook_submission_repository.dart';
 
 class FellowDashboardStats {
   FellowDashboardStats({
@@ -50,31 +51,29 @@ final fellowDashboardProvider =
 
 final consultantDashboardProvider =
     FutureProvider<ConsultantDashboardStats>((ref) async {
+  final submissionsRepo = ref.watch(logbookSubmissionRepositoryProvider);
+  final submissions = await submissionsRepo.listSubmissionsForRecipient();
+  final pending = submissions.length;
+  final perTrainee = <String, int>{};
+  for (final submission in submissions) {
+    perTrainee[submission.createdBy] =
+        (perTrainee[submission.createdBy] ?? 0) + 1;
+  }
+
   final assignments = ref.watch(assignmentsRepositoryProvider);
   final trainees = await assignments.traineeIdsForConsultant();
-  if (trainees.isEmpty) {
-    return ConsultantDashboardStats(
-      pending: 0,
-      approvalsThisMonth: 0,
-      perTrainee: {},
-    );
-  }
-  final repo = ref.watch(entriesRepositoryProvider);
+  final entriesRepo = ref.watch(entriesRepositoryProvider);
   final all = <ElogEntry>[];
   for (final module in moduleTypes) {
-    final list = await repo.listEntries(moduleType: module, onlyMine: false);
+    final list = await entriesRepo.listEntries(moduleType: module, onlyMine: false);
     all.addAll(list.where((e) => trainees.contains(e.createdBy)));
   }
-  final pending = all.where((e) => e.status == statusSubmitted).length;
   final approvalsThisMonth = all.where((e) {
     if (e.status != statusApproved) return false;
     final now = DateTime.now();
     return e.updatedAt.year == now.year && e.updatedAt.month == now.month;
   }).length;
-  final perTrainee = <String, int>{};
-  for (final e in all) {
-    perTrainee[e.createdBy] = (perTrainee[e.createdBy] ?? 0) + 1;
-  }
+
   return ConsultantDashboardStats(
     pending: pending,
     approvalsThisMonth: approvalsThisMonth,

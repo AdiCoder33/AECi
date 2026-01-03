@@ -12,15 +12,17 @@ class ReviewerQueueScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileState = ref.watch(profileControllerProvider);
-    final isReviewer = profileState.profile?.designation == 'Reviewer';
+    final designation = profileState.profile?.designation;
+    final hasReviewerAccess =
+        designation == 'Reviewer' || designation == 'Consultant';
     final pendingAsync = ref.watch(reviewerPendingProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profiles to Assess'),
         actions: const [ReviewerAppBarActions()],
       ),
-      body: !isReviewer
-          ? const Center(child: Text('Reviewer access only.'))
+      body: !hasReviewerAccess
+          ? const Center(child: Text('Consultant access only.'))
           : pendingAsync.when(
               data: (items) {
                 if (items.isEmpty) {

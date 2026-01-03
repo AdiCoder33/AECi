@@ -7,6 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../auth/application/auth_controller.dart';
+import '../../profile/application/profile_controller.dart';
+import '../../reviewer/application/reviewer_controller.dart';
 import '../application/logbook_providers.dart';
 import '../domain/elog_entry.dart';
 import '../domain/surgical_learning_options.dart';
@@ -592,6 +594,9 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
   Widget build(BuildContext context) {
     final entryAsync = ref.watch(entryDetailProvider(widget.entryId));
     final auth = ref.watch(authControllerProvider);
+    final profileState = ref.watch(profileControllerProvider);
+    final myAssessmentAsync =
+        ref.watch(reviewerEntryAssessmentProvider(widget.entryId));
     final isEditing = ref.watch(_isEditingProvider);
 
     return Scaffold(
@@ -607,10 +612,55 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
             fontWeight: FontWeight.w600,
           ),
         ),
+        actions: [
+          entryAsync.maybeWhen(
+            data: (entry) {
+              final authId = auth.session?.user.id;
+              final designation = profileState.profile?.designation;
+              final canScore = designation == 'Consultant' &&
+                  authId != null &&
+                  authId != entry.createdBy;
+              if (!canScore) return const SizedBox.shrink();
+              final steps = _recordScoreStepsForSurgery(
+                _recordSurgeryName(entry),
+              );
+              final useStepScores =
+                  entry.moduleType == moduleRecords && steps.isNotEmpty;
+              return TextButton.icon(
+                onPressed: () => useStepScores
+                    ? _showRecordScoreSheet(
+                        context: context,
+                        ref: ref,
+                        entryId: entry.id,
+                        traineeId: entry.createdBy,
+                        steps: steps,
+                        initialScores: const <String, int>{},
+                        initialRemarks: '',
+                      )
+                    : _showEntryScoreSheet(
+                        context: context,
+                        ref: ref,
+                        entryId: entry.id,
+                        traineeId: entry.createdBy,
+                        initialRating: 0,
+                        initialRemarks: '',
+                      ),
+                icon: const Icon(Icons.star_rate),
+                label: const Text('Score Now'),
+              );
+            },
+            orElse: () => const SizedBox.shrink(),
+          ),
+        ],
       ),
       body: entryAsync.when(
         data: (entry) {
-          final isOwner = auth.session?.user.id == entry.createdBy;
+          final authId = auth.session?.user.id;
+          final isOwner = authId != null && authId == entry.createdBy;
+          final designation = profileState.profile?.designation;
+          final canScore = designation == 'Consultant' &&
+              authId != null &&
+              authId != entry.createdBy;
           final canEdit = isOwner &&
               (entry.status == statusDraft || entry.status == statusNeedsRevision) &&
               (entry.moduleType == moduleRecords || 
@@ -843,73 +893,159 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                       ),
                     ],
                   ),
+),
+const SizedBox(height: 12),
+
+// --------------------------------------------------
+// Payload details card (Images / Records / Learning)
+// --------------------------------------------------
+if (entry.moduleType == moduleImages ||
+    entry.moduleType == moduleRecords ||
+    entry.moduleType == moduleLearning) ...[
+  Card(
+    elevation: 3,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+    ),
+    margin: EdgeInsets.zero,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF10B981), Color(0xFF34D399)],
+            ),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                entry.moduleType == moduleImages
+                    ? Icons.photo_library_outlined
+                    : entry.moduleType == moduleRecords
+                        ? Icons.medical_services_outlined
+                        : Icons.school_outlined,
+                color: Colors.white,
+                size: 22,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                entry.moduleType == moduleImages
+                    ? 'Atlas Details'
+                    : entry.moduleType == moduleRecords
+                        ? 'Surgical Record Details'
+                        : 'Learning Module Details',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-                const SizedBox(height: 12),
-                if (entry.moduleType == moduleImages || 
-                    entry.moduleType == moduleRecords || 
-                    entry.moduleType == moduleLearning) ...[
-                  Card(
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    margin: EdgeInsets.zero,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Color(0xFF10B981), Color(0xFF34D399)],
-                            ),
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(16),
-                              topRight: Radius.circular(16),
-                            ),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          child: Row(
-                            children: [
-                              Icon(
-                                entry.moduleType == moduleImages 
-                                    ? Icons.photo_library_outlined
-                                    : entry.moduleType == moduleRecords
-                                        ? Icons.medical_services_outlined
-                                        : Icons.school_outlined,
-                                color: Colors.white,
-                                size: 22,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                entry.moduleType == moduleImages 
-                                    ? 'Atlas Details'
-                                    : entry.moduleType == moduleRecords
-                                        ? 'Surgical Record Details'
-                                        : 'Learning Module Details',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: _buildPayloadFields(entry),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                if (entry.moduleType != moduleImages && 
-                    entry.moduleType != moduleRecords && 
-                    entry.moduleType != moduleLearning) ...[
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: _buildPayloadFields(entry),
+          ),
+        ),
+      ],
+    ),
+  ),
+  const SizedBox(height: 12),
+],
+
+// --------------------------------------------------
+// Scoring / Assessment card
+// --------------------------------------------------
+if (canScore) ...[
+  myAssessmentAsync.when(
+    data: (assessment) {
+      final remarks = assessment?.remarks ?? '';
+      final steps =
+          _recordScoreStepsForSurgery(_recordSurgeryName(entry));
+
+      // Surgical record step-wise scoring
+      if (entry.moduleType == moduleRecords && steps.isNotEmpty) {
+        final stepScores =
+            _stepScoresFromAssessment(assessment?.oscarScores);
+        final totalScore = _stepScoreTotal(steps, stepScores);
+        final hasScore =
+            (assessment?.oscarScores?.isNotEmpty ?? false);
+
+        return _RecordScoreCard(
+          steps: steps,
+          stepScores: stepScores,
+          totalScore: totalScore,
+          remarks: remarks,
+          hasScore: hasScore,
+          onEdit: () => _showRecordScoreSheet(
+            context: context,
+            ref: ref,
+            entryId: entry.id,
+            traineeId: entry.createdBy,
+            steps: steps,
+            initialScores: stepScores,
+            initialRemarks: remarks,
+          ),
+        );
+      }
+
+      // Normal entry scoring
+      final score =
+          assessment?.score ?? assessment?.oscarTotal ?? 0;
+      final hasScore =
+          assessment?.score != null ||
+          assessment?.oscarTotal != null;
+
+      return _EntryScoreCard(
+        score: score,
+        remarks: remarks,
+        hasScore: hasScore,
+        onEdit: () => _showEntryScoreSheet(
+          context: context,
+          ref: ref,
+          entryId: entry.id,
+          traineeId: entry.createdBy,
+          initialRating: score,
+          initialRemarks: remarks,
+        ),
+      );
+    },
+    loading: () => const Center(
+      child: CircularProgressIndicator(
+        color: Color(0xFF0B5FFF),
+      ),
+    ),
+    error: (e, _) => Card(
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Text('Failed to load score: $e'),
+      ),
+    ),
+  ),
+  const SizedBox(height: 12),
+],
+
+// --------------------------------------------------
+// Other module types
+// --------------------------------------------------
+if (entry.moduleType != moduleImages &&
+    entry.moduleType != moduleRecords &&
+    entry.moduleType != moduleLearning) ...[
+  // existing content continues here
+],
+
                   _AuthorInfo(author: entry.authorProfile),
                   const SizedBox(height: 12),
                   _PayloadView(entry: entry),
@@ -3136,6 +3272,753 @@ class _StatusBadge extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+String _recordSurgeryName(ElogEntry entry) {
+  final payload = entry.payload;
+  return (payload['surgery'] as String?) ??
+      (payload['learningPointOrComplication'] as String?) ??
+      '';
+}
+
+List<String> _recordScoreStepsForSurgery(String surgery) {
+  final normalized = surgery.toLowerCase().trim();
+  if (normalized.isEmpty) return const [];
+  if (normalized.contains('sor') || normalized.contains('silicone')) {
+    return const [
+      'Port making',
+      'Checking infusion',
+      'Silicone oil removal',
+      'Fluid air exchange',
+      'Assessing retina',
+      'Port removal and suturing',
+      'Additional steps',
+    ];
+  }
+  if (normalized.contains('vh') || normalized.contains('vitreous')) {
+    return const [
+      'Port making',
+      'Checking infusion',
+      'Core vitrectomy',
+      'Triamcinolone acetonide staining',
+      'PVD induction',
+      'Removal of remnant vitreous sheets',
+      'Membrane peeling',
+      'Endolaser',
+      'Fluid air exchange',
+      'Tamponade',
+      'Port removal and suturing',
+    ];
+  }
+  if (normalized.contains('rrd') || normalized.contains('rhegmat')) {
+    return const [
+      'Port making',
+      'Check infusion',
+      'Core vitrectomy',
+      'Triamcinolone acetonide staining',
+      'Base shaving',
+      'PFCL injection',
+      'Endolaser',
+      'Fluid air exchange',
+      'Assessing retina',
+      'Silicone oil tamponade',
+      'Port removal and suturing',
+      'Additional steps',
+    ];
+  }
+  if (normalized.contains('mh') ||
+      normalized.contains('erm') ||
+      normalized.contains('macular')) {
+    return const [
+      'Port making',
+      'Checking infusion',
+      'Core vitrectomy',
+      'Triamcinolone acetonide staining',
+      'PVD induction',
+      'BBG staining',
+      'ILM/ERM peeling',
+      'Fluid air exchange',
+      'Gas tamponade',
+      'Port removal and suturing',
+      'Additional steps',
+    ];
+  }
+  if (normalized.contains('scleral') || normalized.contains('buckle')) {
+    return const [
+      'Conjunctival peritomy and tenon seperation',
+      'Bridling of the recti',
+      'Inspection of the scleral bed',
+      'Localisation of the break (single point/two point/three point)',
+      'Cryopexy',
+      'Suture placement/tunnel for belt/band',
+      'Passing of buckle and band',
+      'CHK knot/Watzke sleeve for band tightening',
+      'SRF drainage (optional)',
+      'Closure steps (checking retinal integrity, final tightening of band, conjuctival suturing and gentamicin wash)',
+      'Additional steps',
+    ];
+  }
+  if (normalized.contains('ppl') && normalized.contains('sfiol')) {
+    return const [
+      'Conjunctival peritomy',
+      'Sclero corneal tunnel',
+      'Gabor Scharioth pockets/S-FIX',
+      'Port making',
+      'Check infusion',
+      'Core vitrectomy',
+      'Lensectomy (fragmento/cutter)',
+      'Keratomr entry',
+      'IOL insertion',
+      'Haptic exteriorisation',
+      'Haptic tucking',
+      'Sclero corneal tunnel suturing',
+      'Conjunctival suturing',
+      'Additional steps',
+    ];
+  }
+  if (normalized.contains('sfiol')) {
+    return const [
+      'Conjunctival peritomy',
+      'Sclero corneal tunnel',
+      'Gabor Scharioth pockets/S-FIX',
+      'Port making',
+      'Check infusion',
+      'Core vitrectomy',
+      'Keratomr entry',
+      'IOL insertion',
+      'Haptic exteriorisation',
+      'Haptic tucking',
+      'Sclero corneal tunnel suturing',
+      'Conjunctival suturing',
+      'Additional steps',
+    ];
+  }
+  if (normalized.contains('ppl') || normalized.contains('lensectomy')) {
+    return const [
+      'Port making',
+      'Check infusion',
+      'Core vitrectomy',
+      'Lensectomy (fragmento/cutter)',
+    ];
+  }
+  return const [];
+}
+
+Map<String, int> _stepScoresFromAssessment(List<dynamic>? rawScores) {
+  final scores = <String, int>{};
+  if (rawScores == null) return scores;
+  for (final item in rawScores) {
+    if (item is Map) {
+      final map = Map<String, dynamic>.from(item as Map);
+      final label = (map['criterion'] ?? map['step']) as String?;
+      final score = map['score'];
+      if (label == null) continue;
+      if (score is num) {
+        final value = score.toInt();
+        scores[label] = value.clamp(0, 5) as int;
+      }
+    }
+  }
+  return scores;
+}
+
+int _stepScoreTotal(List<String> steps, Map<String, int> scores) {
+  return steps.fold(0, (sum, step) => sum + (scores[step] ?? 0));
+}
+
+class _RecordScoreCard extends StatelessWidget {
+  const _RecordScoreCard({
+    required this.steps,
+    required this.stepScores,
+    required this.totalScore,
+    required this.remarks,
+    required this.onEdit,
+    required this.hasScore,
+  });
+
+  final List<String> steps;
+  final Map<String, int> stepScores;
+  final int totalScore;
+  final String remarks;
+  final VoidCallback onEdit;
+  final bool hasScore;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  'Your Score',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit, size: 18),
+                  label: Text(hasScore ? 'Edit Score' : 'Score Now'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Total score: $totalScore',
+              style: const TextStyle(
+                color: Color(0xFF0B5FFF),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
+            for (final step in steps) ...[
+              _RecordStepScoreRow(
+                label: step,
+                score: stepScores[step] ?? 0,
+              ),
+              const SizedBox(height: 10),
+            ],
+            if (remarks.trim().isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                remarks,
+                style: const TextStyle(
+                  color: Color(0xFF475569),
+                  height: 1.4,
+                ),
+              ),
+            ],
+            if (!hasScore)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'No score submitted yet.',
+                  style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RecordStepScoreRow extends StatelessWidget {
+  const _RecordStepScoreRow({
+    required this.label,
+    required this.score,
+  });
+
+  final String label;
+  final int score;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1E293B),
+          ),
+        ),
+        const SizedBox(height: 6),
+        _RatingStars(rating: score),
+      ],
+    );
+  }
+}
+
+class _EntryScoreCard extends StatelessWidget {
+  const _EntryScoreCard({
+    required this.score,
+    required this.remarks,
+    required this.onEdit,
+    required this.hasScore,
+  });
+
+  final int score;
+  final String remarks;
+  final VoidCallback onEdit;
+  final bool hasScore;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text(
+                  'Your Score',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: onEdit,
+                  icon: const Icon(Icons.edit, size: 18),
+                  label: Text(hasScore ? 'Edit Score' : 'Score Now'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _RatingStars(rating: score),
+            if (remarks.trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                remarks,
+                style: const TextStyle(
+                  color: Color(0xFF475569),
+                  height: 1.4,
+                ),
+              ),
+            ],
+            if (!hasScore)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'No score submitted yet.',
+                  style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RatingStars extends StatelessWidget {
+  const _RatingStars({required this.rating});
+
+  final int rating;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: List.generate(5, (index) {
+        final isSelected = rating >= index + 1;
+        return Icon(
+          isSelected ? Icons.star : Icons.star_border,
+          color: Colors.amber[600],
+        );
+      }),
+    );
+  }
+}
+
+Future<void> _showRecordScoreSheet({
+  required BuildContext context,
+  required WidgetRef ref,
+  required String entryId,
+  required String traineeId,
+  required List<String> steps,
+  required Map<String, int> initialScores,
+  String initialRemarks = '',
+}) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (sheetContext) {
+      return _RecordScoreSheet(
+        entryId: entryId,
+        traineeId: traineeId,
+        steps: steps,
+        initialScores: initialScores,
+        initialRemarks: initialRemarks,
+      );
+    },
+  );
+}
+
+class _RecordScoreSheet extends ConsumerStatefulWidget {
+  const _RecordScoreSheet({
+    required this.entryId,
+    required this.traineeId,
+    required this.steps,
+    required this.initialScores,
+    required this.initialRemarks,
+  });
+
+  final String entryId;
+  final String traineeId;
+  final List<String> steps;
+  final Map<String, int> initialScores;
+  final String initialRemarks;
+
+  @override
+  ConsumerState<_RecordScoreSheet> createState() => _RecordScoreSheetState();
+}
+
+class _RecordScoreSheetState extends ConsumerState<_RecordScoreSheet> {
+  final TextEditingController _remarksController = TextEditingController();
+  final Map<String, int> _stepScores = {};
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    for (final step in widget.steps) {
+      final initial = widget.initialScores[step] ?? 0;
+      _stepScores[step] = initial.clamp(0, 5) as int;
+    }
+    _remarksController.text = widget.initialRemarks;
+  }
+
+  @override
+  void dispose() {
+    _remarksController.dispose();
+    super.dispose();
+  }
+
+  int _totalScore() {
+    return widget.steps.fold(0, (sum, step) => sum + (_stepScores[step] ?? 0));
+  }
+
+  Future<void> _submit() async {
+    setState(() => _isSaving = true);
+    try {
+      final scores = widget.steps
+          .map((step) => {
+                'criterion': step,
+                'score': _stepScores[step] ?? 0,
+                'maxScore': 5,
+              })
+          .toList();
+      await ref.read(reviewerMutationProvider.notifier).submitElogEntryStepScore(
+            entryId: widget.entryId,
+            traineeId: widget.traineeId,
+            stepScores: scores,
+            totalScore: _totalScore(),
+            remarks: _remarksController.text.trim(),
+          );
+      if (!mounted) return;
+      Navigator.pop(context);
+      ref.invalidate(reviewerEntryAssessmentProvider(widget.entryId));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Score submitted')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to submit score: $e')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Score Surgical Record',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Rate each step (0-5)',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFF64748B),
+                  ),
+            ),
+            const SizedBox(height: 8),
+            for (final step in widget.steps) ...[
+              _StepRatingInput(
+                label: step,
+                rating: _stepScores[step] ?? 0,
+                onChanged: (value) =>
+                    setState(() => _stepScores[step] = value),
+              ),
+              const SizedBox(height: 12),
+            ],
+            Text(
+              'Total score: ${_totalScore()}',
+              style: const TextStyle(
+                color: Color(0xFF0B5FFF),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _remarksController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Remarks',
+                hintText: 'Add remarks for this record',
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _isSaving ? null : () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isSaving ? null : _submit,
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Submit'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StepRatingInput extends StatelessWidget {
+  const _StepRatingInput({
+    required this.label,
+    required this.rating,
+    required this.onChanged,
+  });
+
+  final String label;
+  final int rating;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1E293B),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            ...List.generate(5, (index) {
+              final isSelected = rating >= index + 1;
+              return IconButton(
+                onPressed: () => onChanged(index + 1),
+                icon: Icon(
+                  isSelected ? Icons.star : Icons.star_border,
+                  color: Colors.amber[600],
+                ),
+              );
+            }),
+            TextButton(
+              onPressed: rating == 0 ? null : () => onChanged(0),
+              child: const Text('Clear'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+Future<void> _showEntryScoreSheet({
+  required BuildContext context,
+  required WidgetRef ref,
+  required String entryId,
+  required String traineeId,
+  int initialRating = 0,
+  String initialRemarks = '',
+}) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (sheetContext) {
+      return _EntryScoreSheet(
+        entryId: entryId,
+        traineeId: traineeId,
+        initialRating: initialRating,
+        initialRemarks: initialRemarks,
+      );
+    },
+  );
+}
+
+class _EntryScoreSheet extends ConsumerStatefulWidget {
+  const _EntryScoreSheet({
+    required this.entryId,
+    required this.traineeId,
+    required this.initialRating,
+    required this.initialRemarks,
+  });
+
+  final String entryId;
+  final String traineeId;
+  final int initialRating;
+  final String initialRemarks;
+
+  @override
+  ConsumerState<_EntryScoreSheet> createState() => _EntryScoreSheetState();
+}
+
+class _EntryScoreSheetState extends ConsumerState<_EntryScoreSheet> {
+  final TextEditingController _remarksController = TextEditingController();
+  int _rating = 0;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _rating = widget.initialRating.clamp(0, 5);
+    _remarksController.text = widget.initialRemarks;
+  }
+
+  @override
+  void dispose() {
+    _remarksController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    setState(() => _isSaving = true);
+    try {
+      await ref.read(reviewerMutationProvider.notifier).submitElogEntryScore(
+            entryId: widget.entryId,
+            traineeId: widget.traineeId,
+            score: _rating,
+            remarks: _remarksController.text.trim(),
+          );
+      if (!mounted) return;
+      Navigator.pop(context);
+      ref.invalidate(reviewerEntryAssessmentProvider(widget.entryId));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Score submitted')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to submit score: $e')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom;
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Score Entry',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Rating (0-5)',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFF64748B),
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                ...List.generate(5, (index) {
+                  final isSelected = _rating >= index + 1;
+                  return IconButton(
+                    onPressed: () => setState(() => _rating = index + 1),
+                    icon: Icon(
+                      isSelected ? Icons.star : Icons.star_border,
+                      color: Colors.amber[600],
+                    ),
+                  );
+                }),
+                TextButton(
+                  onPressed: _rating == 0 ? null : () => setState(() => _rating = 0),
+                  child: const Text('Clear'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _remarksController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Remarks',
+                hintText: 'Add remarks for this entry',
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _isSaving ? null : () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isSaving ? null : _submit,
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Submit'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
