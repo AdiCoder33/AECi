@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../profile/application/profile_controller.dart';
 import '../application/dashboard_providers.dart';
+import '../../clinical_cases/application/notifications_controller.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -14,6 +15,7 @@ class HomeScreen extends ConsumerWidget {
     final profile = profileState.profile;
     final displayName = profile?.name;
     final isConsultant = profile?.designation == 'Consultant';
+    final unreadCount = ref.watch(unreadCountProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -27,7 +29,25 @@ class HomeScreen extends ConsumerWidget {
             onPressed: () => context.go('/search'),
           ),
           IconButton(
-            icon: const Icon(Icons.notifications_outlined),
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(Icons.notifications_outlined),
+                if (unreadCount > 0)
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             onPressed: () => context.go('/cases/notifications'),
           ),
         ],

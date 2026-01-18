@@ -73,6 +73,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   String? _learningSurgery;
   String? _recordRightEye;
   String? _recordLeftEye;
+  double? _videoUploadProgress;
 
   @override
   void initState() {
@@ -383,6 +384,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                                   newVideos: _newVideos,
                                   onChanged: () => setState(() {}),
                                   enabled: _canEditStatus,
+                                  uploadProgress: _videoUploadProgress,
                                 ),
                               ] else if (isRecords) ...[
                                 _buildSectionHeader('Patient Details', Icons.person_outline_rounded),
@@ -473,6 +475,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                                   newVideos: _newVideos,
                                   onChanged: () => setState(() {}),
                                   enabled: _canEditStatus,
+                                  uploadProgress: _videoUploadProgress,
                                 ),
                               ] else if (isLearning) ...[
                                 _buildSectionHeader('Learning Module Details', Icons.school_outlined),
@@ -506,6 +509,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                                   newVideos: _newVideos,
                                   onChanged: () => setState(() {}),
                                   enabled: _canEditStatus,
+                                  uploadProgress: _videoUploadProgress,
                                 ),
                               ],
                             ],
@@ -1009,10 +1013,16 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     String entryId,
   ) async {
     final newPaths = <String>[];
-    for (final file in _newVideos) {
+    if (_newVideos.isEmpty) return newPaths;
+
+    setState(() => _videoUploadProgress = 0.0);
+    for (var i = 0; i < _newVideos.length; i++) {
+      final file = _newVideos[i];
       final path = await mediaRepo.uploadImage(entryId: entryId, file: file);
       newPaths.add(path);
+      setState(() => _videoUploadProgress = (i + 1) / _newVideos.length);
     }
+    setState(() => _videoUploadProgress = null);
     return newPaths;
   }
 
@@ -1811,12 +1821,14 @@ class _VideoPickerSection extends ConsumerWidget {
     required this.newVideos,
     required this.onChanged,
     required this.enabled,
+    this.uploadProgress,
   });
 
   final List<String> existingPaths;
   final List<File> newVideos;
   final VoidCallback onChanged;
   final bool enabled;
+  final double? uploadProgress;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1854,6 +1866,15 @@ class _VideoPickerSection extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 8),
+        if (uploadProgress != null) ...[
+          LinearProgressIndicator(value: uploadProgress),
+          const SizedBox(height: 6),
+          Text(
+            'Uploading videos... ${(uploadProgress! * 100).round()}%',
+            style: const TextStyle(fontSize: 12, color: Colors.black54),
+          ),
+          const SizedBox(height: 8),
+        ],
         Column(
           children: [
             ...existingPaths.map(

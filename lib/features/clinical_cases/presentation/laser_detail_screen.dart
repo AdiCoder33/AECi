@@ -6,6 +6,54 @@ import 'package:url_launcher/url_launcher.dart';
 import '../application/clinical_cases_controller.dart';
 import '../data/clinical_cases_repository.dart';
 
+class LaserMediaGalleryScreen extends ConsumerWidget {
+  const LaserMediaGalleryScreen({super.key, required this.caseId});
+
+  final String caseId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mediaAsync = ref.watch(caseMediaProvider(caseId));
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Laser Media'),
+      ),
+      body: mediaAsync.when(
+        data: (list) {
+          if (list.isEmpty) {
+            return const Center(
+              child: Text('No media uploaded yet.'),
+            );
+          }
+
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: GridView.builder(
+              gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.9,
+              ),
+              itemCount: list.length,
+              itemBuilder: (context, index) =>
+                  _LaserMediaTile(item: list[index]),
+            ),
+          );
+        },
+        loading: () => const Center(
+          child: CircularProgressIndicator(),
+        ),
+        error: (e, _) => Center(
+          child: Text('Failed to load media: $e'),
+        ),
+      ),
+    );
+  }
+}
+
 class LaserDetailScreen extends ConsumerWidget {
   const LaserDetailScreen({super.key, required this.caseId});
 
@@ -194,7 +242,7 @@ class LaserDetailScreen extends ConsumerWidget {
                           alignment: Alignment.centerLeft,
                           child: TextButton(
                             onPressed: () =>
-                                context.push('/cases/$caseId/media'),
+                                context.push('/cases/laser/$caseId/media'),
                             child: const Text('View all media'),
                           ),
                         ),

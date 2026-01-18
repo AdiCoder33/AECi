@@ -402,6 +402,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                   caseId: state.pathParameters['id']!,
                 ),
               ),
+              GoRoute(
+                path: 'laser/:id/media',
+                name: 'laserMedia',
+                builder: (context, state) => LaserMediaGalleryScreen(
+                  caseId: state.pathParameters['id']!,
+                ),
+              ),
           GoRoute(
             path: 'uvea/:id',
             name: 'uveaDetail',

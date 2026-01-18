@@ -106,23 +106,43 @@ class _StorageManagementScreenState
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _items.isEmpty
-          ? const Center(child: Text('No media found'))
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemBuilder: (context, index) {
-                final item = _items[index];
-                return ListTile(
-                  title: Text(item.path),
-                  subtitle: Text('Entry: ${item.entryId} • ${item.module}'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.redAccent),
-                    onPressed: () => _remove(item),
+              ? const Center(
+                  child: Text(
+                    'No uploaded images found in your account storage',
                   ),
-                );
-              },
-              separatorBuilder: (_, __) => const Divider(),
-              itemCount: _items.length,
-            ),
+                )
+              : Padding
+                  (
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'These are all images you have uploaded from your logbook entries. '
+                        'Deleting a file here will remove it from your account storage and from any entries using it.',
+                        style: TextStyle(fontSize: 13, color: Colors.black54),
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: ListView.separated(
+                          itemBuilder: (context, index) {
+                            final item = _items[index];
+                            return ListTile(
+                              title: Text(item.path),
+                              subtitle: Text('Entry: ${item.entryId} • ${item.module}'),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.redAccent),
+                                onPressed: () => _remove(item),
+                              ),
+                            );
+                          },
+                          separatorBuilder: (_, __) => const Divider(),
+                          itemCount: _items.length,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
     );
   }
 }
